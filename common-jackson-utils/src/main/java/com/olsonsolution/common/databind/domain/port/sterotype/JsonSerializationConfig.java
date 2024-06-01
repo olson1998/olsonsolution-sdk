@@ -1,4 +1,4 @@
-package com.olsonsolution.common.jackson.domain.port.sterotype;
+package com.olsonsolution.common.databind.domain.port.sterotype;
 
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;

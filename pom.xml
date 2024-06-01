@@ -11,6 +11,7 @@
     <modules>
         <module>common-time-utils</module>
         <module>common-jackson-utils</module>
+        <module>common-jackson-databind</module>
     </modules>
 
     <properties>
@@ -40,6 +41,16 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>com.olsonsolution.common</groupId>
+                <artifactId>common-time-utils</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.olsonsolution.common</groupId>
+                <artifactId>common-jackson-utils</artifactId>
+                <version>${revision}</version>
+            </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>

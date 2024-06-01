@@ -1,4 +1,4 @@
-package com.olsonsolution.common.jackson.domain.port.repository;
+package com.olsonsolution.common.databind.domain.port.repository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 

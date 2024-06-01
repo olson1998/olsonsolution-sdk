@@ -1,6 +1,6 @@
-package com.olsonsolution.common.jackson.model;
+package com.olsonsolution.common.databind.model;
 
-import com.olsonsolution.common.jackson.domain.port.sterotype.TypeBind;
+import com.olsonsolution.common.databind.domain.port.sterotype.TypeBind;
 import lombok.Data;
 import lombok.NonNull;
 

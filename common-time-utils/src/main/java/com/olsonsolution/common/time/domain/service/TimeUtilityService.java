@@ -5,12 +5,15 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.joda.time.DateTimeZone;
 import org.joda.time.MutableDateTime;
+import org.joda.time.format.DateTimeFormatter;
 
+@Getter
 @RequiredArgsConstructor
 public class TimeUtilityService implements TimeUtils {
 
-    @Getter
     private final DateTimeZone timeZone;
+
+    private final DateTimeFormatter dateTimeFormatter;
 
     @Override
     public MutableDateTime getTimestamp() {

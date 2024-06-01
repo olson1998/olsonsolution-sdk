@@ -1,4 +1,4 @@
-package com.olsonsolution.common.jackson.domain.port.sterotype;
+package com.olsonsolution.common.databind.domain.port.sterotype;
 
 public interface TypeBind<A, T extends A> {
 

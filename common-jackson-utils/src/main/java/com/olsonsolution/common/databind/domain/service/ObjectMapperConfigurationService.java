@@ -1,12 +1,12 @@
-package com.olsonsolution.common.jackson.domain.service;
+package com.olsonsolution.common.databind.domain.service;
 
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.olsonsolution.common.jackson.domain.port.repository.DatabindModuleSupplier;
-import com.olsonsolution.common.jackson.domain.port.repository.ObjectMapperConfigurer;
-import com.olsonsolution.common.jackson.domain.port.sterotype.JsonSerializationConfig;
-import com.olsonsolution.common.jackson.domain.port.sterotype.TypeBind;
+import com.olsonsolution.common.databind.domain.port.repository.DatabindModuleSupplier;
+import com.olsonsolution.common.databind.domain.port.repository.ObjectMapperConfigurer;
+import com.olsonsolution.common.databind.domain.port.sterotype.JsonSerializationConfig;
+import com.olsonsolution.common.databind.domain.port.sterotype.TypeBind;
 
 import java.util.ArrayList;
 import java.util.List;

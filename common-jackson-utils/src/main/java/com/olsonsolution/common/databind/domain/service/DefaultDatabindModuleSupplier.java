@@ -1,13 +1,13 @@
-package com.olsonsolution.common.jackson.domain.service;
+package com.olsonsolution.common.databind.domain.service;
 
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.Module;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import com.olsonsolution.common.jackson.domain.port.repository.DatabindModuleSupplier;
-import com.olsonsolution.common.jackson.domain.port.sterotype.JsonSerializationConfig;
-import com.olsonsolution.common.jackson.domain.port.sterotype.TypeBind;
-import com.olsonsolution.common.jackson.model.SimpleJsonSerializationConfig;
-import com.olsonsolution.common.jackson.model.SimpleTypeBind;
+import com.olsonsolution.common.databind.domain.port.repository.DatabindModuleSupplier;
+import com.olsonsolution.common.databind.domain.port.sterotype.JsonSerializationConfig;
+import com.olsonsolution.common.databind.domain.port.sterotype.TypeBind;
+import com.olsonsolution.common.databind.model.SimpleJsonSerializationConfig;
+import com.olsonsolution.common.databind.model.SimpleTypeBind;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -28,11 +28,11 @@ public class DefaultDatabindModuleSupplier implements DatabindModuleSupplier {
     }
 
     @Override
-    public <T> void registerSerializationConfig(Class<T> javaClass, Class<? extends StdSerializer<T>> stdSerializer, Class<? extends StdDeserializer<T>> stdDeserializer) {
+    public <T> void registerSerializationConfig(Class<T> javaClass, JsonSerializer<T> jsonSerializer, JsonDeserializer<T> jsonDeserializer) {
         JsonSerializationConfig<T> jsonSerializationConfig = new SimpleJsonSerializationConfig<>(
                 javaClass,
-                stdSerializer,
-                stdDeserializer
+                jsonSerializer,
+                jsonDeserializer
         );
         jsonSerializationConfigs.add((JsonSerializationConfig<Object>) jsonSerializationConfig);
     }
