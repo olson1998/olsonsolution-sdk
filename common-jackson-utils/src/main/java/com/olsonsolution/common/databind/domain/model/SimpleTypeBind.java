@@ -1,4 +1,4 @@
-package com.olsonsolution.common.databind.model;
+package com.olsonsolution.common.databind.domain.model;
 
 import com.olsonsolution.common.databind.domain.port.sterotype.TypeBind;
 import lombok.Data;

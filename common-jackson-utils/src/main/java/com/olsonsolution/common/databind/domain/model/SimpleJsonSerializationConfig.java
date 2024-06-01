@@ -1,4 +1,4 @@
-package com.olsonsolution.common.databind.model;
+package com.olsonsolution.common.databind.domain.model;
 
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;

@@ -8,10 +8,18 @@ import com.olsonsolution.common.databind.domain.port.sterotype.TypeBind;
 
 import java.util.Collection;
 
-public interface DatabindModuleSupplier {
+public interface DatabindConfigurer {
 
+    /**
+     * Returns collection of pre-config modules
+     * @return Collection of pre-config modules
+     */
     Collection<Module> getModules();
 
+    /**
+     * Returns collection of binds between abstract java class and java class
+     * @return Collection of binds between abstract java class and java class
+     */
     Collection<TypeBind<Object, Object>> getTypeBinds();
 
     Collection<JsonSerializationConfig<Object>> getJsonSerializationConfigs();

@@ -1,22 +1,22 @@
 package com.olsonsolution.common.databind.domain.service;
 
-import com.olsonsolution.common.databind.domain.port.DataBindConfigurer;
-import com.olsonsolution.common.databind.domain.port.repository.DatabindModuleSupplier;
+import com.olsonsolution.common.databind.domain.port.repository.DataBindConfigurer;
+import com.olsonsolution.common.databind.domain.port.repository.DatabindConfigurer;
 import org.joda.time.MutableDateTime;
 import org.joda.time.format.DateTimeFormatter;
 
 public class DataBindConfigurationService implements DataBindConfigurer {
 
     @Override
-    public DatabindModuleSupplier configJodaDateTimeDataBindSupplier(DateTimeFormatter dateTimeFormatter) {
-        DatabindModuleSupplier databindModuleSupplier = new DefaultDatabindModuleSupplier();
+    public DatabindConfigurer configJodaDateTimeDataBindSupplier(DateTimeFormatter dateTimeFormatter) {
+        DatabindConfigurer databindConfigurer = new DefaultDataBindConfigurer();
         MutableDateTimeJsonSerializer mutableDateTimeJsonSerializer = new MutableDateTimeJsonSerializer(dateTimeFormatter);
         MutableDateTimeJsonDeserializer mutableDateTimeJsonDeserializer = new MutableDateTimeJsonDeserializer(dateTimeFormatter);
-        databindModuleSupplier.registerSerializationConfig(
+        databindConfigurer.registerSerializationConfig(
                 MutableDateTime.class,
                 mutableDateTimeJsonSerializer,
                 mutableDateTimeJsonDeserializer
         );
-        return databindModuleSupplier;
+        return databindConfigurer;
     }
 }

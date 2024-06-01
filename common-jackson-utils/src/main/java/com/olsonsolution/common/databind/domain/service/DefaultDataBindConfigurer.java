@@ -3,18 +3,18 @@ package com.olsonsolution.common.databind.domain.service;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.Module;
-import com.olsonsolution.common.databind.domain.port.repository.DatabindModuleSupplier;
+import com.olsonsolution.common.databind.domain.model.SimpleJsonSerializationConfig;
+import com.olsonsolution.common.databind.domain.port.repository.DatabindConfigurer;
 import com.olsonsolution.common.databind.domain.port.sterotype.JsonSerializationConfig;
 import com.olsonsolution.common.databind.domain.port.sterotype.TypeBind;
-import com.olsonsolution.common.databind.model.SimpleJsonSerializationConfig;
-import com.olsonsolution.common.databind.model.SimpleTypeBind;
+import com.olsonsolution.common.databind.domain.model.SimpleTypeBind;
 import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.Collection;
 
 @Getter
-public class DefaultDatabindModuleSupplier implements DatabindModuleSupplier {
+public class DefaultDataBindConfigurer implements DatabindConfigurer {
 
     private final Collection<Module> modules = new ArrayList<>();
 

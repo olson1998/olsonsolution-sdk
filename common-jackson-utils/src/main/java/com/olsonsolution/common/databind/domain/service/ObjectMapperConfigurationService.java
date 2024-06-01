@@ -3,7 +3,7 @@ package com.olsonsolution.common.databind.domain.service;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.olsonsolution.common.databind.domain.port.repository.DatabindModuleSupplier;
+import com.olsonsolution.common.databind.domain.port.repository.DatabindConfigurer;
 import com.olsonsolution.common.databind.domain.port.repository.ObjectMapperConfigurer;
 import com.olsonsolution.common.databind.domain.port.sterotype.JsonSerializationConfig;
 import com.olsonsolution.common.databind.domain.port.sterotype.TypeBind;
@@ -17,13 +17,13 @@ import java.util.stream.Collectors;
 public class ObjectMapperConfigurationService implements ObjectMapperConfigurer {
 
     @Override
-    public void configure(ObjectMapper objectMapper, List<? extends DatabindModuleSupplier> databindModuleSuppliers) {
+    public void configure(ObjectMapper objectMapper, List<? extends DatabindConfigurer> databindModuleSuppliers) {
         List<Module> modules = new ArrayList<>();
         SimpleModule mappingsModule = databindModuleSuppliers.stream()
                 .flatMap(databindModuleSupplier -> databindModuleSupplier.getTypeBinds().stream())
                 .collect(Collectors.collectingAndThen(Collectors.toMap(TypeBind::getAbstractClass, TypeBind::getJavaClass), this::collectToMappingModule));
         SimpleModule jsonSerializationModule = databindModuleSuppliers.stream()
-                .flatMap(databindModuleSupplier -> databindModuleSupplier.getStdSerializationConfigs().stream())
+                .flatMap(databindModuleSupplier -> databindModuleSupplier.getJsonSerializationConfigs().stream())
                 .collect(Collectors.collectingAndThen(Collectors.toList(), this::collectToJsonSerializationModule));
         modules.add(mappingsModule);
         modules.add(jsonSerializationModule);

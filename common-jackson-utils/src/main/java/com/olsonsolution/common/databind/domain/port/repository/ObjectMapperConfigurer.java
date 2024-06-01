@@ -6,6 +6,6 @@ import java.util.List;
 
 public interface ObjectMapperConfigurer {
 
-    void configure(ObjectMapper objectMapper, List<? extends DatabindModuleSupplier> databindModuleSuppliers);
+    void configure(ObjectMapper objectMapper, List<? extends DatabindConfigurer> databindModuleSuppliers);
 
 }
