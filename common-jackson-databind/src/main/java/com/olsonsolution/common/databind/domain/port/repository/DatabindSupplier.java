@@ -2,7 +2,7 @@ package com.olsonsolution.common.databind.domain.port.repository;
 
 import org.joda.time.format.DateTimeFormatter;
 
-public interface DataBindConfigurer {
+public interface DatabindSupplier {
 
     /**
      * Returns data bind module for joda-time library
