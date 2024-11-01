@@ -14,6 +14,9 @@
         <module>common-jackson-databind</module>
         <module>common-spring-boot-web-starter</module>
         <module>common-reflection-utils</module>
+        <module>common-spring-jpa-starter</module>
+        <module>common-tenant-core</module>
+        <module>common-datasource-core</module>
     </modules>
 
     <properties>
@@ -63,6 +66,21 @@
             <dependency>
                 <groupId>com.olsonsolution.common</groupId>
                 <artifactId>common-jackson-databind</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.olsonsolution.common</groupId>
+                <artifactId>common-datasource-core</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.olsonsolution.common</groupId>
+                <artifactId>common-tenant-core</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.olsonsolution.common</groupId>
+                <artifactId>common-spring-jpa-starter</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
