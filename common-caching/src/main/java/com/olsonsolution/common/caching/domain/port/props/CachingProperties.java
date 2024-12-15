@@ -1,7 +1,5 @@
 package com.olsonsolution.common.caching.domain.port.props;
 
-import com.olsonsolution.common.spring.configurer.domain.port.stereotype.BeanDefinition;
-
 import java.time.Duration;
 
 public interface CachingProperties {
@@ -15,11 +13,5 @@ public interface CachingProperties {
     Duration getExpireAfterAccess();
 
     Duration getExpireAfterWrite();
-
-    BeanDefinition getExecutorProperties();
-
-    BeanDefinition getRemovalListenerProperties();
-
-    BeanDefinition getWeigherProperties();
 
 }

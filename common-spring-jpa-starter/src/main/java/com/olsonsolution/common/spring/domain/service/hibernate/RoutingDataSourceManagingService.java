@@ -3,6 +3,7 @@ package com.olsonsolution.common.spring.domain.service.hibernate;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.olsonsolution.common.data.domain.port.repository.sql.DataSourceModeler;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSource;
+import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceProvider;
 import com.olsonsolution.common.spring.domain.port.repository.hibernate.RoutingDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
@@ -19,9 +20,7 @@ public class RoutingDataSourceManagingService extends RoutingDataSourceManager {
 
     private final DataSourceModeler dataSourceModeler;
 
-    private final DestinationDataSourceProvider destinationDataSourceProvider;
-
-    private final Cache<String, SqlDataSource> sqlDataSourceCache;
+    private final DestinationDataSourceManager destinationDataSourceManager;
 
     private final Cache<DataSourceSpec, DataSource> destinationDataSourcesCache;
 
@@ -37,7 +36,7 @@ public class RoutingDataSourceManagingService extends RoutingDataSourceManager {
 
     private DataSource createDataSource(DataSourceSpec dataSourceSpec) {
         String name = dataSourceSpec.getName();
-        SqlDataSource sqlDataSource = sqlDataSourceCache.get(name, this::obtainSqlDataSource);
+        SqlDataSource sqlDataSource = destinationDataSourceManager.obtainSqlDataSource(name);
         DataSource dataSource = dataSourceModeler.createDataSource(sqlDataSource, dataSourceSpec.getPermission());
         log.info(
                 "Routing data source spec: {} vendor: '{}' host: '{}'",
@@ -46,13 +45,6 @@ public class RoutingDataSourceManagingService extends RoutingDataSourceManager {
                 sqlDataSource.getHost()
         );
         return dataSource;
-    }
-
-    private SqlDataSource obtainSqlDataSource(String dataSourceName) {
-        SqlDataSource sqlDataSource = destinationDataSourceProvider.findDestination(dataSourceName)
-                .orElseThrow();
-        log.info("Obtained routing data source name: '{}'", dataSourceName);
-        return sqlDataSource;
     }
 
 }
