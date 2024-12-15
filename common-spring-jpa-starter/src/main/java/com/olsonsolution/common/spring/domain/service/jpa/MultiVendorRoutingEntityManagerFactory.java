@@ -4,6 +4,7 @@ import com.olsonsolution.common.spring.domain.port.props.jpa.EntityManagerFactor
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
 import com.olsonsolution.common.spring.domain.port.repository.hibernate.RoutingDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingEntityManagerFactory;
+import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.RoutingDataSource;
 import com.olsonsolution.common.spring.domain.port.stereotype.jpa.JpaEnvironment;
 import jakarta.persistence.*;
@@ -17,6 +18,7 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 
 import static org.hibernate.cfg.JdbcSettings.*;
@@ -32,7 +34,7 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     private final JpaProperties jpaProperties;
 
-    private final CurrentTenantIdentifierResolver<JpaEnvironment> currentTenantIdentifierResolver;
+    private final CurrentTenantIdentifierResolver<DataSourceSpec> currentTenantIdentifierResolver;
 
     private final RoutingDataSourceManager routingDataSourceManager;
 
@@ -116,8 +118,7 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
     }
 
     @Override
-    protected EntityManagerFactory constructDelegate(JpaEnvironment jpaEnvironment) {
-        RoutingDataSource routingDataSource = jpaEnvironment.getDataBaseEnvironment();
+    protected EntityManagerFactory constructDelegate(DataSourceSpec dataSourceSpec) {
         EntityManagerFactoryProperties entityManagerFactoryProperties =
                 getEntityManagerFactoryProperties(jpaEnvironment);
         String unitName = PERSISTENCE_UNIT_NAME.formatted(
@@ -135,11 +136,11 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
     }
 
     private Properties resolveProperties(EntityManagerFactoryProperties entityManagerFactoryProperties,
-                                         JpaEnvironment jpaEnvironment) {
-        RoutingDataSource routingDataSource = jpaEnvironment.getDataBaseEnvironment();
+                                         DataSourceSpec dataSourceSpec) {
         Properties properties = new Properties(entityManagerFactoryProperties.getProperties());
-        properties.setProperty(DIALECT, jpaEnvironment.getDialect().getCanonicalName());
-        properties.setProperty(DEFAULT_SCHEMA, routingDataSource.getSchema());
+        properties.setProperty(DIALECT, dataSourceSpec.getDialect().getCanonicalName());
+        Optional.ofNullable(dataSourceSpec.getDefaultSchema())
+                .ifPresent(schema -> properties.put(DEFAULT_SCHEMA, schema));
         properties.put(SHOW_SQL, entityManagerFactoryProperties.isLogSql());
         properties.put(FORMAT_SQL, entityManagerFactoryProperties.isFormatSqlLog());
         properties.put(MULTI_TENANT_CONNECTION_PROVIDER, routingDataSourceManager);
@@ -147,8 +148,8 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
         return properties;
     }
 
-    private EntityManagerFactoryProperties getEntityManagerFactoryProperties(JpaEnvironment jpaEnvironment) {
-        String schema = jpaEnvironment.getDataBaseEnvironment().getSchema();
+    private EntityManagerFactoryProperties getEntityManagerFactoryProperties(DataSourceSpec dataSourceSpec) {
+        String schema = dataSourceSpec.getDefaultSchema();
         return jpaProperties.getEntityManagerFactoryProperties()
                 .stream()
                 .filter(props -> schema.equals(props.getSchema()))

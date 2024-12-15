@@ -4,25 +4,29 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.olsonsolution.common.caching.application.props.DefaultCachingProperties;
 import com.olsonsolution.common.caching.domain.port.props.CachingProperties;
 import com.olsonsolution.common.caching.domain.port.repository.InMemoryCacheFactory;
+import com.olsonsolution.common.data.domain.port.repository.sql.DataSourceModeler;
+import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSource;
+import com.olsonsolution.common.data.domain.service.sql.DataSourceModelingService;
 import com.olsonsolution.common.spring.configurer.application.props.DefaultBeanDefinition;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.RoutingDataSourceProperties;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceProvider;
-import com.olsonsolution.common.spring.domain.port.repository.datasource.RoutingDataSourceEvictor;
+import com.olsonsolution.common.spring.domain.port.repository.datasource.DataSourceEvictor;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.*;
 import com.olsonsolution.common.spring.domain.port.repository.hibernate.RoutingDataSourceManager;
+import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.RoutingDataSource;
 import com.olsonsolution.common.spring.domain.port.stereotype.jpa.JpaEnvironment;
-import com.olsonsolution.common.spring.domain.service.datasource.RoutingDataSourceEvictionService;
-import com.olsonsolution.common.spring.domain.service.hibernate.JpaEnvironmentIdentifierResolver;
+import com.olsonsolution.common.spring.domain.service.datasource.DataSourceEvictionService;
+import com.olsonsolution.common.spring.domain.service.hibernate.DataSourceSpecIdentifierResolver;
 import com.olsonsolution.common.spring.domain.service.jpa.*;
 import com.olsonsolution.common.spring.domain.service.hibernate.RoutingDataSourceManagingService;
-import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import javax.sql.DataSource;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -44,25 +48,32 @@ public class MultiVendorJpaConfig {
         );
     }
 
+    @Bean
+    public DataSourceModeler dataSourceModeler() {
+        return new DataSourceModelingService();
+    }
+
     @Bean(ROUTING_DATA_SOURCE_EVICTOR_BEAN)
-    public RoutingDataSourceEvictor routingDataSourceEvictor() {
-        return new RoutingDataSourceEvictionService();
+    public DataSourceEvictor routingDataSourceEvictor() {
+        return new DataSourceEvictionService();
     }
 
     @Bean
-    public JpaEnvironmentManager jpaEnvironmentManager() {
-        return new JpaEnvironmentManagingService();
+    public DataSourceSpecManager jpaEnvironmentManager() {
+        return new DataSourceSpecificationManagingService();
     }
 
     @Bean
-    public CurrentTenantIdentifierResolver<JpaEnvironment> jpaEnvironmentCurrentTenantIdentifierResolver(JpaEnvironmentManager jpaEnvironmentManager) {
-        return new JpaEnvironmentIdentifierResolver(jpaEnvironmentManager);
+    public CurrentTenantIdentifierResolver<DataSourceSpec> jpaEnvironmentCurrentTenantIdentifierResolver(DataSourceSpecManager dataSourceSpecManager) {
+        return new DataSourceSpecIdentifierResolver(dataSourceSpecManager);
+
     }
 
     @Bean
-    public RoutingDataSourceManager routingDataSourceManager(JpaProperties jpaProperties,
+    public RoutingDataSourceManager routingDataSourceManager(DataSourceModeler dataSourceModeler,
                                                              InMemoryCacheFactory inMemoryCacheFactory,
-                                                             DestinationDataSourceProvider destinationDataSourceProvider) {
+                                                             DestinationDataSourceProvider destinationDataSourceProvider,
+                                                             JpaProperties jpaProperties) {
         RoutingDataSourceProperties routingDataSourceProperties = jpaProperties.getRoutingDataSourceProperties();
         int maximumDataSources = routingDataSourceProperties.getMaxDataSources();
         CachingProperties cachingProperties = new DefaultCachingProperties(
@@ -72,21 +83,25 @@ public class MultiVendorJpaConfig {
                 routingDataSourceProperties.getExpireTimeout(),
                 null,
                 new DefaultBeanDefinition(Executor.class, ROUTING_DATA_SOURCE_EXECUTOR_BEAN),
-                new DefaultBeanDefinition(RoutingDataSourceEvictor.class, ROUTING_DATA_SOURCE_EVICTOR_BEAN),
+                new DefaultBeanDefinition(DataSourceEvictor.class, ROUTING_DATA_SOURCE_EVICTOR_BEAN),
                 null
         );
-        Cache<RoutingDataSource, HikariDataSource> dataBaseEnvironmentHikariDataSourceCache =
+        Cache<String, SqlDataSource> sqlDataSourceCache = inMemoryCacheFactory.fabricate(cachingProperties);
+        Cache<DataSourceSpec, DataSource> destinationDataSourceCache =
                 inMemoryCacheFactory.fabricate(cachingProperties);
         return new RoutingDataSourceManagingService(
+                jpaProperties.getDefaultDataSourceProperties().getSpecProperties(),
+                dataSourceModeler,
                 destinationDataSourceProvider,
-                dataBaseEnvironmentHikariDataSourceCache
+                sqlDataSourceCache,
+                destinationDataSourceCache
         );
     }
 
     @Bean
     public RoutingEntityManagerFactory routingEntityManagerFactory(JpaProperties jpaProperties,
                                                                    RoutingDataSourceManager routingDataSourceManager,
-                                                                   CurrentTenantIdentifierResolver<JpaEnvironment> tenantIdentifierResolver) {
+                                                                   CurrentTenantIdentifierResolver<DataSourceSpec> tenantIdentifierResolver) {
         return new MultiVendorRoutingEntityManagerFactory(
                 jpaProperties,
                 tenantIdentifierResolver,
@@ -105,10 +120,10 @@ public class MultiVendorJpaConfig {
     }
 
     @Bean
-    public JpaEnvironmentConfigurer jpaEnvironmentConfigurer(RoutingEntityManager routingEntityManager,
+    public DataSourceSpecConfigurer jpaEnvironmentConfigurer(RoutingEntityManager routingEntityManager,
                                                              RoutingEntityManagerFactory routingEntityManagerFactory,
                                                              RoutingPlatformTransactionManager routingPlatformTransactionManager) {
-        return new JpaEnvironmentConfiguringService(
+        return new DataSourceSpecConfiguringService(
                 routingEntityManager,
                 routingEntityManagerFactory,
                 routingPlatformTransactionManager

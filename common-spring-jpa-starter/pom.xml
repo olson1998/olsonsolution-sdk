@@ -20,6 +20,10 @@
     <dependencies>
         <dependency>
             <groupId>com.olsonsolution.common</groupId>
+            <artifactId>common-data</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.olsonsolution.common</groupId>
             <artifactId>common-caching</artifactId>
         </dependency>
         <dependency>

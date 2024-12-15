@@ -1,14 +1,13 @@
 package com.olsonsolution.common.spring.domain.port.repository.datasource;
 
-import com.olsonsolution.common.spring.domain.port.stereotype.datasource.RoutingDataSource;
-import com.zaxxer.hikari.HikariConfig;
+import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSource;
 
 import java.util.Optional;
 
 public interface DestinationDataSourceProvider {
 
-    RoutingDataSource getProductDataSourceEnvironment();
+    Optional<? extends SqlDataSource> findDefaultDestination();
 
-    Optional<HikariConfig> findDestinationConfig(RoutingDataSource routingDataSource);
+    Optional<? extends SqlDataSource> findDestination(String dataSourceName);
 
 }

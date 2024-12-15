@@ -4,6 +4,8 @@ import java.util.Collection;
 
 public interface JpaProperties {
 
+    DefaultDataSourceSpecProperties getDefaultDataSourceProperties();
+
     RoutingDataSourceProperties getRoutingDataSourceProperties();
 
     Collection<? extends EntityManagerFactoryProperties> getEntityManagerFactoryProperties();

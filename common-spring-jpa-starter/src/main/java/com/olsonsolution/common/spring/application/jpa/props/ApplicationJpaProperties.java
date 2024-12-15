@@ -1,9 +1,8 @@
 package com.olsonsolution.common.spring.application.jpa.props;
 
-import com.olsonsolution.common.spring.domain.port.props.jpa.EntityManagerFactoryProperties;
-import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
-import com.olsonsolution.common.spring.domain.port.props.jpa.PackagesToScanProperties;
-import com.olsonsolution.common.spring.domain.port.props.jpa.RoutingDataSourceProperties;
+import com.olsonsolution.common.spring.domain.model.datasource.DataSourceSpecification;
+import com.olsonsolution.common.spring.domain.port.props.jpa.*;
+import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -16,8 +15,14 @@ import java.util.*;
 @ConfigurationProperties(prefix = "common.spring.application.jpa")
 public class ApplicationJpaProperties implements JpaProperties {
 
+    private final ApplicationDefaultDataSourceProperties defaultDataSource = new ApplicationDefaultDataSourceProperties();
     private final ApplicationRoutingDataSourceProperties routingDataSource = new ApplicationRoutingDataSourceProperties();
     private final List<ApplicationEntityManagerFactoryProperties> entityManagerFactory = new ArrayList<>();
+
+    @Override
+    public DefaultDataSourceSpecProperties getDefaultDataSourceProperties() {
+        return defaultDataSource;
+    }
 
     @Override
     public RoutingDataSourceProperties getRoutingDataSourceProperties() {
@@ -27,6 +32,17 @@ public class ApplicationJpaProperties implements JpaProperties {
     @Override
     public Collection<? extends EntityManagerFactoryProperties> getEntityManagerFactoryProperties() {
         return entityManagerFactory;
+    }
+
+    @Data
+    public static class ApplicationDefaultDataSourceProperties implements DefaultDataSourceSpecProperties {
+
+        private final DataSourceSpecification specification = new DataSourceSpecification();
+
+        @Override
+        public DataSourceSpec getSpecProperties() {
+            return specification;
+        }
     }
 
     @Data

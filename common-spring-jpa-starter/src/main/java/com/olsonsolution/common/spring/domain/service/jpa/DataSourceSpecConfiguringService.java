@@ -1,14 +1,14 @@
 package com.olsonsolution.common.spring.domain.service.jpa;
 
-import com.olsonsolution.common.spring.domain.port.repository.jpa.JpaEnvironmentConfigurer;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecConfigurer;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingEntityManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingEntityManagerFactory;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingPlatformTransactionManager;
-import com.olsonsolution.common.spring.domain.port.stereotype.jpa.JpaEnvironment;
+import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public class JpaEnvironmentConfiguringService implements JpaEnvironmentConfigurer {
+public class DataSourceSpecConfiguringService implements DataSourceSpecConfigurer {
 
     private final RoutingEntityManager routingEntityManager;
 
@@ -17,10 +17,10 @@ public class JpaEnvironmentConfiguringService implements JpaEnvironmentConfigure
     private final RoutingPlatformTransactionManager routingPlatformTransactionManager;
 
     @Override
-    public void configure(JpaEnvironment jpaEnvironment) {
-        routingEntityManagerFactory.setEnvironment(jpaEnvironment);
-        routingEntityManager.setEnvironment(jpaEnvironment);
-        routingPlatformTransactionManager.setEnvironment(jpaEnvironment);
+    public void configure(DataSourceSpec dataSourceSpec) {
+        routingEntityManagerFactory.setDataSourceSpec(dataSourceSpec);
+        routingEntityManager.setDataSourceSpec(dataSourceSpec);
+        routingPlatformTransactionManager.setDataSourceSpec(dataSourceSpec);
     }
 
     @Override

@@ -2,7 +2,7 @@ package com.olsonsolution.common.spring.domain.service.jpa;
 
 import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingEntityManagerFactory;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingPlatformTransactionManager;
-import com.olsonsolution.common.spring.domain.port.stereotype.jpa.JpaEnvironment;
+import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.orm.jpa.JpaTransactionManager;
@@ -18,7 +18,7 @@ public class MultiVendorPlatformTransactionManager extends MultiVendorJpaConfigu
     private final RoutingEntityManagerFactory routingEntityManagerFactory;
 
     @Override
-    protected PlatformTransactionManager constructDelegate(JpaEnvironment jpaEnvironment) {
+    protected PlatformTransactionManager constructDelegate(DataSourceSpec dataSourceSpec) {
         return new JpaTransactionManager(routingEntityManagerFactory.getDelegate());
     }
 

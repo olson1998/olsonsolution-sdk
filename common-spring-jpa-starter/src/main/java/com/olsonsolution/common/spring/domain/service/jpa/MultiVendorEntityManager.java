@@ -1,7 +1,8 @@
 package com.olsonsolution.common.spring.domain.service.jpa;
 
 import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingEntityManager;
-import com.olsonsolution.common.spring.domain.port.stereotype.jpa.JpaEnvironment;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingEntityManagerFactory;
+import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import jakarta.persistence.*;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaDelete;
@@ -18,9 +19,11 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class MultiVendorEntityManager extends MultiVendorJpaConfigurable<EntityManager> implements RoutingEntityManager {
 
+    private final RoutingEntityManagerFactory routingEntityManagerFactory;
+
     @Override
-    protected EntityManager constructDelegate(JpaEnvironment jpaEnvironment) {
-        return null;
+    protected EntityManager constructDelegate(DataSourceSpec dataSourceSpec) {
+        return routingEntityManagerFactory.createEntityManager();
     }
 
     @Override
@@ -220,7 +223,7 @@ public class MultiVendorEntityManager extends MultiVendorJpaConfigurable<EntityM
 
     @Override
     public void close() {
-        for(Map.Entry<Class<?>, EntityManager> sqlDialectEntityManager : delegatesRegistry.entrySet()) {
+        for (Map.Entry<Class<?>, EntityManager> sqlDialectEntityManager : delegatesRegistry.entrySet()) {
             String sqlDialect = sqlDialectEntityManager.getKey().getSimpleName();
             EntityManager entityManager = sqlDialectEntityManager.getValue();
             try {
