@@ -5,13 +5,11 @@ import com.olsonsolution.common.spring.domain.port.props.jpa.EntityManagerFactor
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceProvider;
 import com.olsonsolution.common.spring.domain.port.repository.hibernate.RoutingDataSourceManager;
-import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingEntityManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingEntityManagerFactory;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import jakarta.persistence.*;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.metamodel.Metamodel;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
@@ -36,29 +34,24 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     private final ThreadLocal<SqlVendor> currentSqlVendor;
 
-    private final RoutingEntityManager routingEntityManager;
-
     private final RoutingDataSourceManager routingDataSourceManager;
 
     private final CurrentTenantIdentifierResolver<DataSourceSpec> datasSourceSpecResolver;
 
     public MultiVendorRoutingEntityManagerFactory(JpaProperties jpaProperties,
                                                   DestinationDataSourceProvider destinationDataSourceProvider,
-                                                  RoutingEntityManager routingEntityManager,
                                                   RoutingDataSourceManager routingDataSourceManager,
-                                                  CurrentTenantIdentifierResolver<DataSourceSpec> datasSourceSpecResolver) {
+                                                  CurrentTenantIdentifierResolver<DataSourceSpec> dataSourceSpecResolver) {
         super(destinationDataSourceProvider);
         this.jpaProperties = jpaProperties;
         this.currentSqlVendor = new ThreadLocal<>();
-        this.routingEntityManager = routingEntityManager;
         this.routingDataSourceManager = routingDataSourceManager;
-        this.datasSourceSpecResolver = datasSourceSpecResolver;
+        this.datasSourceSpecResolver = dataSourceSpecResolver;
     }
 
     @Override
     public EntityManager createEntityManager() {
-        SqlVendor sqlVendor = getCurrentSqlVendor();
-        EntityManager entityManager = getDelegate().createEntityManager();
+        return getDelegate().createEntityManager();
     }
 
     @Override
@@ -73,7 +66,7 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     @Override
     public EntityManager createEntityManager(SynchronizationType synchronizationType, Map map) {
-        return getDelegate().createEntityManager(synchronizationType);
+        return getDelegate().createEntityManager(synchronizationType, map);
     }
 
     @Override
@@ -180,14 +173,6 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
                 .filter(props -> schema.equals(props.getSchema()))
                 .findFirst()
                 .orElseThrow();
-    }
-
-    private SqlVendor getCurrentSqlVendor() {
-        SqlVendor sqlVendor = currentSqlVendor.get();
-        if (sqlVendor == null) {
-            throw new IllegalStateException("No current sql vendor was found");
-        }
-        return sqlVendor;
     }
 
 }

@@ -32,7 +32,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 @Configuration
-public class MultiVendorJpaConfig {
+public class DataSourceSpecConfig {
 
     public static final String ROUTING_DATA_SOURCE_EXECUTOR_BEAN = "routingDataSourceExecutor";
     public static final String ROUTING_DATA_SOURCE_EVICTOR_BEAN = "routingDataSourceEvictor";
@@ -95,38 +95,6 @@ public class MultiVendorJpaConfig {
                 destinationDataSourceProvider,
                 sqlDataSourceCache,
                 destinationDataSourceCache
-        );
-    }
-
-    @Bean
-    public RoutingEntityManagerFactory routingEntityManagerFactory(JpaProperties jpaProperties,
-                                                                   RoutingDataSourceManager routingDataSourceManager,
-                                                                   CurrentTenantIdentifierResolver<DataSourceSpec> tenantIdentifierResolver) {
-        return new MultiVendorRoutingEntityManagerFactory(
-                jpaProperties,
-                tenantIdentifierResolver,
-                routingDataSourceManager
-        );
-    }
-
-    @Bean
-    public RoutingEntityManager routingEntityManager() {
-        return new MultiVendorEntityManager();
-    }
-
-    @Bean
-    public RoutingPlatformTransactionManager routingPlatformTransactionManager(RoutingEntityManagerFactory routingEntityManagerFactory) {
-        return new MultiVendorPlatformTransactionManager(routingEntityManagerFactory);
-    }
-
-    @Bean
-    public DataSourceSpecConfigurer jpaEnvironmentConfigurer(RoutingEntityManager routingEntityManager,
-                                                             RoutingEntityManagerFactory routingEntityManagerFactory,
-                                                             RoutingPlatformTransactionManager routingPlatformTransactionManager) {
-        return new DataSourceSpecConfiguringService(
-                routingEntityManager,
-                routingEntityManagerFactory,
-                routingPlatformTransactionManager
         );
     }
 
