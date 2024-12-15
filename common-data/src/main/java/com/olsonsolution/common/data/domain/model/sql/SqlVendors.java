@@ -7,7 +7,6 @@ public enum SqlVendors implements SqlVendor {
     SQL_SERVER,
     POSTGRESQL,
     DB2,
-    SQLLITE,
     MARIADB
 
 }
