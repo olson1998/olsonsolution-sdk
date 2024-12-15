@@ -1,9 +1,10 @@
 package com.olsonsolution.common.spring.domain.service.jpa;
 
+import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlVendor;
+import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceProvider;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingEntityManagerFactory;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingPlatformTransactionManager;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -12,13 +13,18 @@ import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.TransactionStatus;
 
 @Slf4j
-@RequiredArgsConstructor
 public class MultiVendorPlatformTransactionManager extends MultiVendorJpaConfigurable<PlatformTransactionManager> implements RoutingPlatformTransactionManager {
 
     private final RoutingEntityManagerFactory routingEntityManagerFactory;
 
+    public MultiVendorPlatformTransactionManager(DestinationDataSourceProvider destinationDataSourceProvider,
+                                                 RoutingEntityManagerFactory routingEntityManagerFactory) {
+        super(destinationDataSourceProvider);
+        this.routingEntityManagerFactory = routingEntityManagerFactory;
+    }
+
     @Override
-    protected PlatformTransactionManager constructDelegate(DataSourceSpec dataSourceSpec) {
+    protected PlatformTransactionManager constructDelegate(SqlVendor sqlVendor, DataSourceSpec dataSourceSpec) {
         return new JpaTransactionManager(routingEntityManagerFactory.getDelegate());
     }
 

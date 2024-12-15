@@ -1,7 +1,8 @@
 package com.olsonsolution.common.spring.domain.service.jpa;
 
+import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlVendor;
+import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceProvider;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingEntityManager;
-import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingEntityManagerFactory;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import jakarta.persistence.*;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -9,21 +10,22 @@ import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.persistence.metamodel.Metamodel;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
 
 @Slf4j
-@RequiredArgsConstructor
 public class MultiVendorEntityManager extends MultiVendorJpaConfigurable<EntityManager> implements RoutingEntityManager {
 
-    private final RoutingEntityManagerFactory routingEntityManagerFactory;
+    public MultiVendorEntityManager(DestinationDataSourceProvider destinationDataSourceProvider) {
+        super(destinationDataSourceProvider);
+    }
 
     @Override
-    protected EntityManager constructDelegate(DataSourceSpec dataSourceSpec) {
-        return routingEntityManagerFactory.createEntityManager();
+    protected EntityManager constructDelegate(SqlVendor sqlVendor, DataSourceSpec dataSourceSpec) {
+        IllegalStateException stackTraceException = new IllegalStateException("Exception for stack trace");
+        throw new IllegalStateException("Entiy manager factory should construct delegates", stackTraceException);
     }
 
     @Override
@@ -223,13 +225,14 @@ public class MultiVendorEntityManager extends MultiVendorJpaConfigurable<EntityM
 
     @Override
     public void close() {
-        for (Map.Entry<Class<?>, EntityManager> sqlDialectEntityManager : delegatesRegistry.entrySet()) {
-            String sqlDialect = sqlDialectEntityManager.getKey().getSimpleName();
-            EntityManager entityManager = sqlDialectEntityManager.getValue();
+        for (Map.Entry<SqlVendor, EntityManager> sqlVendorEntityManager : delegatesRegistry.entrySet()) {
+            SqlVendor sqlVendor = sqlVendorEntityManager.getKey();
+            EntityManager entityManager = sqlVendorEntityManager.getValue();
             try {
                 entityManager.close();
+                log.info("Closed entity manager, vendor: {}", sqlVendor);
             } catch (Exception e) {
-                log.error("Failed to close entity manager for dialect={}, reason:", sqlDialect, e);
+                log.error("Failed to close entity manager for vendor: {}, reason:", sqlVendor, e);
             }
         }
     }
@@ -277,5 +280,11 @@ public class MultiVendorEntityManager extends MultiVendorJpaConfigurable<EntityM
     @Override
     public <T> List<EntityGraph<? super T>> getEntityGraphs(Class<T> entityClass) {
         return getDelegate().getEntityGraphs(entityClass);
+    }
+
+    @Override
+    public void registerDelegate(SqlVendor sqlVendor, EntityManager entityManager) {
+        delegatesRegistry.putIfAbsent(sqlVendor, entityManager);
+        log.info("Registered entity manager delegate for vendor: {}", sqlVendor);
     }
 }
