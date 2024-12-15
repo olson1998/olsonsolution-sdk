@@ -32,11 +32,6 @@ public class DestinationDataSourceProperties implements DestinationDataSourcePro
     }
 
     @Override
-    public Optional<? extends SqlDataSource> findDefaultDestination() {
-        return Optional.empty();
-    }
-
-    @Override
     public Optional<? extends SqlDataSource> findDestination(String dataSourceName) {
         return instance.stream()
                 .filter(routingDataSourceProperties -> StringUtils.equalsIgnoreCase(

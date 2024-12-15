@@ -6,8 +6,6 @@ import java.util.Optional;
 
 public interface DestinationDataSourceProvider {
 
-    Optional<? extends SqlDataSource> findDefaultDestination();
-
     Optional<? extends SqlDataSource> findDestination(String dataSourceName);
 
 }
