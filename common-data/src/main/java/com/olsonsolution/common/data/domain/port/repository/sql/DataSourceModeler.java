@@ -1,0 +1,12 @@
+package com.olsonsolution.common.data.domain.port.repository.sql;
+
+import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSource;
+import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlPermission;
+
+import javax.sql.DataSource;
+
+public interface DataSourceModeler {
+
+    DataSource createDataSource(SqlDataSource sqlDataSource, SqlPermission permission);
+
+}

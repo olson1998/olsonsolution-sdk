@@ -4,6 +4,8 @@ import java.util.Collection;
 
 public interface JpaProperties {
 
-    Collection<? extends EntityManagerFactoryProperties> getEntityManagerFactory();
+    RoutingDataSourceProperties getRoutingDataSourceProperties();
+
+    Collection<? extends EntityManagerFactoryProperties> getEntityManagerFactoryProperties();
 
 }

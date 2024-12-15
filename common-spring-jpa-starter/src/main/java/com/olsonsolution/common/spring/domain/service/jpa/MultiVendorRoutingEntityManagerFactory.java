@@ -2,16 +2,16 @@ package com.olsonsolution.common.spring.domain.service.jpa;
 
 import com.olsonsolution.common.spring.domain.port.props.jpa.EntityManagerFactoryProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
-import com.olsonsolution.common.spring.domain.port.repository.hibernate.JpaEnvironmentManager;
 import com.olsonsolution.common.spring.domain.port.repository.hibernate.RoutingDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingEntityManagerFactory;
-import com.olsonsolution.common.spring.domain.port.stereotype.hibernate.DataBaseEnvironment;
+import com.olsonsolution.common.spring.domain.port.stereotype.datasource.RoutingDataSource;
 import com.olsonsolution.common.spring.domain.port.stereotype.jpa.JpaEnvironment;
 import jakarta.persistence.*;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.metamodel.Metamodel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 
@@ -32,7 +32,7 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     private final JpaProperties jpaProperties;
 
-    private final JpaEnvironmentManager jpaEnvironmentManager;
+    private final CurrentTenantIdentifierResolver<JpaEnvironment> currentTenantIdentifierResolver;
 
     private final RoutingDataSourceManager routingDataSourceManager;
 
@@ -73,7 +73,16 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     @Override
     public void close() {
-
+        for(Map.Entry<Class<?>, EntityManagerFactory> sqlDialectEntityManagerFactory : delegatesRegistry.entrySet()) {
+            String sqlDialect = sqlDialectEntityManagerFactory.getKey().getSimpleName();
+            EntityManagerFactory entityManagerFactory = sqlDialectEntityManagerFactory.getValue();
+            try {
+                entityManagerFactory.close();
+                log.info("Closed entity manager for dialect={}", sqlDialect);
+            } catch (Exception e) {
+                log.error("Failed to close entity manager factory for dialect={}, reason:", sqlDialect, e);
+            }
+        }
     }
 
     @Override
@@ -108,14 +117,14 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     @Override
     protected EntityManagerFactory constructDelegate(JpaEnvironment jpaEnvironment) {
-        DataBaseEnvironment dataBaseEnvironment = jpaEnvironment.getDataBaseEnvironment();
+        RoutingDataSource routingDataSource = jpaEnvironment.getDataBaseEnvironment();
         EntityManagerFactoryProperties entityManagerFactoryProperties =
                 getEntityManagerFactoryProperties(jpaEnvironment);
         String unitName = PERSISTENCE_UNIT_NAME.formatted(
                 jpaEnvironment.getDialect().getSimpleName(),
-                dataBaseEnvironment.getId(),
-                dataBaseEnvironment.getDataBase(),
-                dataBaseEnvironment.getSchema()
+                routingDataSource.getId(),
+                routingDataSource.getDataBase(),
+                routingDataSource.getSchema()
         );
         Properties properties = resolveProperties(entityManagerFactoryProperties, jpaEnvironment);
         LocalContainerEntityManagerFactoryBean entityManagerFactoryBean = new LocalContainerEntityManagerFactoryBean();
@@ -127,33 +136,24 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     private Properties resolveProperties(EntityManagerFactoryProperties entityManagerFactoryProperties,
                                          JpaEnvironment jpaEnvironment) {
-        DataBaseEnvironment dataBaseEnvironment = jpaEnvironment.getDataBaseEnvironment();
+        RoutingDataSource routingDataSource = jpaEnvironment.getDataBaseEnvironment();
         Properties properties = new Properties(entityManagerFactoryProperties.getProperties());
         properties.setProperty(DIALECT, jpaEnvironment.getDialect().getCanonicalName());
-        properties.setProperty(DEFAULT_SCHEMA, dataBaseEnvironment.getSchema());
+        properties.setProperty(DEFAULT_SCHEMA, routingDataSource.getSchema());
         properties.put(SHOW_SQL, entityManagerFactoryProperties.isLogSql());
         properties.put(FORMAT_SQL, entityManagerFactoryProperties.isFormatSqlLog());
         properties.put(MULTI_TENANT_CONNECTION_PROVIDER, routingDataSourceManager);
-        properties.put(MULTI_TENANT_IDENTIFIER_RESOLVER, jpaEnvironmentManager);
+        properties.put(MULTI_TENANT_IDENTIFIER_RESOLVER, currentTenantIdentifierResolver);
         return properties;
     }
 
     private EntityManagerFactoryProperties getEntityManagerFactoryProperties(JpaEnvironment jpaEnvironment) {
-        return jpaProperties.getEntityManagerFactory()
+        String schema = jpaEnvironment.getDataBaseEnvironment().getSchema();
+        return jpaProperties.getEntityManagerFactoryProperties()
                 .stream()
-                .filter(env -> isSameJpaEnv(env.getEnvironment(), jpaEnvironment))
+                .filter(props -> schema.equals(props.getSchema()))
                 .findFirst()
                 .orElseThrow();
-    }
-
-    private boolean isSameJpaEnv(JpaEnvironment thisEnv, JpaEnvironment matchEnv) {
-        DataBaseEnvironment thisDbEnv = thisEnv.getDataBaseEnvironment();
-        DataBaseEnvironment matchDbEnv = matchEnv.getDataBaseEnvironment();
-        return matchEnv.getDialect().equals(thisEnv.getDialect()) &&
-                matchDbEnv.getId().equals(thisDbEnv.getId()) &&
-                matchDbEnv.getDataBase().equals(thisDbEnv.getDataBase()) &&
-                matchDbEnv.getSchema().equals(thisDbEnv.getSchema());
-
     }
 
 }

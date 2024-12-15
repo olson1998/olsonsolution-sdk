@@ -9,10 +9,12 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.persistence.metamodel.Metamodel;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RequiredArgsConstructor
 public class MultiVendorEntityManager extends MultiVendorJpaConfigurable<EntityManager> implements RoutingEntityManager {
 
@@ -218,7 +220,15 @@ public class MultiVendorEntityManager extends MultiVendorJpaConfigurable<EntityM
 
     @Override
     public void close() {
-
+        for(Map.Entry<Class<?>, EntityManager> sqlDialectEntityManager : delegatesRegistry.entrySet()) {
+            String sqlDialect = sqlDialectEntityManager.getKey().getSimpleName();
+            EntityManager entityManager = sqlDialectEntityManager.getValue();
+            try {
+                entityManager.close();
+            } catch (Exception e) {
+                log.error("Failed to close entity manager for dialect={}, reason:", sqlDialect, e);
+            }
+        }
     }
 
     @Override

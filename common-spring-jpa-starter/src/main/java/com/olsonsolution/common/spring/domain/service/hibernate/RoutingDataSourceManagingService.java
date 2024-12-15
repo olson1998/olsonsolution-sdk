@@ -4,7 +4,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.olsonsolution.common.spring.domain.model.exception.datasource.DestinationDataSourceNotFoundException;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceProvider;
 import com.olsonsolution.common.spring.domain.port.repository.hibernate.RoutingDataSourceManager;
-import com.olsonsolution.common.spring.domain.port.stereotype.hibernate.DataBaseEnvironment;
+import com.olsonsolution.common.spring.domain.port.stereotype.datasource.RoutingDataSource;
 import com.olsonsolution.common.spring.domain.port.stereotype.jpa.JpaEnvironment;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -19,24 +19,24 @@ public class RoutingDataSourceManagingService extends RoutingDataSourceManager {
 
     private final DestinationDataSourceProvider destinationDataSourceProvider;
 
-    private final Cache<DataBaseEnvironment, HikariDataSource> destinationDataSourcesCache;
+    private final Cache<RoutingDataSource, HikariDataSource> destinationDataSourcesCache;
 
     @Override
     protected DataSource selectAnyDataSource() {
-        DataBaseEnvironment dataBaseEnvironment = destinationDataSourceProvider.getProductDataSourceEnvironment();
-        return createDestinationDataSource(dataBaseEnvironment);
+        RoutingDataSource routingDataSource = destinationDataSourceProvider.getProductDataSourceEnvironment();
+        return createDestinationDataSource(routingDataSource);
     }
 
     @Override
     protected DataSource selectDataSource(JpaEnvironment tenantIdentifier) {
-        DataBaseEnvironment dataBaseEnvironment = tenantIdentifier.getDataBaseEnvironment();
-        return destinationDataSourcesCache.get(dataBaseEnvironment, this::createDestinationDataSource);
+        RoutingDataSource routingDataSource = tenantIdentifier.getDataBaseEnvironment();
+        return destinationDataSourcesCache.get(routingDataSource, this::createDestinationDataSource);
     }
 
-    private HikariDataSource createDestinationDataSource(DataBaseEnvironment dataBaseEnvironment) {
-        HikariConfig hikariConfig = destinationDataSourceProvider.findDestinationConfig(dataBaseEnvironment)
-                .orElseThrow(() -> new DestinationDataSourceNotFoundException(dataBaseEnvironment));
-        String unitName = UNIT_NAME.formatted(dataBaseEnvironment.getDataBase(), dataBaseEnvironment.getSchema());
+    private HikariDataSource createDestinationDataSource(RoutingDataSource routingDataSource) {
+        HikariConfig hikariConfig = destinationDataSourceProvider.findDestinationConfig(routingDataSource)
+                .orElseThrow(() -> new DestinationDataSourceNotFoundException(routingDataSource));
+        String unitName = UNIT_NAME.formatted(routingDataSource.getDataBase(), routingDataSource.getSchema());
         hikariConfig.setPoolName(unitName);
         return new HikariDataSource(hikariConfig);
     }

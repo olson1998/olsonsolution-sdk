@@ -16,7 +16,9 @@
         <module>common-reflection-utils</module>
         <module>common-spring-jpa-starter</module>
         <module>common-tenant-core</module>
-        <module>common-datasource-core</module>
+        <module>common-caching</module>
+        <module>common-spring-config</module>
+        <module>common-data</module>
     </modules>
 
     <properties>
@@ -28,9 +30,12 @@
         <joda-time.version>2.12.7</joda-time.version>
         <slf4j-api.version>2.0.13</slf4j-api.version>
         <commons-lang-3.version>3.14.0</commons-lang-3.version>
+        <caffeine.version>3.1.8</caffeine.version>
         <jackson-databind.version>2.17.1</jackson-databind.version>
         <spring-core.version>6.1.8</spring-core.version>
+        <spring-context.version>6.1.8</spring-context.version>
         <spring-boot-configuration-processor.version>3.3.0</spring-boot-configuration-processor.version>
+        <spring-boot-starter-test.version>3.3.5</spring-boot-starter-test.version>
         <assertj-core.version>3.26.0</assertj-core.version>
         <junit-jupiter-api.version>5.10.2</junit-jupiter-api.version>
         <junit-jupiter-params.version>5.10.2</junit-jupiter-params.version>
@@ -70,12 +75,22 @@
             </dependency>
             <dependency>
                 <groupId>com.olsonsolution.common</groupId>
-                <artifactId>common-datasource-core</artifactId>
+                <artifactId>common-caching</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.olsonsolution.common</groupId>
+                <artifactId>common-data</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
                 <groupId>com.olsonsolution.common</groupId>
                 <artifactId>common-tenant-core</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.olsonsolution.common</groupId>
+                <artifactId>common-spring-config</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
@@ -87,6 +102,11 @@
                 <groupId>com.olsonsolution.common</groupId>
                 <artifactId>common-spring-boot-web-starter</artifactId>
                 <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.ben-manes.caffeine</groupId>
+                <artifactId>caffeine</artifactId>
+                <version>${caffeine.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
@@ -101,7 +121,13 @@
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-context</artifactId>
-                <version>6.1.8</version>
+                <version>${spring-context.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-test</artifactId>
+                <version>${spring-boot-starter-test.version}</version>
+                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
