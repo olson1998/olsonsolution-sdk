@@ -3,12 +3,10 @@ package com.olsonsolution.common.spring.application.jpa.config;
 import com.olsonsolution.common.spring.domain.port.props.jpa.EntityManagerFactoryProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
-import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceProvider;
 import com.olsonsolution.common.spring.domain.port.repository.hibernate.RoutingDataSourceManager;
-import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecConfigurer;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
-import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingEntityManagerFactory;
-import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingPlatformTransactionManager;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.EntityManagerFactoryDelegate;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.PlatformTransactionManagerDelegate;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import com.olsonsolution.common.spring.domain.service.jpa.MultiVendorPlatformTransactionManager;
 import com.olsonsolution.common.spring.domain.service.jpa.MultiVendorRoutingEntityManagerFactory;
@@ -17,11 +15,22 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.AnnotationBeanNameGenerator;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.core.type.AnnotationMetadata;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.data.jpa.repository.config.JpaRepositoryConfigExtension;
+import org.springframework.data.repository.config.AnnotationRepositoryConfigurationSource;
+import org.springframework.data.repository.config.RepositoryConfigurationDelegate;
+import org.springframework.data.repository.config.RepositoryConfigurationExtension;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,13 +46,14 @@ public class RoutingJpaConfigurer implements InitializingBean, ApplicationContex
                     Jpa configured for schema: '{}'
                     Entity manager factory: '{}' instance: '{}'
                     Platform transaction manager: '{}' instance: '{}'
-                    Entities scanned packages: {}
-                    Jpa repositories scanned packages: {}
+                    Entities base packages: {}
                     """;
 
     private ConfigurableApplicationContext applicationContext;
 
     private final JpaProperties jpaProperties;
+
+    private final ResourceLoader resourceLoader;
 
     private final DataSourceSpecManager dataSourceSpecManager;
 
@@ -56,40 +66,10 @@ public class RoutingJpaConfigurer implements InitializingBean, ApplicationContex
     @Override
     public void afterPropertiesSet() throws Exception {
         ConfigurableListableBeanFactory beanFactory = applicationContext.getBeanFactory();
-        Map<String, RoutingEntityManagerFactory> routingEntityManagerFactories = new HashMap<>();
-        Map<String, RoutingPlatformTransactionManager> routingPlatformTransactionManagers = new HashMap<>();
+        Map<String, EntityManagerFactoryDelegate> entityManagerFactories = new HashMap<>();
+        Map<String, PlatformTransactionManagerDelegate> platformTransactionManagers = new HashMap<>();
         for (EntityManagerFactoryProperties properties : jpaProperties.getEntityManagerFactoryProperties()) {
-            String schema = properties.getSchema();
-            Set<String> entityPackagesToScan = properties.getEntityProperties().getPackagesToScan();
-            Set<String> jpaRepoPackagesToScan = properties.getJpaRepositoryProperties().getPackagesToScan();
-            String entityMangerFactoryBean = schema + "_entityManagerFactory";
-            String entityMangerBean = schema + "_entityManager";
-            String platformTransactionManagerBean = schema + "_platformTransactionManager";
-            RoutingEntityManagerFactory routingEntityManagerFactory = new MultiVendorRoutingEntityManagerFactory(
-                    schema,
-                    jpaProperties,
-                    dataSourceSpecManager,
-                    destinationDataSourceManager,
-                    routingDataSourceManager,
-                    dataSourceSpecResolver
-            );
-            RoutingPlatformTransactionManager routingPlatformTransactionManager =
-                    new MultiVendorPlatformTransactionManager(
-                            dataSourceSpecManager,
-                            destinationDataSourceManager,
-                            routingEntityManagerFactory
-                    );
-            beanFactory.registerSingleton(entityMangerFactoryBean, routingEntityManagerFactory);
-            beanFactory.registerSingleton(entityMangerBean, routingPlatformTransactionManager);
-            beanFactory.registerSingleton(platformTransactionManagerBean, routingPlatformTransactionManager);
-            log.info(LOG_MSG, schema,
-                    entityMangerFactoryBean, routingEntityManagerFactory,
-                    platformTransactionManagerBean, routingPlatformTransactionManager,
-                    entityPackagesToScan,
-                    jpaRepoPackagesToScan
-            );
-            routingEntityManagerFactories.put(schema, routingEntityManagerFactory);
-            routingPlatformTransactionManagers.put(schema, routingPlatformTransactionManager);
+            registerJpaBeansDelegates(properties, beanFactory, entityManagerFactories, platformTransactionManagers);
         }
     }
 
@@ -99,4 +79,74 @@ public class RoutingJpaConfigurer implements InitializingBean, ApplicationContex
             this.applicationContext = context;
         }
     }
+
+    private void registerJpaBeansDelegates(EntityManagerFactoryProperties properties,
+                                           ConfigurableListableBeanFactory beanFactory,
+                                           Map<String, EntityManagerFactoryDelegate> entityManagerFactories,
+                                           Map<String, PlatformTransactionManagerDelegate> platformTransactionMngs) {
+        String schema = properties.getSchema();
+        Set<String> entityPackagesToScan = properties.getEntityProperties().getPackagesToScan();
+        Set<String> jpaRepoPackagesToScan = properties.getJpaRepositoryProperties().getPackagesToScan();
+        String entityMangerFactoryBean = schema + "_entityManagerFactory";
+        String platformTransactionManagerBean = schema + "_platformTransactionManager";
+        EntityManagerFactoryDelegate entityManagerFactoryDelegate = new MultiVendorRoutingEntityManagerFactory(
+                schema,
+                jpaProperties,
+                dataSourceSpecManager,
+                destinationDataSourceManager,
+                routingDataSourceManager,
+                dataSourceSpecResolver
+        );
+        PlatformTransactionManagerDelegate platformTransactionManagerDelegate =
+                new MultiVendorPlatformTransactionManager(
+                        dataSourceSpecManager,
+                        destinationDataSourceManager,
+                        entityManagerFactoryDelegate
+                );
+        beanFactory.registerSingleton(entityMangerFactoryBean, entityManagerFactoryDelegate);
+        beanFactory.registerSingleton(platformTransactionManagerBean, platformTransactionManagerDelegate);
+        log.info(
+                LOG_MSG,
+                schema,
+                entityMangerFactoryBean,
+                entityManagerFactoryDelegate,
+                platformTransactionManagerBean,
+                platformTransactionManagerDelegate,
+                entityPackagesToScan
+        );
+        entityManagerFactories.put(schema, entityManagerFactoryDelegate);
+        platformTransactionMngs.put(schema, platformTransactionManagerDelegate);
+        enableJpaRepositories(schema, entityMangerFactoryBean, platformTransactionManagerBean, jpaRepoPackagesToScan);
+    }
+
+    private void enableJpaRepositories(String schema,
+                                       String entityManagerFactoryRef,
+                                       String platformTransactionManagerRef,
+                                       Set<String> jpaRepoPackagesToScan) {
+        AnnotationMetadata enableJpaRepo = new EnableJpaRepositoriesMetadata(
+                entityManagerFactoryRef,
+                platformTransactionManagerRef,
+                jpaRepoPackagesToScan
+        );
+        AutowireCapableBeanFactory autowireCapableBeanFactory = applicationContext.getAutowireCapableBeanFactory();
+        BeanDefinitionRegistry beanDefinitionRegistry = (BeanDefinitionRegistry) autowireCapableBeanFactory;
+        Environment environment = applicationContext.getEnvironment();
+        AnnotationRepositoryConfigurationSource configurationSource = new AnnotationRepositoryConfigurationSource(
+                enableJpaRepo,
+                EnableJpaRepositories.class,
+                resourceLoader,
+                environment,
+                beanDefinitionRegistry,
+                new AnnotationBeanNameGenerator()
+        );
+        RepositoryConfigurationExtension extension = new JpaRepositoryConfigExtension();
+        RepositoryConfigurationDelegate configurationDelegate = new RepositoryConfigurationDelegate(
+                configurationSource,
+                resourceLoader,
+                environment
+        );
+        configurationDelegate.registerRepositoriesIn(beanDefinitionRegistry, extension);
+        log.info("Enabled jpa repositories: schema: '{}' base packages: {}", schema, jpaRepoPackagesToScan);
+    }
+
 }

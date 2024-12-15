@@ -6,7 +6,7 @@ import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.hibernate.RoutingDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
-import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingEntityManagerFactory;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.EntityManagerFactoryDelegate;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import jakarta.persistence.*;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -16,10 +16,7 @@ import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Properties;
+import java.util.*;
 
 import static org.hibernate.cfg.JdbcSettings.FORMAT_SQL;
 import static org.hibernate.cfg.JdbcSettings.SHOW_SQL;
@@ -28,7 +25,7 @@ import static org.hibernate.cfg.MultiTenancySettings.MULTI_TENANT_CONNECTION_PRO
 import static org.hibernate.cfg.MultiTenancySettings.MULTI_TENANT_IDENTIFIER_RESOLVER;
 
 @Slf4j
-public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfigurable<EntityManagerFactory> implements RoutingEntityManagerFactory {
+public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfigurable<EntityManagerFactory> implements EntityManagerFactoryDelegate {
 
     private static final String PERSISTENCE_UNIT_NAME = "%s_%s_jpa_env";
 
@@ -144,14 +141,24 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
     @Override
     protected EntityManagerFactory constructDelegate(SqlVendor sqlVendor, DataSourceSpec dataSourceSpec) {
         String unitName = PERSISTENCE_UNIT_NAME.formatted(dataSourceSpec.getName(), schema);
-        Properties properties = findEntityManagerFactoryProperties()
-                .map(this::resolveProperties)
+        Optional<? extends EntityManagerFactoryProperties> properties = findEntityManagerFactoryProperties();
+        Properties jpaProperties = properties.map(this::resolveProperties)
                 .orElseGet(Properties::new);
+        String[] basePackages = properties.map(EntityManagerFactoryProperties::getEntityProperties)
+                .map(props -> props.getPackagesToScan()
+                        .toArray(String[]::new))
+                .orElseGet(() -> new String[0]);
         LocalContainerEntityManagerFactoryBean entityManagerFactoryBean = new LocalContainerEntityManagerFactoryBean();
         entityManagerFactoryBean.setPersistenceUnitName(unitName);
-        entityManagerFactoryBean.setJpaProperties(properties);
+        entityManagerFactoryBean.setJpaProperties(jpaProperties);
         entityManagerFactoryBean.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
-        return Objects.requireNonNull(entityManagerFactoryBean.getObject());
+        entityManagerFactoryBean.setPackagesToScan(basePackages);
+        EntityManagerFactory entityManagerFactory = Objects.requireNonNull(entityManagerFactoryBean.getObject());
+        log.info(
+                "Created entity manager factory, schema: '{}' SQL vendor: '{}' base packages: {}",
+                schema, sqlVendor, Arrays.toString(basePackages)
+        );
+        return entityManagerFactory;
     }
 
     private Properties resolveProperties(EntityManagerFactoryProperties entityManagerFactoryProperties) {

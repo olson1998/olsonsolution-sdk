@@ -2,10 +2,9 @@ package com.olsonsolution.common.spring.domain.service.jpa;
 
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlVendor;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
-import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceProvider;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
-import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingEntityManagerFactory;
-import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingPlatformTransactionManager;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.EntityManagerFactoryDelegate;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.PlatformTransactionManagerDelegate;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.orm.jpa.JpaTransactionManager;
@@ -15,20 +14,20 @@ import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.TransactionStatus;
 
 @Slf4j
-public class MultiVendorPlatformTransactionManager extends MultiVendorJpaConfigurable<PlatformTransactionManager> implements RoutingPlatformTransactionManager {
+public class MultiVendorPlatformTransactionManager extends MultiVendorJpaConfigurable<PlatformTransactionManager> implements PlatformTransactionManagerDelegate {
 
-    private final RoutingEntityManagerFactory routingEntityManagerFactory;
+    private final EntityManagerFactoryDelegate entityManagerFactoryDelegate;
 
     public MultiVendorPlatformTransactionManager(DataSourceSpecManager dataSourceSpecManager,
                                                  DestinationDataSourceManager destinationDataSourceManager,
-                                                 RoutingEntityManagerFactory routingEntityManagerFactory) {
+                                                 EntityManagerFactoryDelegate entityManagerFactoryDelegate) {
         super(dataSourceSpecManager, destinationDataSourceManager);
-        this.routingEntityManagerFactory = routingEntityManagerFactory;
+        this.entityManagerFactoryDelegate = entityManagerFactoryDelegate;
     }
 
     @Override
     protected PlatformTransactionManager constructDelegate(SqlVendor sqlVendor, DataSourceSpec dataSourceSpec) {
-        return new JpaTransactionManager(routingEntityManagerFactory.getDelegate());
+        return new JpaTransactionManager(entityManagerFactoryDelegate.getDelegate());
     }
 
     @Override
