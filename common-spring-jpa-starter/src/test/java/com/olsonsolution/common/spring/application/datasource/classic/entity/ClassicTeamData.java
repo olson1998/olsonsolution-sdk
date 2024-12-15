@@ -13,19 +13,17 @@ import lombok.*;
 @AllArgsConstructor
 
 @Entity
-@Table(name = "PRSDTA")
-public class PersonClassicData {
+@Table(name = "TEMDATA")
+public class ClassicTeamData {
 
     @Id
-    @Column(name = "PRSID")
+    @Column(name = "TEMID")
     private Long id;
 
-    @Column(name = "PRSNM")
+    @Column(name = "TEMCD")
+    private String code;
+
+    @Column(name = "TEMNM")
     private String name;
 
-    @Column(name = "PRSSNM")
-    private String surname;
-
-    @Column(name = "PRSGN")
-    private String gender;
 }

@@ -13,14 +13,12 @@ import com.olsonsolution.common.spring.domain.port.repository.datasource.DataSou
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceProvider;
 import com.olsonsolution.common.spring.domain.port.repository.hibernate.RoutingDataSourceManager;
-import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecConfigurer;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import com.olsonsolution.common.spring.domain.service.datasource.DataSourceEvictionService;
 import com.olsonsolution.common.spring.domain.service.datasource.DestinationDataSourceManagingService;
 import com.olsonsolution.common.spring.domain.service.hibernate.DataSourceSpecIdentifierResolver;
 import com.olsonsolution.common.spring.domain.service.hibernate.RoutingDataSourceManagingService;
-import com.olsonsolution.common.spring.domain.service.jpa.MultiVendorConfiguringService;
 import com.olsonsolution.common.spring.domain.service.jpa.MultiVendorManagingService;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
@@ -111,11 +109,6 @@ public class DataSourceSpecConfig {
                 destinationDataSourceManager,
                 destinationDataSourceCache
         );
-    }
-
-    @Bean
-    public DataSourceSpecConfigurer dataSourceSpecConfigurer() {
-        return new MultiVendorConfiguringService();
     }
 
 }
