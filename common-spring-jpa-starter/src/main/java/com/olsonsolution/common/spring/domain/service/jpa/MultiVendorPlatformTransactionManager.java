@@ -1,7 +1,9 @@
 package com.olsonsolution.common.spring.domain.service.jpa;
 
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlVendor;
+import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceProvider;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingEntityManagerFactory;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingPlatformTransactionManager;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
@@ -17,9 +19,10 @@ public class MultiVendorPlatformTransactionManager extends MultiVendorJpaConfigu
 
     private final RoutingEntityManagerFactory routingEntityManagerFactory;
 
-    public MultiVendorPlatformTransactionManager(DestinationDataSourceProvider destinationDataSourceProvider,
+    public MultiVendorPlatformTransactionManager(DataSourceSpecManager dataSourceSpecManager,
+                                                 DestinationDataSourceManager destinationDataSourceManager,
                                                  RoutingEntityManagerFactory routingEntityManagerFactory) {
-        super(destinationDataSourceProvider);
+        super(dataSourceSpecManager, destinationDataSourceManager);
         this.routingEntityManagerFactory = routingEntityManagerFactory;
     }
 

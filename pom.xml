@@ -19,6 +19,7 @@
         <module>common-caching</module>
         <module>common-spring-config</module>
         <module>common-data</module>
+        <module>common-spring-caching</module>
     </modules>
 
     <properties>
@@ -91,6 +92,11 @@
             <dependency>
                 <groupId>com.olsonsolution.common</groupId>
                 <artifactId>common-spring-config</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.olsonsolution.common</groupId>
+                <artifactId>common-spring-caching</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>

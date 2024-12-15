@@ -24,7 +24,7 @@
         </dependency>
         <dependency>
             <groupId>com.olsonsolution.common</groupId>
-            <artifactId>common-caching</artifactId>
+            <artifactId>common-spring-caching</artifactId>
         </dependency>
         <dependency>
             <groupId>com.olsonsolution.common</groupId>

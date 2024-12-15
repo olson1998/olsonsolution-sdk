@@ -7,7 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RequiredArgsConstructor
-public class DataSourceSpecificationManagingService implements DataSourceSpecManager {
+public class MultiVendorManagingService implements DataSourceSpecManager {
 
     private final ThreadLocal<DataSourceSpec> dataSourceSpecThreadLocal = new ThreadLocal<>();
 

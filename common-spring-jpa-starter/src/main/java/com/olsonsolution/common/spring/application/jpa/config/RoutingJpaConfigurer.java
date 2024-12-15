@@ -2,9 +2,11 @@ package com.olsonsolution.common.spring.application.jpa.config;
 
 import com.olsonsolution.common.spring.domain.port.props.jpa.EntityManagerFactoryProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
+import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceProvider;
 import com.olsonsolution.common.spring.domain.port.repository.hibernate.RoutingDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecConfigurer;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingEntityManagerFactory;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingPlatformTransactionManager;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
@@ -43,9 +45,9 @@ public class RoutingJpaConfigurer implements InitializingBean, ApplicationContex
 
     private final JpaProperties jpaProperties;
 
-    private final DataSourceSpecConfigurer dataSourceSpecConfigurer;
+    private final DataSourceSpecManager dataSourceSpecManager;
 
-    private final DestinationDataSourceProvider dataSourceProvider;
+    private final DestinationDataSourceManager destinationDataSourceManager;
 
     private final RoutingDataSourceManager routingDataSourceManager;
 
@@ -64,13 +66,19 @@ public class RoutingJpaConfigurer implements InitializingBean, ApplicationContex
             String entityMangerBean = schema + "_entityManager";
             String platformTransactionManagerBean = schema + "_platformTransactionManager";
             RoutingEntityManagerFactory routingEntityManagerFactory = new MultiVendorRoutingEntityManagerFactory(
+                    schema,
                     jpaProperties,
-                    dataSourceProvider,
+                    dataSourceSpecManager,
+                    destinationDataSourceManager,
                     routingDataSourceManager,
                     dataSourceSpecResolver
             );
             RoutingPlatformTransactionManager routingPlatformTransactionManager =
-                    new MultiVendorPlatformTransactionManager(dataSourceProvider, routingEntityManagerFactory);
+                    new MultiVendorPlatformTransactionManager(
+                            dataSourceSpecManager,
+                            destinationDataSourceManager,
+                            routingEntityManagerFactory
+                    );
             beanFactory.registerSingleton(entityMangerFactoryBean, routingEntityManagerFactory);
             beanFactory.registerSingleton(entityMangerBean, routingPlatformTransactionManager);
             beanFactory.registerSingleton(platformTransactionManagerBean, routingPlatformTransactionManager);
@@ -83,7 +91,6 @@ public class RoutingJpaConfigurer implements InitializingBean, ApplicationContex
             routingEntityManagerFactories.put(schema, routingEntityManagerFactory);
             routingPlatformTransactionManagers.put(schema, routingPlatformTransactionManager);
         }
-        dataSourceSpecConfigurer.register(routingEntityManagerFactories, routingPlatformTransactionManagers);
     }
 
     @Override

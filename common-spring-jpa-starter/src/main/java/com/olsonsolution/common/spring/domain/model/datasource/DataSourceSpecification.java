@@ -15,9 +15,6 @@ public class DataSourceSpecification implements DataSourceSpec {
     private String name;
 
     @NonNull
-    private String defaultSchema;
-
-    @NonNull
     private SqlPermissions permissions;
 
     @Override

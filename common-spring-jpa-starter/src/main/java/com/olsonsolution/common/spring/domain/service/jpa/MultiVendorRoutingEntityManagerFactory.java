@@ -3,8 +3,9 @@ package com.olsonsolution.common.spring.domain.service.jpa;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlVendor;
 import com.olsonsolution.common.spring.domain.port.props.jpa.EntityManagerFactoryProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
-import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceProvider;
+import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.hibernate.RoutingDataSourceManager;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingEntityManagerFactory;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import jakarta.persistence.*;
@@ -17,6 +18,7 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 
 import static org.hibernate.cfg.JdbcSettings.FORMAT_SQL;
@@ -30,6 +32,8 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     private static final String PERSISTENCE_UNIT_NAME = "%s_%s_jpa_env";
 
+    private final String schema;
+
     private final JpaProperties jpaProperties;
 
     private final ThreadLocal<SqlVendor> currentSqlVendor;
@@ -38,11 +42,14 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     private final CurrentTenantIdentifierResolver<DataSourceSpec> datasSourceSpecResolver;
 
-    public MultiVendorRoutingEntityManagerFactory(JpaProperties jpaProperties,
-                                                  DestinationDataSourceProvider destinationDataSourceProvider,
+    public MultiVendorRoutingEntityManagerFactory(String schema,
+                                                  JpaProperties jpaProperties,
+                                                  DataSourceSpecManager dataSourceSpecManager,
+                                                  DestinationDataSourceManager destinationDataSourceManager,
                                                   RoutingDataSourceManager routingDataSourceManager,
                                                   CurrentTenantIdentifierResolver<DataSourceSpec> dataSourceSpecResolver) {
-        super(destinationDataSourceProvider);
+        super(dataSourceSpecManager, destinationDataSourceManager);
+        this.schema = schema;
         this.jpaProperties = jpaProperties;
         this.currentSqlVendor = new ThreadLocal<>();
         this.routingDataSourceManager = routingDataSourceManager;
@@ -129,12 +136,6 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
     }
 
     @Override
-    protected void setSqlVendorSpec(SqlVendor sqlVendor, DataSourceSpec dataSourceSpec) {
-        super.setSqlVendorSpec(sqlVendor, dataSourceSpec);
-        currentSqlVendor.set(sqlVendor);
-    }
-
-    @Override
     public void clear() {
         currentSqlVendor.remove();
         super.clear();
@@ -142,13 +143,10 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     @Override
     protected EntityManagerFactory constructDelegate(SqlVendor sqlVendor, DataSourceSpec dataSourceSpec) {
-        EntityManagerFactoryProperties entityManagerFactoryProperties =
-                getEntityManagerFactoryProperties(dataSourceSpec);
-        String unitName = PERSISTENCE_UNIT_NAME.formatted(
-                dataSourceSpec.getName(),
-                dataSourceSpec.getDefaultSchema()
-        );
-        Properties properties = resolveProperties(entityManagerFactoryProperties);
+        String unitName = PERSISTENCE_UNIT_NAME.formatted(dataSourceSpec.getName(), schema);
+        Properties properties = findEntityManagerFactoryProperties()
+                .map(this::resolveProperties)
+                .orElseGet(Properties::new);
         LocalContainerEntityManagerFactoryBean entityManagerFactoryBean = new LocalContainerEntityManagerFactoryBean();
         entityManagerFactoryBean.setPersistenceUnitName(unitName);
         entityManagerFactoryBean.setJpaProperties(properties);
@@ -166,13 +164,11 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
         return properties;
     }
 
-    private EntityManagerFactoryProperties getEntityManagerFactoryProperties(DataSourceSpec dataSourceSpec) {
-        String schema = dataSourceSpec.getDefaultSchema();
+    private Optional<? extends EntityManagerFactoryProperties> findEntityManagerFactoryProperties() {
         return jpaProperties.getEntityManagerFactoryProperties()
                 .stream()
                 .filter(props -> schema.equals(props.getSchema()))
-                .findFirst()
-                .orElseThrow();
+                .findFirst();
     }
 
 }

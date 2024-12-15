@@ -6,8 +6,6 @@ public interface DataSourceSpecConfigurable<D> {
 
     D getDelegate();
 
-    void setDataSourceSpec(DataSourceSpec dataSourceSpec);
-
     void unregisterDelegate(DataSourceSpec dataSourceSpec) throws Exception;
 
     void clear();

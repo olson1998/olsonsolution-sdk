@@ -6,8 +6,6 @@ public interface DataSourceSpec {
 
     String getName();
 
-    String getDefaultSchema();
-
     SqlPermission getPermission();
 
 }
