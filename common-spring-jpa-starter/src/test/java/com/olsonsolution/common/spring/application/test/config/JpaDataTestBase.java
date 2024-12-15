@@ -28,7 +28,6 @@ import static com.olsonsolution.common.data.domain.model.sql.SqlVendors.SQL_SERV
 })
 @TestPropertySource(locations = "classpath://application-spring-common.properties")
 @ExtendWith(SpringExtension.class)
-@TestContainers
 public abstract class JpaDataTestBase {
 
     protected static final String DATABASE = "UNITTEST";
