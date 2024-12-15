@@ -115,11 +115,11 @@ final class DataSourceModelerUtils {
         if (vendor == null) {
             throw new DataSourceModelerException("Vendor is null");
         }
-        if (vendor.isSqlServer()) {
+        if (isSqlServerVendor(vendor)) {
             return createSQLServerDataSource(sqlDataSource, sqlUser);
-        } else if (vendor.isPostgresql()) {
+        } else if (isPostgresqlVendor(vendor)) {
             return createPostgresqlDataSource(sqlDataSource, sqlUser, permission);
-        } else if (vendor.isDb2()) {
+        } else if (isDb2Vendor(vendor)) {
             return createDb2DataSource(sqlDataSource, sqlUser, permission);
         } else {
             throw new DataSourceModelerException("Unknown SQL vendor: '%s'".formatted(vendor));
@@ -184,10 +184,10 @@ final class DataSourceModelerUtils {
                                                            SqlPermission permission) {
         DB2SimpleDataSource db2DataSource = new DB2SimpleDataSource();
         Properties sqlDataSourceProperties = sqlDataSource.getProperties();
-        if(sqlDataSourceProperties != null) {
-            for(Map.Entry<String, Method> propertySetter : DB2_PROPERTIES_SETTER_BOUNDS.entrySet()) {
+        if (sqlDataSourceProperties != null) {
+            for (Map.Entry<String, Method> propertySetter : DB2_PROPERTIES_SETTER_BOUNDS.entrySet()) {
                 String property = propertySetter.getKey();
-                if(sqlDataSourceProperties.containsKey(property)) {
+                if (sqlDataSourceProperties.containsKey(property)) {
                     String propertyValueString = sqlDataSourceProperties.getProperty(property);
                     Object propertyValue =
                             convertPropertyValue(propertyValueString, propertySetter.getValue().getParameterTypes()[0]);
@@ -204,7 +204,7 @@ final class DataSourceModelerUtils {
         db2DataSource.setServerName(sqlDataSource.getHost());
         db2DataSource.setPortNumber(sqlDataSource.getPort());
         db2DataSource.setDatabaseName(sqlDataSource.getDatabase());
-        if(isReadOnly(permission)) {
+        if (isReadOnly(permission)) {
             db2DataSource.setReadOnly(true);
         }
         return db2DataSource;
@@ -277,6 +277,30 @@ final class DataSourceModelerUtils {
             return permissions == RWX;
         } else {
             return StringUtils.equalsIgnoreCase(permission.name(), RWX.name());
+        }
+    }
+
+    private static boolean isSqlServerVendor(SqlVendor vendor) {
+        if (vendor instanceof SqlVendors vendors) {
+            return vendors == SQL_SERVER;
+        } else {
+            return StringUtils.equalsIgnoreCase(vendor.name(), SQL_SERVER.name());
+        }
+    }
+
+    private static boolean isPostgresqlVendor(SqlVendor vendor) {
+        if (vendor instanceof SqlVendors vendors) {
+            return vendors == POSTGRESQL;
+        } else {
+            return StringUtils.equalsIgnoreCase(vendor.name(), POSTGRESQL.name());
+        }
+    }
+
+    private static boolean isDb2Vendor(SqlVendor vendor) {
+        if (vendor instanceof SqlVendors vendors) {
+            return vendors == DB2;
+        } else {
+            return StringUtils.equalsIgnoreCase(vendor.name(), DB2.name());
         }
     }
 

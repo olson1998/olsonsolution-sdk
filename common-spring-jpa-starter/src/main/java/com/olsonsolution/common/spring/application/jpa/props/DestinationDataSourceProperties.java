@@ -27,9 +27,10 @@ public class DestinationDataSourceProperties implements DestinationDataSourcePro
 
         private String name;
 
-        private final DefaultSqlDataSourceModel dataSource = new DefaultSqlDataSourceModel();
+        private final DefaultSqlDataSourceModel datasource = new DefaultSqlDataSourceModel();
 
     }
+
 
     @Override
     public Optional<? extends SqlDataSource> findDestination(String dataSourceName) {
@@ -38,6 +39,6 @@ public class DestinationDataSourceProperties implements DestinationDataSourcePro
                         routingDataSourceProperties.name,
                         dataSourceName
                 )).findFirst()
-                .map(RoutingDataSourceProperties::getDataSource);
+                .map(RoutingDataSourceProperties::getDatasource);
     }
 }
