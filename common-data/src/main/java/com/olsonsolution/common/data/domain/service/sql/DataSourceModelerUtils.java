@@ -115,11 +115,11 @@ final class DataSourceModelerUtils {
         if (vendor == null) {
             throw new DataSourceModelerException("Vendor is null");
         }
-        if (isSqlServerVendor(vendor)) {
+        if (vendor.isSqlServer()) {
             return createSQLServerDataSource(sqlDataSource, sqlUser);
-        } else if (isPostgresqlVendor(vendor)) {
+        } else if (vendor.isPostgresql()) {
             return createPostgresqlDataSource(sqlDataSource, sqlUser, permission);
-        } else if (isDb2Vendor(vendor)) {
+        } else if (vendor.isDb2()) {
             return createDb2DataSource(sqlDataSource, sqlUser, permission);
         } else {
             throw new DataSourceModelerException("Unknown SQL vendor: '%s'".formatted(vendor));
@@ -277,30 +277,6 @@ final class DataSourceModelerUtils {
             return permissions == RWX;
         } else {
             return StringUtils.equalsIgnoreCase(permission.name(), RWX.name());
-        }
-    }
-
-    private static boolean isSqlServerVendor(SqlVendor vendor) {
-        if (vendor instanceof SqlVendors vendors) {
-            return vendors == SQL_SERVER;
-        } else {
-            return StringUtils.equalsIgnoreCase(vendor.name(), SQL_SERVER.name());
-        }
-    }
-
-    private static boolean isPostgresqlVendor(SqlVendor vendor) {
-        if (vendor instanceof SqlVendors vendors) {
-            return vendors == POSTGRESQL;
-        } else {
-            return StringUtils.equalsIgnoreCase(vendor.name(), POSTGRESQL.name());
-        }
-    }
-
-    private static boolean isDb2Vendor(SqlVendor vendor) {
-        if (vendor instanceof SqlVendors vendors) {
-            return vendors == DB2;
-        } else {
-            return StringUtils.equalsIgnoreCase(vendor.name(), DB2.name());
         }
     }
 

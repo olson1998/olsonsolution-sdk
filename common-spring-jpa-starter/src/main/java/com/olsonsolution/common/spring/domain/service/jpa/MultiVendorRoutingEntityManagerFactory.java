@@ -5,8 +5,6 @@ import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
 import com.olsonsolution.common.spring.domain.port.repository.hibernate.RoutingDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.RoutingEntityManagerFactory;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
-import com.olsonsolution.common.spring.domain.port.stereotype.datasource.RoutingDataSource;
-import com.olsonsolution.common.spring.domain.port.stereotype.jpa.JpaEnvironment;
 import jakarta.persistence.*;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.metamodel.Metamodel;
@@ -21,7 +19,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 
-import static org.hibernate.cfg.JdbcSettings.*;
+import static org.hibernate.cfg.JdbcSettings.FORMAT_SQL;
+import static org.hibernate.cfg.JdbcSettings.SHOW_SQL;
 import static org.hibernate.cfg.MappingSettings.DEFAULT_SCHEMA;
 import static org.hibernate.cfg.MultiTenancySettings.MULTI_TENANT_CONNECTION_PROVIDER;
 import static org.hibernate.cfg.MultiTenancySettings.MULTI_TENANT_IDENTIFIER_RESOLVER;
@@ -30,7 +29,7 @@ import static org.hibernate.cfg.MultiTenancySettings.MULTI_TENANT_IDENTIFIER_RES
 @RequiredArgsConstructor
 public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfigurable<EntityManagerFactory> implements RoutingEntityManagerFactory {
 
-    private static final String PERSISTENCE_UNIT_NAME = "%s.%s.%s.%s_jpa_env";
+    private static final String PERSISTENCE_UNIT_NAME = "%s_%s_jpa_env";
 
     private final JpaProperties jpaProperties;
 
@@ -75,7 +74,7 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     @Override
     public void close() {
-        for(Map.Entry<Class<?>, EntityManagerFactory> sqlDialectEntityManagerFactory : delegatesRegistry.entrySet()) {
+        for (Map.Entry<Class<?>, EntityManagerFactory> sqlDialectEntityManagerFactory : delegatesRegistry.entrySet()) {
             String sqlDialect = sqlDialectEntityManagerFactory.getKey().getSimpleName();
             EntityManagerFactory entityManagerFactory = sqlDialectEntityManagerFactory.getValue();
             try {
@@ -120,14 +119,12 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
     @Override
     protected EntityManagerFactory constructDelegate(DataSourceSpec dataSourceSpec) {
         EntityManagerFactoryProperties entityManagerFactoryProperties =
-                getEntityManagerFactoryProperties(jpaEnvironment);
+                getEntityManagerFactoryProperties(dataSourceSpec);
         String unitName = PERSISTENCE_UNIT_NAME.formatted(
-                jpaEnvironment.getDialect().getSimpleName(),
-                routingDataSource.getId(),
-                routingDataSource.getDataBase(),
-                routingDataSource.getSchema()
+                dataSourceSpec.getName(),
+                dataSourceSpec.getDefaultSchema()
         );
-        Properties properties = resolveProperties(entityManagerFactoryProperties, jpaEnvironment);
+        Properties properties = resolveProperties(entityManagerFactoryProperties, dataSourceSpec);
         LocalContainerEntityManagerFactoryBean entityManagerFactoryBean = new LocalContainerEntityManagerFactoryBean();
         entityManagerFactoryBean.setPersistenceUnitName(unitName);
         entityManagerFactoryBean.setJpaProperties(properties);
@@ -138,7 +135,6 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
     private Properties resolveProperties(EntityManagerFactoryProperties entityManagerFactoryProperties,
                                          DataSourceSpec dataSourceSpec) {
         Properties properties = new Properties(entityManagerFactoryProperties.getProperties());
-        properties.setProperty(DIALECT, dataSourceSpec.getDialect().getCanonicalName());
         Optional.ofNullable(dataSourceSpec.getDefaultSchema())
                 .ifPresent(schema -> properties.put(DEFAULT_SCHEMA, schema));
         properties.put(SHOW_SQL, entityManagerFactoryProperties.isLogSql());
