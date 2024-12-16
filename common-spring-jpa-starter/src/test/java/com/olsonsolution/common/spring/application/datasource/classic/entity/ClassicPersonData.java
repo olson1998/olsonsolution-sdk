@@ -23,7 +23,7 @@ public class ClassicPersonData {
     @Column(name = "PRSNM")
     private String name;
 
-    @Column(name = "PRSSNM")
+    @Column(name = "PRSSN")
     private String surname;
 
     @Column(name = "PRSGN")

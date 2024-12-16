@@ -6,7 +6,7 @@ public interface CachingProperties {
 
     int getInitialCapacity();
 
-    long getMaximumSize();
+    Long getMaximumSize();
 
     Long getMaximumWeight();
 

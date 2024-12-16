@@ -4,7 +4,6 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.olsonsolution.common.data.domain.port.repository.sql.DataSourceModeler;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSource;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
-import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceProvider;
 import com.olsonsolution.common.spring.domain.port.repository.hibernate.RoutingDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import lombok.RequiredArgsConstructor;
@@ -25,13 +24,18 @@ public class RoutingDataSourceManagingService extends RoutingDataSourceManager {
     private final Cache<DataSourceSpec, DataSource> destinationDataSourcesCache;
 
     @Override
+    public DataSource selectDataSourceBySpec(DataSourceSpec dataSourceSpec) {
+        return destinationDataSourcesCache.get(dataSourceSpec, this::createDataSource);
+    }
+
+    @Override
     protected DataSource selectAnyDataSource() {
         return selectDataSource(defaultDataSourceSpec);
     }
 
     @Override
     protected DataSource selectDataSource(DataSourceSpec tenantIdentifier) {
-        return destinationDataSourcesCache.get(tenantIdentifier, this::createDataSource);
+        return selectDataSourceBySpec(tenantIdentifier);
     }
 
     private DataSource createDataSource(DataSourceSpec dataSourceSpec) {

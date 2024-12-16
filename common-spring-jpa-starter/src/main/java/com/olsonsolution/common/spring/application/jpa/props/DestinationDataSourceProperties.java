@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+@Data
 @Configuration
 @ConfigurationProperties(prefix = "common.spring.application.jpa.routing")
 public class DestinationDataSourceProperties implements DestinationDataSourceProvider {

@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Embeddable
 public class ClassicPersonTeamBound {
 
-    @Column(name = "TEMID")
+    @Column(name = "TMMID")
     private Long teamId;
 
     @Column(name = "PRSID")

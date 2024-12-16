@@ -27,7 +27,7 @@ public class EnableJpaRepositoriesMetadata implements AnnotationMetadata {
                 entry("basePackageClasses", new Class[0]),
                 entry("basePackages", basePackages),
                 entry("entityManagerFactoryRef", entityManagerFactoryRef),
-                entry("transactionManagerFactoryRef", transactionManagerRef),
+                entry("transactionManagerRef", transactionManagerRef),
                 entry("enableDefaultTransactions", true),
                 entry("considerNestedRepositories", true),
                 entry("bootstrapMode", BootstrapMode.DEFAULT),

@@ -1,5 +1,6 @@
 package com.olsonsolution.common.spring.domain.service.jpa;
 
+import com.olsonsolution.common.data.domain.model.sql.SqlVendors;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlVendor;
 import com.olsonsolution.common.spring.domain.port.props.jpa.EntityManagerFactoryProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
@@ -13,13 +14,14 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.metamodel.Metamodel;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
+import org.hibernate.dialect.*;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 
 import java.util.*;
 
-import static org.hibernate.cfg.JdbcSettings.FORMAT_SQL;
-import static org.hibernate.cfg.JdbcSettings.SHOW_SQL;
+import static java.util.Map.entry;
+import static org.hibernate.cfg.JdbcSettings.*;
 import static org.hibernate.cfg.MappingSettings.DEFAULT_SCHEMA;
 import static org.hibernate.cfg.MultiTenancySettings.MULTI_TENANT_CONNECTION_PROVIDER;
 import static org.hibernate.cfg.MultiTenancySettings.MULTI_TENANT_IDENTIFIER_RESOLVER;
@@ -29,6 +31,13 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     private static final String PERSISTENCE_UNIT_NAME = "%s_%s_jpa_env";
 
+    private static final Map<SqlVendor, Class<? extends Dialect>> SQL_VENDOR_DIALECT = Map.ofEntries(
+            entry(SqlVendors.SQL_SERVER, SQLServerDialect.class),
+            entry(SqlVendors.POSTGRESQL, PostgreSQLDialect.class),
+            entry(SqlVendors.DB2, DB2Dialect.class),
+            entry(SqlVendors.MARIADB, MariaDBDialect.class)
+    );
+
     private final String schema;
 
     private final JpaProperties jpaProperties;
@@ -37,7 +46,7 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     private final RoutingDataSourceManager routingDataSourceManager;
 
-    private final CurrentTenantIdentifierResolver<DataSourceSpec> datasSourceSpecResolver;
+    private final CurrentTenantIdentifierResolver<DataSourceSpec> dataSourceSpecResolver;
 
     public MultiVendorRoutingEntityManagerFactory(String schema,
                                                   JpaProperties jpaProperties,
@@ -50,7 +59,7 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
         this.jpaProperties = jpaProperties;
         this.currentSqlVendor = new ThreadLocal<>();
         this.routingDataSourceManager = routingDataSourceManager;
-        this.datasSourceSpecResolver = dataSourceSpecResolver;
+        this.dataSourceSpecResolver = dataSourceSpecResolver;
     }
 
     @Override
@@ -139,10 +148,11 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
     }
 
     @Override
-    protected EntityManagerFactory constructDelegate(SqlVendor sqlVendor, DataSourceSpec dataSourceSpec) {
-        String unitName = PERSISTENCE_UNIT_NAME.formatted(dataSourceSpec.getName(), schema);
+    protected EntityManagerFactory constructDelegate(SqlVendor sqlVendor) {
+        String unitName = PERSISTENCE_UNIT_NAME.formatted(sqlVendor.name(), schema);
         Optional<? extends EntityManagerFactoryProperties> properties = findEntityManagerFactoryProperties();
-        Properties jpaProperties = properties.map(this::resolveProperties)
+        Properties jpaProperties = properties
+                .map(p -> resolveProperties(p, sqlVendor))
                 .orElseGet(Properties::new);
         String[] basePackages = properties.map(EntityManagerFactoryProperties::getEntityProperties)
                 .map(props -> props.getPackagesToScan()
@@ -153,6 +163,7 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
         entityManagerFactoryBean.setJpaProperties(jpaProperties);
         entityManagerFactoryBean.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
         entityManagerFactoryBean.setPackagesToScan(basePackages);
+        entityManagerFactoryBean.afterPropertiesSet();
         EntityManagerFactory entityManagerFactory = Objects.requireNonNull(entityManagerFactoryBean.getObject());
         log.info(
                 "Created entity manager factory, schema: '{}' SQL vendor: '{}' base packages: {}",
@@ -161,13 +172,17 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
         return entityManagerFactory;
     }
 
-    private Properties resolveProperties(EntityManagerFactoryProperties entityManagerFactoryProperties) {
+    private Properties resolveProperties(EntityManagerFactoryProperties entityManagerFactoryProperties,
+                                         SqlVendor vendor) {
         Properties properties = new Properties(entityManagerFactoryProperties.getProperties());
         properties.put(DEFAULT_SCHEMA, entityManagerFactoryProperties.getSchema());
         properties.put(SHOW_SQL, entityManagerFactoryProperties.isLogSql());
         properties.put(FORMAT_SQL, entityManagerFactoryProperties.isFormatSqlLog());
         properties.put(MULTI_TENANT_CONNECTION_PROVIDER, routingDataSourceManager);
-        properties.put(MULTI_TENANT_IDENTIFIER_RESOLVER, datasSourceSpecResolver);
+        properties.put(MULTI_TENANT_IDENTIFIER_RESOLVER, dataSourceSpecResolver);
+        properties.put("initialization-mode", "never");
+        Optional.ofNullable(SQL_VENDOR_DIALECT.get(vendor))
+                .ifPresent(dialect -> properties.put(DIALECT, dialect));
         return properties;
     }
 

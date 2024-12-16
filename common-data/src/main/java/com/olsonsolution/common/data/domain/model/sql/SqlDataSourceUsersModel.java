@@ -4,11 +4,13 @@ import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSourceUse
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlUser;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 
 import java.util.Collection;
 
 @Getter
+@Setter
 @ToString
 @EqualsAndHashCode
 public class SqlDataSourceUsersModel<U extends SqlUser> implements SqlDataSourceUsers {

@@ -63,13 +63,15 @@ public class RoutingJpaConfigurer implements InitializingBean, ApplicationContex
 
     private final CurrentTenantIdentifierResolver<DataSourceSpec> dataSourceSpecResolver;
 
+    private final Map<String, EntityManagerFactoryDelegate> entityManagerFactories = new HashMap<>();
+
+    private final Map<String, PlatformTransactionManagerDelegate> platformTransactionManagers = new HashMap<>();
+
     @Override
     public void afterPropertiesSet() throws Exception {
         ConfigurableListableBeanFactory beanFactory = applicationContext.getBeanFactory();
-        Map<String, EntityManagerFactoryDelegate> entityManagerFactories = new HashMap<>();
-        Map<String, PlatformTransactionManagerDelegate> platformTransactionManagers = new HashMap<>();
         for (EntityManagerFactoryProperties properties : jpaProperties.getEntityManagerFactoryProperties()) {
-            registerJpaBeansDelegates(properties, beanFactory, entityManagerFactories, platformTransactionManagers);
+            registerJpaBeansDelegates(properties, beanFactory);
         }
     }
 
@@ -81,9 +83,7 @@ public class RoutingJpaConfigurer implements InitializingBean, ApplicationContex
     }
 
     private void registerJpaBeansDelegates(EntityManagerFactoryProperties properties,
-                                           ConfigurableListableBeanFactory beanFactory,
-                                           Map<String, EntityManagerFactoryDelegate> entityManagerFactories,
-                                           Map<String, PlatformTransactionManagerDelegate> platformTransactionMngs) {
+                                           ConfigurableListableBeanFactory beanFactory) {
         String schema = properties.getSchema();
         Set<String> entityPackagesToScan = properties.getEntityProperties().getPackagesToScan();
         Set<String> jpaRepoPackagesToScan = properties.getJpaRepositoryProperties().getPackagesToScan();
@@ -115,7 +115,7 @@ public class RoutingJpaConfigurer implements InitializingBean, ApplicationContex
                 entityPackagesToScan
         );
         entityManagerFactories.put(schema, entityManagerFactoryDelegate);
-        platformTransactionMngs.put(schema, platformTransactionManagerDelegate);
+        platformTransactionManagers.put(schema, platformTransactionManagerDelegate);
         enableJpaRepositories(schema, entityMangerFactoryBean, platformTransactionManagerBean, jpaRepoPackagesToScan);
     }
 

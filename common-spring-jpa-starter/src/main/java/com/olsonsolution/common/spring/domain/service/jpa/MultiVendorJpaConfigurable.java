@@ -16,7 +16,7 @@ abstract class MultiVendorJpaConfigurable<D> implements DataSourceSpecConfigurab
 
     private final ThreadLocal<D> threadLocalDelegate;
 
-    private final DataSourceSpecManager dataSourceSpecManager;
+    protected final DataSourceSpecManager dataSourceSpecManager;
 
     private final DestinationDataSourceManager destinationDataSourceManager;
 
@@ -35,7 +35,7 @@ abstract class MultiVendorJpaConfigurable<D> implements DataSourceSpecConfigurab
             DataSourceSpec dataSourceSpec = dataSourceSpecManager.getThreadLocal();
             SqlDataSource sqlDataSource = destinationDataSourceManager.obtainSqlDataSource(dataSourceSpec.getName());
             SqlVendor sqlVendor = sqlDataSource.getVendor();
-            delegate = obtainDelegate(sqlVendor, dataSourceSpec);
+            delegate = obtainDelegate(sqlVendor);
             threadLocalDelegate.set(delegate);
         }
         return delegate;
@@ -59,13 +59,13 @@ abstract class MultiVendorJpaConfigurable<D> implements DataSourceSpecConfigurab
         threadLocalDelegate.remove();
     }
 
-    protected D obtainDelegate(SqlVendor sqlVendor, DataSourceSpec dataSourceSpec) {
+    protected D obtainDelegate(SqlVendor sqlVendor) {
         return delegatesRegistry.computeIfAbsent(
                 sqlVendor,
-                c -> constructDelegate(sqlVendor, dataSourceSpec)
+                c -> constructDelegate(sqlVendor)
         );
     }
 
-    protected abstract D constructDelegate(SqlVendor sqlVendor, DataSourceSpec dataSourceSpec);
+    protected abstract D constructDelegate(SqlVendor sqlVendor);
 
 }

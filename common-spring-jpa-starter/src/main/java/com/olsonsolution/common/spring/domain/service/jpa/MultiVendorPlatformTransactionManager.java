@@ -26,7 +26,7 @@ public class MultiVendorPlatformTransactionManager extends MultiVendorJpaConfigu
     }
 
     @Override
-    protected PlatformTransactionManager constructDelegate(SqlVendor sqlVendor, DataSourceSpec dataSourceSpec) {
+    protected PlatformTransactionManager constructDelegate(SqlVendor sqlVendor) {
         return new JpaTransactionManager(entityManagerFactoryDelegate.getDelegate());
     }
 

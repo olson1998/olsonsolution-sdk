@@ -11,7 +11,7 @@ import java.time.Duration;
 public class DefaultCachingProperties implements CachingProperties {
 
     private int initialCapacity;
-    private long maximumSize;
+    private Long maximumSize;
     private Long maximumWeight;
     private Duration expireAfterAccess;
     private Duration expireAfterWrite;

@@ -13,7 +13,7 @@ import lombok.*;
 @AllArgsConstructor
 
 @Entity
-@Table(name = "persion_team_bound")
+@Table(name = "person_team_bound")
 public class PersonTeamBoundData {
 
     @EmbeddedId

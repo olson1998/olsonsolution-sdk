@@ -34,11 +34,11 @@ public class InMemoryFabricatingService implements InMemoryCacheFactory {
                                                     Weigher<K, V> weigher,
                                                     RemovalListener<K, V> removalListener) {
         Caffeine<K, V> caffeine = (Caffeine<K, V>) Caffeine.newBuilder();
-        caffeine.initialCapacity(cachingProperties.getInitialCapacity())
-                .maximumSize(cachingProperties.getMaximumSize())
-                .maximumWeight(cachingProperties.getMaximumWeight())
-                .expireAfterAccess(cachingProperties.getExpireAfterAccess())
-                .expireAfterWrite(cachingProperties.getExpireAfterWrite());
+        caffeine.initialCapacity(cachingProperties.getInitialCapacity());
+        Optional.ofNullable(cachingProperties.getExpireAfterAccess()).ifPresent(caffeine::expireAfterAccess);
+        Optional.ofNullable(cachingProperties.getExpireAfterWrite()).ifPresent(caffeine::expireAfterWrite);
+        Optional.ofNullable(cachingProperties.getMaximumSize()).ifPresent(caffeine::maximumSize);
+        Optional.ofNullable(cachingProperties.getMaximumWeight()).ifPresent(caffeine::maximumWeight);
         Optional.ofNullable(executor).ifPresent(caffeine::executor);
         Optional.ofNullable(weigher).ifPresent(caffeine::weigher);
         Optional.ofNullable(removalListener).ifPresent(caffeine::removalListener);

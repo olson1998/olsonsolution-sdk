@@ -76,7 +76,7 @@ public class DataSourceSpecConfig {
         int maximumDataSources = routingDataSourceProperties.getMaxDataSources();
         CachingProperties cachingProperties = new DefaultCachingProperties(
                 maximumDataSources,
-                maximumDataSources,
+                (long) maximumDataSources,
                 null,
                 routingDataSourceProperties.getExpireTimeout(),
                 null
@@ -96,7 +96,7 @@ public class DataSourceSpecConfig {
         int maximumDataSources = routingDataSourceProperties.getMaxDataSources();
         CachingProperties cachingProperties = new DefaultCachingProperties(
                 maximumDataSources,
-                maximumDataSources,
+                (long) maximumDataSources,
                 null,
                 routingDataSourceProperties.getExpireTimeout(),
                 null
