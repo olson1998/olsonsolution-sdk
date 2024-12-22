@@ -10,4 +10,6 @@ public interface DataSourceSpecManager {
 
     void clear();
 
+    void setInitDataSourceSpec(DataSourceSpec dataSourceSpec);
+
 }

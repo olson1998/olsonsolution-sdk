@@ -66,38 +66,22 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     @Override
     public EntityManager createEntityManager() {
-        if (initialized) {
-            return getDelegate().createEntityManager();
-        } else {
-            return new InitializingEntityManager();
-        }
+        return getDelegate().createEntityManager();
     }
 
     @Override
     public EntityManager createEntityManager(Map map) {
-        if (initialized) {
-            return getDelegate().createEntityManager(map);
-        } else {
-            return new InitializingEntityManager();
-        }
+        return getDelegate().createEntityManager(map);
     }
 
     @Override
     public EntityManager createEntityManager(SynchronizationType synchronizationType) {
-        if (initialized) {
-            return getDelegate().createEntityManager(synchronizationType);
-        } else {
-            return new InitializingEntityManager();
-        }
+        return getDelegate().createEntityManager(synchronizationType);
     }
 
     @Override
     public EntityManager createEntityManager(SynchronizationType synchronizationType, Map map) {
-        if (initialized) {
-            return getDelegate().createEntityManager(synchronizationType, map);
-        } else {
-            return new InitializingEntityManager();
-        }
+        return getDelegate().createEntityManager(synchronizationType, map);
     }
 
     @Override
@@ -107,11 +91,7 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     @Override
     public Metamodel getMetamodel() {
-        if (initialized) {
-            return getDelegate().getMetamodel();
-        } else {
-            return new InitializingMetamodel();
-        }
+        return getDelegate().getMetamodel();
     }
 
     @Override
@@ -149,11 +129,7 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     @Override
     public PersistenceUnitUtil getPersistenceUnitUtil() {
-        if (initialized) {
-            return getDelegate().getPersistenceUnitUtil();
-        } else {
-            return new InitializingPersistenceUnitUtil();
-        }
+        return getDelegate().getPersistenceUnitUtil();
     }
 
     @Override

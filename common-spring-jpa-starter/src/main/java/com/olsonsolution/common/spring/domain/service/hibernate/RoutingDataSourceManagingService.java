@@ -41,7 +41,7 @@ public class RoutingDataSourceManagingService extends RoutingDataSourceManager {
     private DataSource createDataSource(DataSourceSpec dataSourceSpec) {
         String name = dataSourceSpec.getName();
         SqlDataSource sqlDataSource = destinationDataSourceManager.obtainSqlDataSource(name);
-        DataSource dataSource = dataSourceFactory.createDataSource(sqlDataSource, dataSourceSpec.getPermission());
+        DataSource dataSource = dataSourceFactory.fabricate(sqlDataSource, dataSourceSpec.getPermission());
         log.info(
                 "Routing data source spec: {} vendor: '{}' host: '{}'",
                 dataSourceSpec,

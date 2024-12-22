@@ -8,12 +8,11 @@ import com.olsonsolution.common.spring.application.datasource.classic.repository
 import com.olsonsolution.common.spring.application.datasource.classic.repository.ClassicPersonTeamBoundJpaRepository;
 import com.olsonsolution.common.spring.application.datasource.classic.repository.ClassicTeamJpaRepository;
 import com.olsonsolution.common.spring.application.jpa.config.RoutingJpaConfigurer;
-import com.olsonsolution.common.spring.application.test.config.JpaDataTestBase;
+import com.olsonsolution.common.spring.application.test.config.SpringApplicationJpaTestBase;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecConfigurable;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-class JpaModuleTest extends JpaDataTestBase {
+class SpringApplicationJpaTest extends SpringApplicationJpaTestBase {
 
     @Autowired
     private DataSourceSpecManager dataSourceSpecManager;
@@ -48,7 +47,8 @@ class JpaModuleTest extends JpaDataTestBase {
     }
 
     @ParameterizedTest
-    @MethodSource("com.olsonsolution.common.spring.application.test.config.JpaDataTestBase#dataSourceSpecStream")
+    @MethodSource("com.olsonsolution.common.spring.application.test.config.SpringApplicationJpaTestBase" +
+            "#dataSourceSpecStream")
     void shouldSaveTestData(DataSourceSpec spec) {
         dataSourceSpecManager.setCurrent(spec);
         saveTestData();

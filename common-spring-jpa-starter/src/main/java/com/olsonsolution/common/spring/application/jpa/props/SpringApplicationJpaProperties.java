@@ -1,5 +1,7 @@
 package com.olsonsolution.common.spring.application.jpa.props;
 
+import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlPermission;
+import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlVendor;
 import com.olsonsolution.common.spring.domain.model.datasource.DataSourceSpecification;
 import com.olsonsolution.common.spring.domain.port.props.jpa.*;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
@@ -10,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import java.time.Duration;
 import java.util.*;
 
+import static com.olsonsolution.common.data.domain.model.sql.SqlPermissions.RWX;
 import static com.olsonsolution.common.spring.application.jpa.props.SpringApplicationJpaProperties.SPRING_APPLICATION_JPA_PROPERTIES_PREFIX;
 
 @Data
@@ -22,9 +25,15 @@ public class SpringApplicationJpaProperties implements JpaProperties {
     public static final String SPRING_APPLICATION_JPA_PROPERTIES_PREFIX = SPRING_APPLICATION_PROPERTIES_PREFIX + ".jpa";
 
     private final Map<String, String> dataSourceModeler = new HashMap<>();
-    private final List<ApplicationEntityManagerFactoryProperties> entityManagerFactory = new ArrayList<>();
+    private final List<ApplicationEntityManagerFactoryProperties> config = new ArrayList<>();
+    private final InitialDataSourceSpecProperties initialDataSource = new InitialDataSourceSpecProperties();
     private final ApplicationDefaultDataSourceProperties defaultDataSource = new ApplicationDefaultDataSourceProperties();
     private final ApplicationRoutingDataSourceProperties routingDataSource = new ApplicationRoutingDataSourceProperties();
+
+    @Override
+    public DataSourceSpec getInitialDataSourceSpecProperties() {
+        return initialDataSource;
+    }
 
     @Override
     public Map<String, String> getDataSourceModelersEnableProperties() {
@@ -43,7 +52,18 @@ public class SpringApplicationJpaProperties implements JpaProperties {
 
     @Override
     public Collection<? extends EntityManagerFactoryProperties> getEntityManagerFactoryProperties() {
-        return entityManagerFactory;
+        return config;
+    }
+
+    @Data
+    public static class InitialDataSourceSpecProperties implements DataSourceSpec {
+
+        private SqlVendor vendor;
+
+        private String name;
+
+        private SqlPermission permission = RWX;
+
     }
 
     @Data

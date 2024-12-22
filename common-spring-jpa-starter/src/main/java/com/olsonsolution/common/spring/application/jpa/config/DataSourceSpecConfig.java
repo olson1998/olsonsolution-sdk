@@ -47,11 +47,6 @@ public class DataSourceSpecConfig {
         );
     }
 
-    @Bean
-    public DataSourceFactory dataSourceModeler() {
-        return new DataSourceFabricatingService();
-    }
-
     @Bean(ROUTING_DATA_SOURCE_EVICTOR_BEAN)
     public DataSourceEvictor routingDataSourceEvictor() {
         return new DataSourceEvictionService();
