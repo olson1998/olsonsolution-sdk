@@ -7,13 +7,13 @@ import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlVendor;
 import com.olsonsolution.common.property.domain.port.stereotype.PropertySpec;
 
 import javax.sql.DataSource;
-import java.util.List;
+import java.util.Collection;
 
 public interface DataSourceModeler {
 
     SqlVendor getSqlVendor();
 
-    List<? extends PropertySpec> getPropertySpecifications();
+    Collection<? extends PropertySpec> getPropertySpecifications();
 
     DataSource create(SqlDataSource dataSource, SqlUser user, SqlPermission permission);
 

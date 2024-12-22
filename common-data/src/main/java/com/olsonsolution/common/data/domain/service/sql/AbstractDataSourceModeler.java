@@ -3,10 +3,15 @@ package com.olsonsolution.common.data.domain.service.sql;
 import com.olsonsolution.common.data.domain.port.repository.sql.DataSourceModeler;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSource;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlVendor;
+import com.olsonsolution.common.property.domain.model.BooleanPropertySpec;
+import com.olsonsolution.common.property.domain.model.EnumPropertySpec;
+import com.olsonsolution.common.property.domain.model.PropertySpecModel;
 import com.olsonsolution.common.property.domain.port.repository.PropertyReader;
 import com.olsonsolution.common.property.domain.port.stereotype.PropertySpec;
+import com.olsonsolution.common.reflection.domain.service.ReflectionUtils;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -14,12 +19,11 @@ import org.slf4j.Logger;
 import javax.sql.DataSource;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static java.util.Map.entry;
 
@@ -34,51 +38,69 @@ public abstract class AbstractDataSourceModeler implements DataSourceModeler {
     private final List<PropertyReader<?>> propertyReaders;
 
     @Getter
-    private final List<? extends PropertySpec> propertySpecifications;
-
-    protected static Map<PropertySpec, Method> mapPropertyToSetter(Class<? extends DataSource> dataSourceClass,
-                                                                   List<? extends PropertySpec> specifications) {
-        return ReflectionUtils.reflectAllMethods(dataSourceClass)
-                .filter(method -> StringUtils.startsWith(method.getName(), "set"))
-                .filter(method -> method.getParameterCount() == 1)
-                .filter(method -> Modifier.isPublic(method.getModifiers()) &&
-                        !Modifier.isStatic(method.getModifiers()))
-                .flatMap(method -> specifications.stream()
-                        .filter(propertySpec -> isPropertySpecSetter(method, propertySpec))
-                        .map(propertySpec -> entry(propertySpec, method)))
-                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
+    private final Collection<? extends PropertySpec> propertySpecifications;
 
     protected final void loadProperties(DataSource dataSource,
                                         SqlDataSource sqlDataSource,
-                                        Map<PropertySpec, Method> propertySetter) {
+                                        List<Map.Entry<PropertySpec, Method>> propertySetter) {
         Map<String, String> properties = sqlDataSource.getProperties();
         if (properties != null) {
             loadProperties(dataSource, properties, propertySetter);
         }
     }
 
-    private static boolean isPropertySpecSetter(Method method,
-                                                PropertySpec propertySpec) {
-        String methodName = method.getName();
-        if (method.getParameterCount() == 1 && StringUtils.startsWith(methodName, "set")) {
-            String propertyName = propertySpec.getName();
-            Class<?> propertyClass = propertySpec.getType();
-            String methodPropName = StringUtils.substringAfter(methodName, "set");
-            Type parameterType = method.getGenericParameterTypes()[0];
-            return StringUtils.equalsIgnoreCase(propertyName, methodPropName) &&
-                    propertyClass.equals(parameterType);
+    protected static List<Map.Entry<PropertySpec, Method>> loadPropertySpecSetters(@NonNull
+                                                                                 Class<? extends DataSource> dsc) {
+        return ReflectionUtils.listSetters(dsc, true)
+                .stream()
+                .filter(method -> !method.isAnnotationPresent(Deprecated.class))
+                .map(method -> entry(createPropertySpec(method), method))
+                .toList();
+    }
+
+    protected static List<? extends PropertySpec> loadPropertySpec(@NonNull Class<? extends DataSource> dsc) {
+        return ReflectionUtils.listSetters(dsc, true)
+                .stream()
+                .filter(method -> !method.isAnnotationPresent(Deprecated.class))
+                .map(AbstractDataSourceModeler::createPropertySpec)
+                .toList();
+    }
+
+    private static PropertySpec createPropertySpec(@NonNull Method method) {
+        String property = StringUtils.uncapitalize(StringUtils.substringAfter(method.getName(), "set"));
+        Type propertyType = method.getGenericParameterTypes()[0];
+        if (propertyType instanceof Class<?> javaClass &&
+                (Boolean.TYPE.equals(javaClass) || Boolean.class.equals(javaClass))) {
+            BooleanPropertySpec.BooleanPropertySpecBuilder builder = BooleanPropertySpec.booleanPropertySpec();
+            if (Boolean.TYPE.equals(javaClass)) {
+                builder.required(true);
+            } else {
+                builder.required(false);
+            }
+            return builder.description(StringUtils.EMPTY)
+                    .build();
+        } else if (propertyType instanceof Class<?> javaClass && javaClass.isEnum()) {
+            Class<? extends Enum> enumClass = javaClass.asSubclass(Enum.class);
+            return EnumPropertySpec.enumPropertySpec()
+                    .name(property)
+                    .type(enumClass)
+                    .description(StringUtils.EMPTY)
+                    .build();
         } else {
-            return false;
+            return PropertySpecModel.propertySpec()
+                    .name(property)
+                    .type(propertyType)
+                    .description(StringUtils.EMPTY)
+                    .build();
         }
     }
 
     private void loadProperties(DataSource dataSource,
                                 Map<String, String> properties,
-                                Map<PropertySpec, Method> propertySetter) {
+                                List<Map.Entry<PropertySpec, Method>> propertySetter) {
         for (Map.Entry<String, String> propertyValue : properties.entrySet()) {
             String property = propertyValue.getKey();
-            for (Map.Entry<PropertySpec, Method> propertySpecSetter : propertySetter.entrySet()) {
+            for (Map.Entry<PropertySpec, Method> propertySpecSetter : propertySetter) {
                 PropertySpec propertySpec = propertySpecSetter.getKey();
                 Method setter = propertySpecSetter.getValue();
                 if (StringUtils.equals(property, propertySpec.getName())) {
@@ -93,7 +115,7 @@ public abstract class AbstractDataSourceModeler implements DataSourceModeler {
                               PropertySpec propertySpec,
                               Method setter,
                               String propertyValue) {
-        Class<?> propertyType = propertySpec.getType();
+        Type propertyType = propertySpec.getType();
         Object value = propertyValue;
         if (!String.class.equals(propertyType)) {
             if (Boolean.TYPE.equals(propertyType)) {
@@ -102,8 +124,8 @@ public abstract class AbstractDataSourceModeler implements DataSourceModeler {
                 value = Integer.parseInt(propertyValue);
             } else if (Long.TYPE.equals(propertyType)) {
                 value = Long.parseLong(propertyValue);
-            } else if (propertyType.isEnum()) {
-                Class<? extends Enum> enumType = propertyType.asSubclass(Enum.class);
+            } else if (propertyType instanceof Class<?> javaClass && javaClass.isEnum()) {
+                Class<? extends Enum> enumType = javaClass.asSubclass(Enum.class);
                 value = Enum.valueOf(enumType, propertyValue);
             } else {
                 Optional<PropertyReader<?>> propertyReader = findPropertyReader(propertyType);
@@ -122,11 +144,11 @@ public abstract class AbstractDataSourceModeler implements DataSourceModeler {
         }
     }
 
-    private Optional<PropertyReader<?>> findPropertyReader(Class<?> javaClass) {
+    private Optional<PropertyReader<?>> findPropertyReader(Type type) {
         return Optional.ofNullable(propertyReaders)
                 .stream()
                 .flatMap(List::stream)
-                .filter(propertyReader -> javaClass.isAssignableFrom(propertyReader.getClass()))
+                .filter(propertyReader -> type.equals(propertyReader.getPropertyType()))
                 .findFirst();
     }
 

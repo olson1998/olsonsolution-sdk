@@ -4,6 +4,7 @@ import com.olsonsolution.common.property.domain.port.stereotype.PropertySpec;
 import lombok.*;
 import org.apache.commons.lang3.StringUtils;
 
+import java.lang.reflect.Type;
 import java.util.Set;
 
 @Data
@@ -17,7 +18,7 @@ public class PropertySpecModel implements PropertySpec {
 
     @NonNull
     @Builder.Default
-    private Class<?> type = String.class;
+    private Type type = String.class;
 
     private Set<String> enums;
 

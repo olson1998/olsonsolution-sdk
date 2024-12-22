@@ -10,18 +10,22 @@ import org.postgresql.ds.PGSimpleDataSource;
 import javax.sql.DataSource;
 import java.lang.reflect.Method;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.olsonsolution.common.data.domain.model.sql.PostgresDataSourceProperties.PROPERTIES;
 import static com.olsonsolution.common.data.domain.model.sql.SqlPermissions.RO;
 import static com.olsonsolution.common.data.domain.model.sql.SqlVendors.POSTGRESQL;
 
 @Slf4j
 public class PostgresDataSourceModeler extends AbstractDataSourceModeler {
 
-    private static final Map<PropertySpec, Method> POSTGRES_PROPERTIES_SETTERS =
-            mapPropertyToSetter(PGSimpleDataSource.class, PROPERTIES);
+    private static final List<Map.Entry<PropertySpec, Method>> PROPERTY_SETTERS =
+            AbstractDataSourceModeler.loadPropertySpecSetters(PGSimpleDataSource.class);
+
+    private static final List<? extends PropertySpec> PROPERTIES = PROPERTY_SETTERS.stream()
+            .map(Map.Entry::getKey)
+            .toList();
 
     public PostgresDataSourceModeler() {
         super(POSTGRESQL, log, Collections.emptyList(), PROPERTIES);
@@ -38,7 +42,7 @@ public class PostgresDataSourceModeler extends AbstractDataSourceModeler {
         if (permission.isSameAs(RO)) {
             postgresDataSource.setReadOnly(true);
         }
-        loadProperties(postgresDataSource, dataSource, POSTGRES_PROPERTIES_SETTERS);
+        loadProperties(postgresDataSource, dataSource, PROPERTY_SETTERS);
         return postgresDataSource;
     }
 }

@@ -1,12 +1,13 @@
 package com.olsonsolution.common.property.domain.port.stereotype;
 
+import java.lang.reflect.Type;
 import java.util.Set;
 
 public interface PropertySpec {
 
     String getName();
 
-    Class<?> getType();
+    Type getType();
 
     Set<String> getEnums();
 

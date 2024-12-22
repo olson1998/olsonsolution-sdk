@@ -15,13 +15,13 @@ public class EnumPropertySpec extends PropertySpecModel {
 
     @Builder(builderMethodName = "enumPropertySpec")
     public EnumPropertySpec(@NonNull String name,
-                            @NonNull Class<? extends Enum<?>> type,
+                            @NonNull Class<? extends Enum> type,
                             String description,
                             boolean required) {
         super(name, type, resolveEnumValues(type), description, required);
     }
 
-    private static Set<String> resolveEnumValues(Class<? extends Enum<?>> enumClass) {
+    private static Set<String> resolveEnumValues(Class<? extends Enum> enumClass) {
         return Arrays.stream(enumClass.getEnumConstants())
                 .map(Enum::name)
                 .collect(Collectors.toUnmodifiableSet());
