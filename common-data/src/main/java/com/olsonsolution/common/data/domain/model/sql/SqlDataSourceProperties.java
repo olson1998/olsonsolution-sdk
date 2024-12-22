@@ -7,6 +7,11 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.ietf.jgss.GSSCredential;
 
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class SqlDataSourceProperties {
 
@@ -181,13 +186,6 @@ public final class SqlDataSourceProperties {
             .name("serverNameAsACE")
             .description("Enable server name as ACE.")
             .required(true)
-            .build();
-
-    public static final PropertySpec SERVER_NAME = PropertySpecModel.propertySpec()
-            .name("serverName")
-            .type(String.class)
-            .description("Specifies the server name.")
-            .required(false)
             .build();
 
     public static final PropertySpec IP_ADDRESS_PREFERENCE = PropertySpecModel.propertySpec()
@@ -425,5 +423,24 @@ public final class SqlDataSourceProperties {
             .name("accessTokenCallbackClass")
             .description("Specifies the access token callback class.")
             .build();
+
+    public static final List<? extends PropertySpec> PROPERTIES =
+            Arrays.stream(SqlDataSourceProperties.class.getDeclaredFields())
+                    .filter(field -> Modifier.isPublic(field.getModifiers()) &&
+                            Modifier.isStatic(field.getModifiers()) &&
+                            Modifier.isFinal(field.getModifiers()) &&
+                            !"PROPERTIES".equals(field.getName()))
+                    .map(field -> {
+                        try {
+                            return Optional.of(field.get(null));
+                        } catch (IllegalAccessException e) {
+                            return Optional.empty();
+                        }
+                    }).filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .filter(PropertySpec.class::isInstance)
+                    .map(PropertySpec.class::cast)
+                    .toList();
+
 }
 

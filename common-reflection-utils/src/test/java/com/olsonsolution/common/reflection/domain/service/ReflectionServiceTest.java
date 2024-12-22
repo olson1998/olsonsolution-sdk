@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ReflectionServiceTest {
 
-    private final ReflectionUtils reflectionUtils = new ReflectionService();
+    private final ReflectionUtils reflectionUtils = new com.olsonsolution.common.reflection.domain.service.ReflectionUtils();
 
     @Test
     void shouldTrueOnSameAssignableParamTypes() {

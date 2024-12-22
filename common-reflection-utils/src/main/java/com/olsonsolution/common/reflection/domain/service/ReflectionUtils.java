@@ -1,6 +1,7 @@
 package com.olsonsolution.common.reflection.domain.service;
 
-import com.olsonsolution.common.reflection.domain.repository.ReflectionUtils;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.*;
@@ -10,36 +11,36 @@ import java.util.stream.Stream;
 
 import static java.util.Map.entry;
 
-public class ReflectionService implements ReflectionUtils {
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public final class ReflectionUtils {
 
-    public static final ReflectionUtils SINGLETON = new ReflectionService();
+    public static final ReflectionUtils SINGLETON = new ReflectionUtils();
 
-    @Override
-    public boolean isAssignableFrom(Type targetType, Type pretenderType) {
+    public static boolean isAssignableFrom(Type targetType, Type pretenderType) {
         if (targetType instanceof Class<?> targetClass && pretenderType instanceof Class<?> pretenderClass) {
             return pretenderClass.isAssignableFrom(targetClass);
         } else if (targetType instanceof ParameterizedType targetParamType &&
                 pretenderType instanceof Class<?> pretenderClass) {
-            if(targetParamType.getRawType() instanceof Class<?> targetRawClass) {
+            if (targetParamType.getRawType() instanceof Class<?> targetRawClass) {
                 return pretenderClass.isAssignableFrom(targetRawClass);
             }
         } else if (targetType instanceof ParameterizedType targetParamType &&
                 pretenderType instanceof ParameterizedType pretenderParamType) {
-           if(targetParamType.getRawType() instanceof Class<?> targetRawClass &&
-            pretenderParamType.getRawType() instanceof Class<?> pretenderRawClass) {
-                if(pretenderRawClass.isAssignableFrom(targetRawClass)) {
+            if (targetParamType.getRawType() instanceof Class<?> targetRawClass &&
+                    pretenderParamType.getRawType() instanceof Class<?> pretenderRawClass) {
+                if (pretenderRawClass.isAssignableFrom(targetRawClass)) {
                     Type[] targetGenerics = targetParamType.getActualTypeArguments();
                     Type[] pretenderGenerics = pretenderParamType.getActualTypeArguments();
-                    if(targetGenerics.length == pretenderGenerics.length) {
+                    if (targetGenerics.length == pretenderGenerics.length) {
                         boolean[] matchers = new boolean[targetGenerics.length];
-                        for(int i = 0; i < targetGenerics.length; i++) {
+                        for (int i = 0; i < targetGenerics.length; i++) {
                             matchers[i] = isAssignableFrom(targetGenerics[i], pretenderGenerics[i]);
                         }
                         int i = 0;
                         boolean areAllMatching = true;
                         while (i < matchers.length) {
                             boolean isMatching = matchers[i++];
-                            if(!isMatching) {
+                            if (!isMatching) {
                                 areAllMatching = false;
                                 break;
                             }
@@ -47,35 +48,31 @@ public class ReflectionService implements ReflectionUtils {
                         return areAllMatching;
                     }
                 }
-           }
+            }
         }
         return false;
     }
 
-    @Override
-    public List<Field> listFields(Class<?> javaClass, boolean includeSuperClasses) {
+    public static List<Field> listFields(Class<?> javaClass, boolean includeSuperClasses) {
         List<Field> fields = new ArrayList<>();
         reflectFields(javaClass, fields, includeSuperClasses);
         return fields;
     }
 
-    @Override
-    public List<Method> listMethods(Class<?> javaClass, boolean includeSuperClasses) {
+    public static List<Method> listMethods(Class<?> javaClass, boolean includeSuperClasses) {
         List<Method> methods = new ArrayList<>();
         reflectMethods(javaClass, methods, includeSuperClasses);
         return methods;
     }
 
-    @Override
-    public Optional<Field> findField(Class<?> javaClass, String fieldName, boolean includeSuperClass) {
+    public static Optional<Field> findField(Class<?> javaClass, String fieldName, boolean includeSuperClass) {
         return listFields(javaClass, includeSuperClass)
                 .stream()
                 .filter(field -> fieldName.equals(field.getName()))
                 .findFirst();
     }
 
-    @Override
-    public Optional<Field> findField(Class<?> javaClass, Type returnedType, String fieldName, boolean includeSuperClasses) {
+    public static Optional<Field> findField(Class<?> javaClass, Type returnedType, String fieldName, boolean includeSuperClasses) {
         return listFields(javaClass, includeSuperClasses)
                 .stream()
                 .filter(field -> fieldName.equals(field.getName()))
@@ -83,18 +80,16 @@ public class ReflectionService implements ReflectionUtils {
                 .findFirst();
     }
 
-    @Override
-    public Optional<Method> findGetter(Field field) {
+    public static Optional<Method> findGetter(Field field) {
         String getterName = resolveGetterName(field);
         return listMethods(field.getDeclaringClass(), false)
                 .stream()
-                .filter(method -> getterName.equals(method.getName())&&
+                .filter(method -> getterName.equals(method.getName()) &&
                         field.getGenericType().equals(method.getGenericReturnType()))
                 .findFirst();
     }
 
-    @Override
-    public Optional<Method> findSetter(Field field) {
+    public static Optional<Method> findSetter(Field field) {
         String setterName = resolveSetterName(field);
         return listMethods(field.getDeclaringClass(), false)
                 .stream()
@@ -105,21 +100,19 @@ public class ReflectionService implements ReflectionUtils {
                 .findFirst();
     }
 
-    @Override
-    public <T> Optional<Constructor<T>> findNoArgsConstructor(Class<T> javaClass) {
+    public static <T> Optional<Constructor<T>> findNoArgsConstructor(Class<T> javaClass) {
         return Arrays.stream(javaClass.getConstructors())
                 .filter(constructor -> constructor.getParameterCount() == 0)
                 .map(constructor -> (Constructor<T>) constructor)
                 .findFirst();
     }
 
-    @Override
-    public Map<TypeVariable<?>, Type> mapGenericsBounds(ParameterizedType parameterizedType) {
+    public static Map<TypeVariable<?>, Type> mapGenericsBounds(ParameterizedType parameterizedType) {
         Stream.Builder<Map.Entry<TypeVariable<?>, Type>> genericBounds = Stream.builder();
-        if(parameterizedType.getRawType() instanceof Class<?> rawClass) {
+        if (parameterizedType.getRawType() instanceof Class<?> rawClass) {
             Type[] actualTypes = parameterizedType.getActualTypeArguments();
             TypeVariable<? extends Class<?>>[] generics = rawClass.getTypeParameters();
-            for(int i = 0; i < generics.length; i++) {
+            for (int i = 0; i < generics.length; i++) {
                 genericBounds.add(entry(generics[i], actualTypes[i]));
             }
         }
@@ -127,14 +120,14 @@ public class ReflectionService implements ReflectionUtils {
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    private void reflectFields(Class<?> javaClass, List<Field> classFields, boolean includeSuperClass) {
+    private static void reflectFields(Class<?> javaClass, List<Field> classFields, boolean includeSuperClass) {
         classFields.addAll(Arrays.asList(javaClass.getDeclaredFields()));
         if (includeSuperClass && classFields.stream().noneMatch(field -> field.getDeclaringClass().equals(javaClass.getSuperclass()))) {
             reflectFields(javaClass.getSuperclass(), classFields, includeSuperClass);
         }
     }
 
-    private void reflectMethods(Class<?> javaClass, List<Method> methods, boolean includeSuperClass) {
+    private static void reflectMethods(Class<?> javaClass, List<Method> methods, boolean includeSuperClass) {
         methods.addAll(Arrays.asList(javaClass.getDeclaredMethods()));
         if (includeSuperClass &&
                 methods.stream().noneMatch(m -> m.getDeclaringClass().equals(javaClass.getSuperclass()))) {
@@ -142,16 +135,16 @@ public class ReflectionService implements ReflectionUtils {
         }
     }
 
-    private String resolveGetterName(Field field) {
+    private static String resolveGetterName(Field field) {
         Class<?> declaringClass = field.getDeclaringClass();
         Type fieldType = field.getGenericType();
         StringBuilder getterName = new StringBuilder();
-        if(!declaringClass.isRecord() && Boolean.TYPE.equals(fieldType)) {
+        if (!declaringClass.isRecord() && Boolean.TYPE.equals(fieldType)) {
             getterName.append("is");
         } else if (!declaringClass.isRecord()) {
             getterName.append("get");
         }
-        if(declaringClass.isRecord()) {
+        if (declaringClass.isRecord()) {
             getterName.append(field.getName());
         } else {
             getterName.append(StringUtils.capitalize(field.getName()));
@@ -159,7 +152,7 @@ public class ReflectionService implements ReflectionUtils {
         return getterName.toString();
     }
 
-    private String resolveSetterName(Field field) {
+    private static String resolveSetterName(Field field) {
         return "set" + StringUtils.capitalize(field.getName());
     }
 

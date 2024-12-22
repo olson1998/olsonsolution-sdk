@@ -6,374 +6,374 @@ import com.olsonsolution.common.property.domain.model.PropertySpecModel;
 import com.olsonsolution.common.property.domain.port.stereotype.PropertySpec;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.postgresql.jdbc.AutoSave;
 import org.postgresql.jdbc.PreferQueryMode;
 
-import java.util.Set;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class PostgresDataSourceProperties {
 
-    public static final PropertySpec ADAPTIVE_FETCH = BooleanPropertySpec.booleanPropertySpec()
-            .name("adaptiveFetch")
-            .description("Enable or disable adaptive fetching.")
-            .required(true)
-            .build();
-
-    public static final PropertySpec ADAPTIVE_FETCH_MINIMUM = PropertySpecModel.propertySpec()
-            .name("adaptiveFetchMinimum")
-            .description("Set the minimum adaptive fetch size.")
-            .type(Integer.TYPE)
-            .build();
-
-    public static final PropertySpec ADAPTIVE_FETCH_MAXIMUM = PropertySpecModel.propertySpec()
-            .name("adaptiveFetchMaximum")
-            .description("Set the maximum adaptive fetch size.")
-            .type(Integer.TYPE)
-            .required(true)
-            .build();
-
-    public static final PropertySpec ALLOW_ENCODING_CHANGES = BooleanPropertySpec.booleanPropertySpec()
-            .name("allowEncodingChanges")
-            .description("Allow changes to client encoding settings.")
-            .required(true)
-            .build();
-
-    public static final PropertySpec APPLICATION_NAME = PropertySpecModel.propertySpec()
-            .name("applicationName")
-            .description("Set the name of the application.")
-            .build();
-
-    public static final PropertySpec ASSUME_MIN_SERVER_VERSION = PropertySpecModel.propertySpec()
-            .name("assumeMinServerVersion")
-            .description("Assume the minimum server version for compatibility.")
-            .build();
-
-    public static final PropertySpec AUTHENTICATION_PLUGIN_CLASS_NAME = PropertySpecModel.propertySpec()
-            .name("authenticationPluginClassName")
-            .description("Specify the class name for the authentication plugin.")
-            .build();
-
-    public static final PropertySpec AUTOSAVE = PropertySpecModel.propertySpec()
-            .name("autosave")
-            .description("Set the autosave behavior for connections.")
-            .build();
-
-    public static final PropertySpec BINARY_TRANSFER = BooleanPropertySpec.booleanPropertySpec()
-            .name("binaryTransfer")
-            .description("Enable or disable binary transfer for data.")
-            .build();
-
-    public static final PropertySpec BINARY_TRANSFER_DISABLE = PropertySpecModel.propertySpec()
-            .name("binaryTransferDisable")
-            .description("Specify data types to disable binary transfer.")
-            .build();
-
-    public static final PropertySpec BINARY_TRANSFER_ENABLE = PropertySpecModel.propertySpec()
-            .name("binaryTransferEnable")
-            .description("Specify data types to enable binary transfer.")
-            .build();
-
-    public static final PropertySpec BINARY_TRANSFER_TIMEOUT = PropertySpecModel.propertySpec()
-            .name("binaryTransferTimeout")
-            .description("Set the timeout for binary transfers.")
-            .type(Integer.TYPE)
-            .required(true)
-            .build();
-
-    public static final PropertySpec CANCEL_SIGNAL_TIMEOUT = PropertySpecModel.propertySpec()
-            .name("cancelSignalTimeout")
-            .description("Set the timeout for cancel signals.")
-            .type(Integer.TYPE)
-            .required(true)
-            .build();
-
-    public static final PropertySpec CHANNEL_BINDING = PropertySpecModel.propertySpec()
-            .name("channelBinding")
-            .description("Specify the channel binding behavior.")
-            .build();
-
-    public static final PropertySpec CLEANUP_SAVE_POINTS = BooleanPropertySpec.booleanPropertySpec()
-            .name("cleanupSavePoints")
-            .description("Enable or disable cleanup of save points.")
-            .build();
-
-    public static final PropertySpec CONNECT_TIMEOUT = PropertySpecModel.propertySpec()
-            .name("connectTimeout")
-            .description("Set the timeout for establishing connections.")
-            .type(Integer.TYPE)
-            .required(true)
-            .build();
-
-    public static final PropertySpec DATABASE_METADATA_CACHE_FIELDS_SIZE = PropertySpecModel.propertySpec()
-            .name("databaseMetadataCacheFieldsSize")
-            .description("Set the cache size for database metadata fields.")
-            .type(Integer.TYPE)
-            .required(true)
-            .build();
-
-    public static final PropertySpec DEFAULT_RAW_FETCH_SIZE = PropertySpecModel.propertySpec()
-            .name("defaultRawFetchSize")
-            .description("Set the default fetch size for raw queries.")
-            .type(Integer.TYPE)
-            .required(true)
-            .build();
-
-    public static final PropertySpec DISABLE_COLUMN_SANITIZER = BooleanPropertySpec.booleanPropertySpec()
-            .name("disableColumnSanitizer")
-            .description("Enable or disable column name sanitization.")
-            .required(true)
-            .build();
-
-    public static final PropertySpec ESCAPE_SYNTAX_CALL_MODE = PropertySpecModel.propertySpec()
-            .name("escapeSyntaxCallMode")
-            .description("Set the call mode for escape syntax.")
-            .build();
-
-    public static final PropertySpec GSS_ENC_MODE = PropertySpecModel.propertySpec()
-            .name("gssEncMode")
-            .description("Specify the GSS encryption mode.")
-            .build();
-
-    public static final PropertySpec GSS_RESPONSE_TIMEOUT = PropertySpecModel.propertySpec()
-            .name("gssResponseTimeout")
-            .description("Set the timeout for GSS responses.")
-            .type(Integer.TYPE)
-            .required(true)
-            .build();
-
-    public static final PropertySpec GSS_LIB = PropertySpecModel.propertySpec()
-            .name("gssLib")
-            .description("Specify the GSS library to use.")
-            .build();
-
-    public static final PropertySpec GROUP_STARTUP_PARAMETERS = PropertySpecModel.propertySpec()
-            .name("groupStartupParameters")
-            .description("Specify the group startup parameters.")
-            .build();
-
-    public static final PropertySpec HIDE_UNPRIVILEGED_OBJECTS = BooleanPropertySpec.booleanPropertySpec()
-            .name("hideUnprivilegedObjects")
-            .description("Enable or disable hiding of unprivileged objects.")
-            .build();
-
-    public static final PropertySpec HOST_RECHECK_SECONDS = PropertySpecModel.propertySpec()
-            .name("hostRecheckSeconds")
-            .description("Set the recheck interval for hosts in seconds.")
-            .type(Integer.TYPE)
-            .required(true)
-            .build();
-
-    public static final PropertySpec JAAS_APPLICATION_NAME = PropertySpecModel.propertySpec()
-            .name("jaasApplicationName")
-            .description("Specify the JAAS application name.")
-            .build();
-
-    public static final PropertySpec JAAS_LOGIN = BooleanPropertySpec.booleanPropertySpec()
-            .name("jaasLogin")
-            .description("Enable or disable JAAS login.")
-            .required(true)
-            .build();
-
-    public static final PropertySpec KERBOS_SERVER_NAME = PropertySpecModel.propertySpec()
-            .name("kerberosServerName")
-            .description("Specify the Kerberos server name.")
+    public static final PropertySpec OPTIONS = PropertySpecModel.propertySpec()
+            .name("options")
+            .description("Sets command-line options for the connection.")
             .build();
 
     public static final PropertySpec LOGIN_TIMEOUT = PropertySpecModel.propertySpec()
             .name("loginTimeout")
-            .description("Set the timeout for login attempts.")
             .type(Integer.TYPE)
-            .required(true)
+            .description("Sets the login timeout.")
             .build();
 
-    public static final PropertySpec LOG_SERVER_ERROR_DETAIL = BooleanPropertySpec.booleanPropertySpec()
-            .name("logServerErrorDetail")
-            .description("Enable or disable logging of server error details.")
-            .build();
-
-    public static final PropertySpec LOG_UNCLOSED_CONNECTIONS = BooleanPropertySpec.booleanPropertySpec()
-            .name("logUnclosedConnections")
-            .description("Enable or disable logging of unclosed connections.")
-            .build();
-
-    public static final PropertySpec MAX_RESULT_BUFFER = PropertySpecModel.propertySpec()
-            .name("maxResultBuffer")
-            .description("Set the maximum result buffer size.")
-            .type(Long.TYPE)
-            .required(true)
-            .build();
-
-    public static final PropertySpec MAX_RESULT_BUFFER_SIZE = PropertySpecModel.propertySpec()
-            .name("maxResultBufferSize")
-            .description("Set the size of the maximum result buffer.")
-            .type(Long.TYPE)
-            .required(true)
-            .build();
-
-    public static final PropertySpec OPTIONS = PropertySpecModel.propertySpec()
-            .name("options")
-            .description("Specify additional options for the connection.")
-            .build();
-
-    public static final PropertySpec PREFER_QUERY_MODE = EnumPropertySpec.enumPropertySpec()
-            .name("preferQueryMode")
-            .description("Set the preferred query mode.")
-            .type(PreferQueryMode.class)
-            .build();
-
-    public static final PropertySpec PREPARED_QUERY_CACHE_SIZE = PropertySpecModel.propertySpec()
-            .name("preparedQueryCacheSize")
-            .description("Set the size of the prepared query cache.")
+    public static final PropertySpec CONNECT_TIMEOUT = PropertySpecModel.propertySpec()
+            .name("connectTimeout")
             .type(Integer.TYPE)
-            .required(true)
+            .description("Sets the connection timeout.")
             .build();
 
-    public static final PropertySpec PREPARED_TRASH_HOLD = PropertySpecModel.propertySpec()
-            .name("preparedTrashHold")
-            .description("Set the threshold for prepared query trash.")
+    public static final PropertySpec GSS_RESPONSE_TIMEOUT = PropertySpecModel.propertySpec()
+            .name("gssResponseTimeout")
             .type(Integer.TYPE)
-            .required(true)
+            .description("Sets the GSS response timeout.")
+            .build();
+
+    public static final PropertySpec SSL_RESPONSE_TIMEOUT = PropertySpecModel.propertySpec()
+            .name("sslResponseTimeout")
+            .type(Integer.TYPE)
+            .description("Sets the SSL response timeout.")
+            .build();
+
+    public static final PropertySpec PROTOCOL_VERSION = PropertySpecModel.propertySpec()
+            .name("protocolVersion")
+            .type(Integer.TYPE)
+            .description("Specifies the protocol version.")
             .build();
 
     public static final PropertySpec QUOTE_RETURNING_IDENTIFIERS = BooleanPropertySpec.booleanPropertySpec()
             .name("quoteReturningIdentifiers")
-            .description("Enable or disable quoting of returning identifiers.")
+            .description("Specifies whether returning identifiers should be quoted.")
             .build();
 
     public static final PropertySpec RECEIVE_BUFFER_SIZE = PropertySpecModel.propertySpec()
             .name("receiveBufferSize")
-            .description("Set the size of the receive buffer.")
             .type(Integer.TYPE)
-            .required(true)
-            .build();
-
-    public static final PropertySpec RECV_BUFFER_SIZE = PropertySpecModel.propertySpec()
-            .name("recvBufferSize")
-            .description("Set the receive buffer size.")
-            .type(Integer.TYPE)
-            .required(true)
-            .build();
-
-    public static final PropertySpec REPLICATION = PropertySpecModel.propertySpec()
-            .name("replication")
-            .description("Specify the replication mode.")
-            .build();
-
-    public static final PropertySpec RE_WRITE_BATCH_INSERTS = BooleanPropertySpec.booleanPropertySpec()
-            .name("reWriteBatchInserts")
-            .description("Enable or disable rewriting of batch inserts.")
+            .description("Configures the receive buffer size.")
             .build();
 
     public static final PropertySpec SEND_BUFFER_SIZE = PropertySpecModel.propertySpec()
             .name("sendBufferSize")
-            .description("Set the size of the send buffer.")
             .type(Integer.TYPE)
-            .required(true)
+            .description("Configures the send buffer size.")
             .build();
 
-    public static final PropertySpec SOCKET_FACTORY = PropertySpecModel.propertySpec()
-            .name("socketFactory")
-            .description("Specify the socket factory class.")
-            .build();
-
-    public static final PropertySpec SOCKET_FACTORY_ARGS = PropertySpecModel.propertySpec()
-            .name("socketFactoryArgs")
-            .description("Specify arguments for the socket factory.")
+    public static final PropertySpec PREPARED_STATEMENT_CACHE_QUERIES = PropertySpecModel.propertySpec()
+            .name("preparedStatementCacheQueries")
+            .type(Integer.TYPE)
+            .description("Sets the cache size for prepared statements.")
             .build();
 
     public static final PropertySpec SOCKET_TIMEOUT = PropertySpecModel.propertySpec()
             .name("socketTimeout")
-            .description("Set the timeout for socket operations.")
             .type(Integer.TYPE)
-            .required(true)
+            .description("Specifies the socket timeout.")
             .build();
 
-    public static final PropertySpec SSI_SERVER_CLASS = PropertySpecModel.propertySpec()
-            .name("ssiServerClass")
-            .description("Specify the SSI server class.")
+    public static final PropertySpec SSL = BooleanPropertySpec.booleanPropertySpec()
+            .name("ssl")
+            .description("Enables or disables SSL.")
             .build();
 
-    public static final PropertySpec TARGET_SERVER_TYPE = PropertySpecModel.propertySpec()
-            .name("targetServerType")
-            .description("Specify the type of target server.")
+    public static final PropertySpec SSLFACTORY = PropertySpecModel.propertySpec()
+            .name("sslfactory")
+            .description("Configures the SSL factory class.")
+            .build();
+
+    public static final PropertySpec SSL_CERT = PropertySpecModel.propertySpec()
+            .name("sslCert")
+            .description("Specifies the SSL certificate file.")
+            .build();
+
+    public static final PropertySpec SSL_KEY = PropertySpecModel.propertySpec()
+            .name("sslKey")
+            .description("Specifies the SSL key file.")
+            .build();
+
+    public static final PropertySpec APPLICATION_NAME = PropertySpecModel.propertySpec()
+            .name("applicationName")
+            .description("Sets the application name.")
+            .build();
+
+    public static final PropertySpec BINARY_TRANSFER = BooleanPropertySpec.booleanPropertySpec()
+            .name("binaryTransfer")
+            .description("Enables or disables binary transfer.")
+            .build();
+
+    public static final PropertySpec ADAPTIVE_FETCH = BooleanPropertySpec.booleanPropertySpec()
+            .name("adaptiveFetch")
+            .description("Enables or disables adaptive fetch.")
+            .build();
+
+    public static final PropertySpec PREFER_QUERY_MODE = EnumPropertySpec.enumPropertySpec()
+            .name("preferQueryMode")
+            .type(PreferQueryMode.class)
+            .description("Sets the preferred query mode.")
+            .build();
+
+    public static final PropertySpec AUTOSAVE = EnumPropertySpec.enumPropertySpec()
+            .name("autosave")
+            .type(AutoSave.class)
+            .description("Configures automatic per-query savepoints.")
+            .build();
+
+    public static final PropertySpec CLEANUP_SAVEPOINTS = BooleanPropertySpec.booleanPropertySpec()
+            .name("cleanupSavepoints")
+            .description("Indicates whether to clean up savepoints after successful transactions.")
             .build();
 
     public static final PropertySpec TCP_KEEP_ALIVE = BooleanPropertySpec.booleanPropertySpec()
             .name("tcpKeepAlive")
-            .description("Enable or disable TCP keep-alive.")
+            .description("Enables or disables TCP keep-alive.")
             .build();
 
     public static final PropertySpec TCP_NO_DELAY = BooleanPropertySpec.booleanPropertySpec()
             .name("tcpNoDelay")
-            .description("Enable or disable TCP no-delay.")
+            .description("Enables or disables TCP no-delay.")
             .build();
 
-    public static final PropertySpec UNKNOWN_LENGTH = PropertySpecModel.propertySpec()
-            .name("unknownLength")
-            .description("Set the default length for unknown fields.")
-            .type(Long.TYPE)
-            .required(true)
+    public static final PropertySpec REWRITE_BATCHED_INSERTS = BooleanPropertySpec.booleanPropertySpec()
+            .name("reWriteBatchedInserts")
+            .description("Enables rewriting batched inserts.")
             .build();
 
-    public static final PropertySpec USE_SP_NEGO = BooleanPropertySpec.booleanPropertySpec()
+    public static final PropertySpec LOCAL_SOCKET_ADDRESS = PropertySpecModel.propertySpec()
+            .name("localSocketAddress")
+            .description("Configures the local socket address.")
+            .build();
+
+    public static final PropertySpec LOAD_BALANCE_HOSTS = BooleanPropertySpec.booleanPropertySpec()
+            .name("loadBalanceHosts")
+            .description("Enables or disables host load balancing.")
+            .build();
+
+    public static final PropertySpec HOST_RECHECK_SECONDS = PropertySpecModel.propertySpec()
+            .name("hostRecheckSeconds")
+            .type(Integer.TYPE)
+            .description("Sets the recheck interval for host availability.")
+            .build();
+
+    public static final PropertySpec STRING_TYPE = PropertySpecModel.propertySpec()
+            .name("stringType")
+            .description("Specifies the string type for the connection.")
+            .build();
+
+    public static final PropertySpec REPLICATION = PropertySpecModel.propertySpec()
+            .name("replication")
+            .description("Configures replication settings.")
+            .build();
+
+    public static final PropertySpec GSS_LIB = PropertySpecModel.propertySpec()
+            .name("gssLib")
+            .description("Specifies the GSS library.")
+            .build();
+
+    public static final PropertySpec GSS_ENC_MODE = PropertySpecModel.propertySpec()
+            .name("gssEncMode")
+            .description("Configures the GSS encryption mode.")
+            .build();
+
+    public static final PropertySpec READ_ONLY = BooleanPropertySpec.booleanPropertySpec()
+            .name("readOnly")
+            .description("Sets the connection to read-only mode.")
+            .build();
+
+    public static final PropertySpec LOG_UNCLOSED_CONNECTIONS = BooleanPropertySpec.booleanPropertySpec()
+            .name("logUnclosedConnections")
+            .description("Logs unclosed connections if enabled.")
+            .build();
+
+    public static final PropertySpec ALLOW_ENCODING_CHANGES = BooleanPropertySpec.booleanPropertySpec()
+            .name("allowEncodingChanges")
+            .description("Enables or disables encoding changes.")
+            .build();
+
+    public static final PropertySpec SOCKET_FACTORY = PropertySpecModel.propertySpec()
+            .name("socketFactory")
+            .description("Configures the socket factory class.")
+            .build();
+
+    public static final PropertySpec SSL_MODE = PropertySpecModel.propertySpec()
+            .name("sslMode")
+            .description("Configures the SSL mode.")
+            .build();
+
+    public static final PropertySpec SSL_PASSWORD_CALLBACK = PropertySpecModel.propertySpec()
+            .name("sslPasswordCallback")
+            .description("Configures the SSL password callback class.")
+            .build();
+
+    public static final PropertySpec GROUP_STARTUP_PARAMETERS = BooleanPropertySpec.booleanPropertySpec()
+            .name("groupStartupParameters")
+            .description("Specifies whether to group startup parameters.")
+            .build();
+
+    public static final PropertySpec SSL_PASSWORD = PropertySpecModel.propertySpec()
+            .name("sslPassword")
+            .description("Sets the SSL password.")
+            .build();
+
+    public static final PropertySpec SSL_HOSTNAME_VERIFIER = PropertySpecModel.propertySpec()
+            .name("sslHostnameVerifier")
+            .description("Configures the SSL hostname verifier class.")
+            .build();
+
+    public static final PropertySpec SSL_FACTORY_ARG = PropertySpecModel.propertySpec()
+            .name("sslFactoryArg")
+            .description("Sets the argument for the SSL factory.")
+            .build();
+
+    public static final PropertySpec DATABASE_METADATA_CACHE_FIELDS = PropertySpecModel.propertySpec()
+            .name("databaseMetadataCacheFields")
+            .type(Integer.TYPE)
+            .description("Sets the number of fields in the database metadata cache.")
+            .build();
+
+    public static final PropertySpec DATABASE_METADATA_CACHE_FIELDS_MIB = PropertySpecModel.propertySpec()
+            .name("databaseMetadataCacheFieldsMiB")
+            .type(Integer.TYPE)
+            .description("Sets the size of the database metadata cache in MiB.")
+            .build();
+
+    public static final PropertySpec DEFAULT_ROW_FETCH_SIZE = PropertySpecModel.propertySpec()
+            .name("defaultRowFetchSize")
+            .type(Integer.TYPE)
+            .description("Sets the default row fetch size.")
+            .build();
+
+    public static final PropertySpec ADAPTIVE_FETCH_MAXIMUM = PropertySpecModel.propertySpec()
+            .name("adaptiveFetchMaximum")
+            .type(Integer.TYPE)
+            .description("Sets the maximum value for adaptive fetch.")
+            .build();
+
+    public static final PropertySpec ADAPTIVE_FETCH_MINIMUM = PropertySpecModel.propertySpec()
+            .name("adaptiveFetchMinimum")
+            .type(Integer.TYPE)
+            .description("Sets the minimum value for adaptive fetch.")
+            .build();
+
+    public static final PropertySpec ESCAPE_SYNTAX_CALL_MODE = PropertySpecModel.propertySpec()
+            .name("escapeSyntaxCallMode")
+            .description("Configures the escape syntax call mode.")
+            .build();
+
+    public static final PropertySpec MAX_SEND_BUFFER_SIZE = PropertySpecModel.propertySpec()
+            .name("maxSendBufferSize")
+            .type(Integer.TYPE)
+            .description("Sets the maximum send buffer size.")
+            .build();
+
+    public static final PropertySpec PREPARE_THRESHOLD = PropertySpecModel.propertySpec()
+            .name("prepareThreshold")
+            .type(Integer.TYPE)
+            .description("Configures the prepare threshold.")
+            .build();
+
+    public static final PropertySpec PREPARED_STATEMENT_CACHE_SIZE_MIB = PropertySpecModel.propertySpec()
+            .name("preparedStatementCacheSizeMiB")
+            .type(Integer.TYPE)
+            .description("Sets the size of the prepared statement cache in MiB.")
+            .build();
+
+    public static final PropertySpec SSL_ROOT_CERT = PropertySpecModel.propertySpec()
+            .name("sslRootCert")
+            .description("Sets the SSL root certificate file.")
+            .build();
+
+    public static final PropertySpec LOGGER_LEVEL = PropertySpecModel.propertySpec()
+            .name("loggerLevel")
+            .description("Configures the logger level.")
+            .build();
+
+    public static final PropertySpec CHANNEL_BINDING = PropertySpecModel.propertySpec()
+            .name("channelBinding")
+            .description("Specifies the channel binding type.")
+            .build();
+
+    public static final PropertySpec LOGGER_FILE = PropertySpecModel.propertySpec()
+            .name("loggerFile")
+            .description("Sets the logger file location.")
+            .build();
+
+    public static final PropertySpec MAX_RESULT_BUFFER = PropertySpecModel.propertySpec()
+            .name("maxResultBuffer")
+            .description("Specifies the maximum result buffer size.")
+            .build();
+
+    public static final PropertySpec KERBEROS_SERVER_NAME = PropertySpecModel.propertySpec()
+            .name("kerberosServerName")
+            .description("Specifies the Kerberos server name.")
+            .build();
+
+    public static final PropertySpec USE_SPNEGO = BooleanPropertySpec.booleanPropertySpec()
             .name("useSpNego")
-            .description("Enable or disable SPNEGO authentication.")
+            .description("Specifies whether to use SPNEGO for authentication.")
             .build();
 
-    public static final Set<PropertySpec> PROPERTIES_SPECIFICATIONS = Set.of(
-            ADAPTIVE_FETCH,
-            ADAPTIVE_FETCH_MINIMUM,
-            ADAPTIVE_FETCH_MAXIMUM,
-            ALLOW_ENCODING_CHANGES,
-            APPLICATION_NAME,
-            ASSUME_MIN_SERVER_VERSION,
-            AUTHENTICATION_PLUGIN_CLASS_NAME,
-            AUTOSAVE,
-            BINARY_TRANSFER,
-            BINARY_TRANSFER_DISABLE,
-            BINARY_TRANSFER_ENABLE,
-            BINARY_TRANSFER_TIMEOUT,
-            CANCEL_SIGNAL_TIMEOUT,
-            CHANNEL_BINDING,
-            CLEANUP_SAVE_POINTS,
-            CONNECT_TIMEOUT,
-            DATABASE_METADATA_CACHE_FIELDS_SIZE,
-            DEFAULT_RAW_FETCH_SIZE,
-            DISABLE_COLUMN_SANITIZER,
-            ESCAPE_SYNTAX_CALL_MODE,
-            GSS_ENC_MODE,
-            GSS_RESPONSE_TIMEOUT,
-            GSS_LIB,
-            GROUP_STARTUP_PARAMETERS,
-            HIDE_UNPRIVILEGED_OBJECTS,
-            HOST_RECHECK_SECONDS,
-            JAAS_APPLICATION_NAME,
-            JAAS_LOGIN,
-            KERBOS_SERVER_NAME,
-            LOGIN_TIMEOUT,
-            LOG_SERVER_ERROR_DETAIL,
-            LOG_UNCLOSED_CONNECTIONS,
-            MAX_RESULT_BUFFER,
-            MAX_RESULT_BUFFER_SIZE,
-            OPTIONS,
-            PREFER_QUERY_MODE,
-            PREPARED_QUERY_CACHE_SIZE,
-            PREPARED_TRASH_HOLD,
-            QUOTE_RETURNING_IDENTIFIERS,
-            RECEIVE_BUFFER_SIZE,
-            RECV_BUFFER_SIZE,
-            REPLICATION,
-            RE_WRITE_BATCH_INSERTS,
-            SEND_BUFFER_SIZE,
-            SOCKET_FACTORY,
-            SOCKET_FACTORY_ARGS,
-            SOCKET_TIMEOUT,
-            SSI_SERVER_CLASS,
-            TARGET_SERVER_TYPE,
-            TCP_KEEP_ALIVE,
-            TCP_NO_DELAY,
-            UNKNOWN_LENGTH,
-            USE_SP_NEGO
-    );
+    public static final PropertySpec HIDE_UNPRIVILEGED_OBJECTS = BooleanPropertySpec.booleanPropertySpec()
+            .name("hideUnprivilegedObjects")
+            .description("Specifies whether to hide unprivileged objects.")
+            .build();
+
+    public static final PropertySpec XML_FACTORY_FACTORY = PropertySpecModel.propertySpec()
+            .name("xmlFactoryFactory")
+            .description("Specifies the XML factory class.")
+            .build();
+
+    public static final PropertySpec BINARY_TRANSFER_DISABLE = PropertySpecModel.propertySpec()
+            .name("binaryTransferDisable")
+            .description("Specifies the OIDs for which binary transfer should be disabled.")
+            .build();
+
+    public static final PropertySpec BINARY_TRANSFER_ENABLE = PropertySpecModel.propertySpec()
+            .name("binaryTransferEnable")
+            .description("Specifies the OIDs for which binary transfer should be enabled.")
+            .build();
+
+    public static final PropertySpec SSL_NEGOTIATION = PropertySpecModel.propertySpec()
+            .name("sslNegotiation")
+            .description("Configures the SSL negotiation method.")
+            .build();
+
+    public static final PropertySpec ASSUME_MIN_SERVER_VERSION = PropertySpecModel.propertySpec()
+            .name("assumeMinServerVersion")
+            .description("Specifies the assumed minimum server version.")
+            .build();
+
+    public static final PropertySpec CANCEL_SIGNAL_TIMEOUT = PropertySpecModel.propertySpec()
+            .name("cancelSignalTimeout")
+            .type(Integer.TYPE)
+            .description("Specifies the cancel signal timeout.")
+            .build();
+
+    public static final List<? extends PropertySpec> PROPERTIES =
+            Arrays.stream(PostgresDataSourceProperties.class.getDeclaredFields())
+                    .filter(field -> Modifier.isPublic(field.getModifiers()) &&
+                            Modifier.isStatic(field.getModifiers()) &&
+                            Modifier.isFinal(field.getModifiers()) &&
+                            !"PROPERTIES".equals(field.getName()))
+                    .map(field -> {
+                        try {
+                            return Optional.of(field.get(null));
+                        } catch (IllegalAccessException e) {
+                            return Optional.empty();
+                        }
+                    }).filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .filter(PropertySpec.class::isInstance)
+                    .map(PropertySpec.class::cast)
+                    .toList();
 
 }
