@@ -64,6 +64,9 @@ public class DataSourceModelersConfig {
         Collection<SqlVendor> enabledVendors = dataSourceModelers.stream()
                 .map(DataSourceModeler::getSqlVendor)
                 .toList();
+        if(enabledVendors.isEmpty()) {
+            throw new IllegalStateException("No Data Source Modeler registered");
+        }
         log.info("Data Source Modelers enabled for vendors: {}", enabledVendors);
         return new DataSourceFabricatingService(dataSourceModelers);
     }

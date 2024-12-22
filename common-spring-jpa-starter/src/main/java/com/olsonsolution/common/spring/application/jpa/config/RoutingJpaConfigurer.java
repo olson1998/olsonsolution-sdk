@@ -41,13 +41,10 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class RoutingJpaConfigurer implements InitializingBean, ApplicationContextAware {
 
-    public static final String LOG_MSG =
-            """
-                    Jpa configured for schema: '{}'
-                    Entity manager factory: '{}' instance: '{}'
-                    Platform transaction manager: '{}' instance: '{}'
-                    Entities base packages: {}
-                    """;
+    public static final String LOG_MSG = "Jpa configured for schema: '{}'\n" +
+            "Entity manager factory: '{}' instance: '{}'\n" +
+            "Platform transaction manager: '{}' instance: '{}'\n" +
+            "Entities base packages: {}";
 
     private ConfigurableApplicationContext applicationContext;
 
