@@ -37,7 +37,7 @@ public class PostgresDataSourceModeler extends AbstractDataSourceModeler {
 
     private static final List<Map.Entry<PropertySpec, Method>> PROPERTY_SETTERS =
             AbstractDataSourceModeler.loadPropertySpecSetters(PGSimpleDataSource.class).stream()
-                    .filter(PostgresDataSourceModeler::isPreDefinedPropertySpecSetter)
+                    .filter(spec -> !isPreDefinedPropertySpecSetter(spec))
                     .toList();
 
     private static final List<? extends PropertySpec> PROPERTIES = PROPERTY_SETTERS.stream()

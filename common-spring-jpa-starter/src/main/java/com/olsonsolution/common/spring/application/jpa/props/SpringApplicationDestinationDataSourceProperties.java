@@ -25,7 +25,6 @@ import static java.util.Map.entry;
 
 @Data
 @Configuration
-@ConditionalOnMissingBean
 @ConfigurationProperties(prefix = SPRING_APPLICATION_JPA_DESTINATION_DATA_SOURCE_PROPERTIES_PREFIX)
 public class SpringApplicationDestinationDataSourceProperties implements DestinationDataSourceProvider, InitializingBean {
 
@@ -42,6 +41,7 @@ public class SpringApplicationDestinationDataSourceProperties implements Destina
             Map<String, String> parsedProps = new HashMap<>(dataSourceProps.size());
             for(Map.Entry<String, String> prop : dataSourceProps.entrySet()) {
                 String property= prop.getKey();
+                String value = prop.getValue();
                 if(StringUtils.containsAny(property, '-')) {
                     StringBuilder parsedProp = new StringBuilder();
                     char[] characters = property.toCharArray();
@@ -56,7 +56,9 @@ public class SpringApplicationDestinationDataSourceProperties implements Destina
                         parsedProp.append(character);
                         i ++;
                     }
-                    parsedProps.put(parsedProp.toString(), prop.getValue());
+                    parsedProps.put(parsedProp.toString(), value);
+                } else {
+                    parsedProps.put(property, value);
                 }
             }
             dataSourceProps.clear();
@@ -91,7 +93,7 @@ public class SpringApplicationDestinationDataSourceProperties implements Destina
     @AllArgsConstructor
     public static class DataSourceProperties implements SqlDataSource {
 
-        private String vendors;
+        private SqlVendor vendor;
 
         private String host;
 
@@ -103,11 +105,6 @@ public class SpringApplicationDestinationDataSourceProperties implements Destina
 
         @Getter
         private final Map<String, String> properties = new HashMap<>();
-
-        @Override
-        public SqlVendor getVendor() {
-            return null;
-        }
 
         @Override
         public SqlDataSourceUsers getUsers() {

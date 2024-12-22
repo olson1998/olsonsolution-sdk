@@ -27,7 +27,7 @@ public class SqlServerDataSourceModeler extends AbstractDataSourceModeler {
 
     private static final List<Map.Entry<PropertySpec, Method>> PROPERTY_SETTERS =
             AbstractDataSourceModeler.loadPropertySpecSetters(SQLServerDataSource.class).stream()
-                    .filter(SqlServerDataSourceModeler::isPreDefinedPropertySpecSetter)
+                    .filter(spec -> !isPreDefinedPropertySpecSetter(spec))
                     .toList();
 
     private static final Collection<? extends PropertySpec> PROPERTIES = PROPERTY_SETTERS

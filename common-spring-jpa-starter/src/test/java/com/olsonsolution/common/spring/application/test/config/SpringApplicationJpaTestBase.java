@@ -3,8 +3,10 @@ package com.olsonsolution.common.spring.application.test.config;
 import com.microsoft.sqlserver.jdbc.SQLServerDataSource;
 import com.microsoft.sqlserver.jdbc.SQLServerException;
 import com.olsonsolution.common.spring.application.caching.InMemoryCachingConfig;
+import com.olsonsolution.common.spring.application.jpa.config.DataSourceModelersConfig;
 import com.olsonsolution.common.spring.application.jpa.config.DataSourceSpecConfig;
 import com.olsonsolution.common.spring.application.jpa.config.RoutingJpaConfigurer;
+import com.olsonsolution.common.spring.application.jpa.config.SqlVendorPropertiesResolverConfig;
 import com.olsonsolution.common.spring.application.jpa.props.SpringApplicationDestinationDataSourceProperties;
 import com.olsonsolution.common.spring.application.jpa.props.SpringApplicationJpaProperties;
 import com.olsonsolution.common.spring.domain.model.datasource.DataSourceSpecification;
@@ -42,26 +44,30 @@ import static com.olsonsolution.common.spring.application.test.config.SpringAppl
 @EnableConfigurationProperties
 @ContextConfiguration(classes = {
         DataSourceSpecConfig.class,
+        DataSourceModelersConfig.class,
         RoutingJpaConfigurer.class,
         InMemoryCachingConfig.class,
+        SqlVendorPropertiesResolverConfig.class,
         SpringApplicationJpaProperties.class,
         SpringApplicationDestinationDataSourceProperties.class
 })
 @ExtendWith(SpringExtension.class)
 @Testcontainers(disabledWithoutDocker = true)
 @TestPropertySource(properties = {
+        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".initial-data-source.name=" + SQL_SERVER_DATASOURCE,
+        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".initial-data-source.vendor=SQL_SERVER",
         SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".sql-server=enabled",
         SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".postgresql=enabled",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.schema=company",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.log-sql=true",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.format-sql-log=true",
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.entity.package-to-scan.0=" + CLASSIC_ENTITY_PACKAGE,
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.repository.package-to-scan.0=" + CLASSIC_REPO_PACKAGE,
+        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.entity.packages-to-scan.0=" + CLASSIC_ENTITY_PACKAGE,
+        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.repository.packages-to-scan.0=" + CLASSIC_REPO_PACKAGE,
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.schema=company_structure",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.log-sql=true",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.format-sql-log=true",
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.entity.package-to-scan.0=" + ENTITY_PACKAGE,
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.repository.package-to-scan.0=" + REPO_PACKAGE,
+        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.entity.packages-to-scan.0=" + ENTITY_PACKAGE,
+        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.repository.packages-to-scan.0=" + REPO_PACKAGE,
 })
 public abstract class SpringApplicationJpaTestBase {
 
@@ -186,7 +192,7 @@ public abstract class SpringApplicationJpaTestBase {
 
     private static final List<String> SQL_SERVER_QUERIES = Stream.of(
             "CREATE SCHEMA company_structure",
-            "CREATE SCHEMA company",
+            "CREATE SCHEMA COMPANY",
             CREATE_CLASSIC_PERSON_SQL_SERVER_QUERY,
             CREATE_CLASSIC_TEAM_SQL_SERVER_QUERY,
             CREATE_CLASSIC_PERSON_TEAM_BOUND_SQL_SERVER_QUERY,
@@ -232,20 +238,21 @@ public abstract class SpringApplicationJpaTestBase {
 
     @DynamicPropertySource
     static void setDataSourceProperties(DynamicPropertyRegistry registry) {
-        String prefix = SPRING_APPLICATION_JPA_DESTINATION_DATA_SOURCE_PROPERTIES_PREFIX;
+        String prefix = SPRING_APPLICATION_JPA_DESTINATION_DATA_SOURCE_PROPERTIES_PREFIX + ".instance";
         registry.add(prefix + ".0.name", () -> SQL_SERVER_DATASOURCE);
         registry.add(prefix + ".0.data-source.vendor", SQL_SERVER::name);
         registry.add(prefix + ".0.data-source.host", SQL_SERVER_CONTAINER::getHost);
         registry.add(prefix + ".0.data-source.port", () -> SQL_SERVER_CONTAINER.getMappedPort(1433));
-        registry.add(prefix + ".0.data-source.database", () -> "dbo");
+        registry.add(prefix + ".0.data-source.database", () -> DATABASE);
         registry.add(prefix + ".0.data-source.user.rwx.0.username", SQL_SERVER_CONTAINER::getUsername);
         registry.add(prefix + ".0.data-source.user.rwx.0.password", SQL_SERVER_CONTAINER::getPassword);
-        registry.add(prefix + ".0.data-source.properties.trust-certificate", () -> "true");
+        registry.add(prefix + ".0.data-source.properties.trust-server-certificate", () -> "true");
+        registry.add(prefix + ".0.data-source.properties.encrypt", () -> "false");
         registry.add(prefix + ".1.name", () -> POSTGRES_DATASOURCE);
         registry.add(prefix + ".1.data-source.vendor", POSTGRESQL::name);
         registry.add(prefix + ".1.data-source.host", POSTGRES_CONTAINER::getHost);
         registry.add(prefix + ".1.data-source.port", () -> POSTGRES_CONTAINER.getMappedPort(5432));
-        registry.add(prefix + ".1.data-source.database", () -> "dbo");
+        registry.add(prefix + ".1.data-source.database", () -> DATABASE);
         registry.add(prefix + ".1.data-source.user.rwx.0.username", POSTGRES_CONTAINER::getUsername);
         registry.add(prefix + ".1.data-source.user.rwx.0.password", POSTGRES_CONTAINER::getPassword);
     }

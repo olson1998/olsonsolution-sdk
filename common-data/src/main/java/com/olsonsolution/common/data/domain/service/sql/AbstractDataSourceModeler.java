@@ -80,7 +80,8 @@ public abstract class AbstractDataSourceModeler implements DataSourceModeler {
             } else {
                 builder.required(false);
             }
-            return builder.description(StringUtils.EMPTY)
+            return builder .name(property)
+                    .description(StringUtils.EMPTY)
                     .build();
         } else if (propertyType instanceof Class<?> javaClass && javaClass.isEnum()) {
             Class<? extends Enum> enumClass = javaClass.asSubclass(Enum.class);

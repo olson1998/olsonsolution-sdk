@@ -33,7 +33,7 @@ public class Db2DataSourceModeler extends AbstractDataSourceModeler {
 
     private static final List<Map.Entry<PropertySpec, Method>> PROPERTY_SETTERS =
             AbstractDataSourceModeler.loadPropertySpecSetters(DB2SimpleDataSource.class).stream()
-                    .filter(Db2DataSourceModeler::isPreDefinedPropertySpecSetter)
+                    .filter(spec -> !isPreDefinedPropertySpecSetter(spec))
                     .toList();
 
     private static final List<? extends PropertySpec> PROPERTIES = PROPERTY_SETTERS.stream()

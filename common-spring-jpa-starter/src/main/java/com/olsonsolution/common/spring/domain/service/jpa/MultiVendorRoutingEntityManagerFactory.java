@@ -38,8 +38,6 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
             entry(SqlVendors.MARIADB, MariaDBDialect.class)
     );
 
-    private boolean initialized;
-
     private final String schema;
 
     private final JpaProperties jpaProperties;
@@ -96,11 +94,7 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     @Override
     public boolean isOpen() {
-        if (initialized) {
-            return false;
-        } else {
-            return getDelegate().isOpen();
-        }
+        return getDelegate().isOpen();
     }
 
     @Override

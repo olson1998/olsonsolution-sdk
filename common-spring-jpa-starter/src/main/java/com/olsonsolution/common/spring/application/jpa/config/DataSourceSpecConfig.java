@@ -53,8 +53,12 @@ public class DataSourceSpecConfig {
     }
 
     @Bean
-    public DataSourceSpecManager jpaEnvironmentManager() {
-        return new MultiVendorManagingService();
+    public DataSourceSpecManager jpaEnvironmentManager(JpaProperties jpaProperties) {
+        DataSourceSpec initSpec = jpaProperties.getInitialDataSourceSpecProperties();
+        DataSourceSpecManager dataSourceSpecManager = new MultiVendorManagingService();
+        dataSourceSpecManager.setInitDataSourceSpec(initSpec);
+        dataSourceSpecManager.setCurrent(initSpec);
+        return dataSourceSpecManager;
     }
 
     @Bean

@@ -2,14 +2,10 @@ package com.olsonsolution.common.data.domain.service.sql;
 
 import com.olsonsolution.common.data.domain.port.repository.sql.DataSourceFactory;
 import com.olsonsolution.common.data.domain.port.repository.sql.DataSourceModeler;
-import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSource;
-import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSourceUsers;
-import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlPermission;
-import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlUser;
+import com.olsonsolution.common.data.domain.port.stereotype.sql.*;
 import lombok.RequiredArgsConstructor;
 
 import javax.sql.DataSource;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
@@ -23,9 +19,14 @@ public class DataSourceFabricatingService implements DataSourceFactory {
 
     @Override
     public DataSource fabricate(SqlDataSource sqlDataSource, SqlPermission permission) {
-        SqlUser user = selectUser(sqlDataSource, permission);
-        Objects.requireNonNull(user);
-        return null;
+        if (dataSourceModelers != null && !dataSourceModelers.isEmpty()) {
+            DataSourceModeler modeler = selectModeler(sqlDataSource.getVendor());
+            SqlUser user = selectUser(sqlDataSource, permission);
+            Objects.requireNonNull(user);
+            return modeler.create(sqlDataSource, user, permission);
+        } else {
+            throw new IllegalArgumentException("No data modelers specified");
+        }
     }
 
     private SqlUser selectUser(SqlDataSource sqlDataSource,
@@ -50,6 +51,15 @@ public class DataSourceFabricatingService implements DataSourceFactory {
             }
         }
         return user;
+    }
+
+    private DataSourceModeler selectModeler(SqlVendor vendor) {
+        return dataSourceModelers.stream()
+                .filter(dataSourceModeler -> dataSourceModeler.getSqlVendor().isSameAs(vendor))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Sql modeler not registered for vendor: '%s'".formatted(vendor)
+                ));
     }
 
 }

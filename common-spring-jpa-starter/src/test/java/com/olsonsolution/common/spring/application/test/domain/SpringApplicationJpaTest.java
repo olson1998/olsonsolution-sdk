@@ -26,9 +26,6 @@ class SpringApplicationJpaTest extends SpringApplicationJpaTestBase {
     private DataSourceSpecManager dataSourceSpecManager;
 
     @Autowired
-    private RoutingJpaConfigurer routingJpaConfigurer;
-
-    @Autowired
     private ClassicTeamJpaRepository classicTeamJpaRepository;
 
     @Autowired
@@ -65,6 +62,9 @@ class SpringApplicationJpaTest extends SpringApplicationJpaTestBase {
         ClassicTeamData persistedTeam = classicTeamJpaRepository.save(classicTeamData);
         ClassicPersonData persistedPerson = classicPersonJpaRepository.save(classicPersonData);
         ClassicPersonTeamBoundData persistedBound = classicPersonTeamBoundJpaRepository.save(bound);
+        classicTeamJpaRepository.existsById(persistedTeam.getId());
+        classicPersonJpaRepository.existsById(persistedPerson.getId());
+        classicPersonTeamBoundJpaRepository.existsById(persistedBound.getValueMap());
     }
 
 }
