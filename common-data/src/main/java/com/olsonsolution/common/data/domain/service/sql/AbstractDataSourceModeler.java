@@ -67,7 +67,10 @@ public abstract class AbstractDataSourceModeler implements DataSourceModeler {
     }
 
     private static PropertySpec createPropertySpec(@NonNull Method method) {
-        String property = StringUtils.uncapitalize(StringUtils.substringAfter(method.getName(), "set"));
+        String property = StringUtils.substringAfter(method.getName(), "set");
+        if(!StringUtils.isAllUpperCase(property)) {
+            property = StringUtils.uncapitalize(property);
+        }
         Type propertyType = method.getGenericParameterTypes()[0];
         if (propertyType instanceof Class<?> javaClass &&
                 (Boolean.TYPE.equals(javaClass) || Boolean.class.equals(javaClass))) {

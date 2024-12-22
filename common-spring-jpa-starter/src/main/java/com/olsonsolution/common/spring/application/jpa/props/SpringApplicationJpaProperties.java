@@ -10,14 +10,26 @@ import org.springframework.context.annotation.Configuration;
 import java.time.Duration;
 import java.util.*;
 
+import static com.olsonsolution.common.spring.application.jpa.props.SpringApplicationJpaProperties.SPRING_APPLICATION_JPA_PROPERTIES_PREFIX;
+
 @Data
 @Configuration
-@ConfigurationProperties(prefix = "common.spring.application.jpa")
-public class ApplicationJpaProperties implements JpaProperties {
+@ConfigurationProperties(prefix = SPRING_APPLICATION_JPA_PROPERTIES_PREFIX)
+public class SpringApplicationJpaProperties implements JpaProperties {
 
+    public static final String SPRING_APPLICATION_PROPERTIES_PREFIX = "spring.application";
+
+    public static final String SPRING_APPLICATION_JPA_PROPERTIES_PREFIX = SPRING_APPLICATION_PROPERTIES_PREFIX + ".jpa";
+
+    private final Map<String, String> dataSourceModeler = new HashMap<>();
+    private final List<ApplicationEntityManagerFactoryProperties> entityManagerFactory = new ArrayList<>();
     private final ApplicationDefaultDataSourceProperties defaultDataSource = new ApplicationDefaultDataSourceProperties();
     private final ApplicationRoutingDataSourceProperties routingDataSource = new ApplicationRoutingDataSourceProperties();
-    private final List<ApplicationEntityManagerFactoryProperties> entityManagerFactory = new ArrayList<>();
+
+    @Override
+    public Map<String, String> getDataSourceModelersEnableProperties() {
+        return dataSourceModeler;
+    }
 
     @Override
     public DefaultDataSourceSpecProperties getDefaultDataSourceProperties() {

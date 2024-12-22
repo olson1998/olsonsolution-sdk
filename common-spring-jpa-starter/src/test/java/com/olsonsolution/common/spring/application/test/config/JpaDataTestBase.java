@@ -5,8 +5,8 @@ import com.microsoft.sqlserver.jdbc.SQLServerException;
 import com.olsonsolution.common.spring.application.caching.InMemoryCachingConfig;
 import com.olsonsolution.common.spring.application.jpa.config.DataSourceSpecConfig;
 import com.olsonsolution.common.spring.application.jpa.config.RoutingJpaConfigurer;
-import com.olsonsolution.common.spring.application.jpa.props.ApplicationJpaProperties;
-import com.olsonsolution.common.spring.application.jpa.props.DestinationDataSourceProperties;
+import com.olsonsolution.common.spring.application.jpa.props.SpringApplicationJpaProperties;
+import com.olsonsolution.common.spring.application.jpa.props.SpringApplicationRoutingProperties;
 import com.olsonsolution.common.spring.domain.model.datasource.DataSourceSpecification;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,8 +41,8 @@ import static com.olsonsolution.common.spring.application.test.config.JpaDataTes
         DataSourceSpecConfig.class,
         RoutingJpaConfigurer.class,
         InMemoryCachingConfig.class,
-        ApplicationJpaProperties.class,
-        DestinationDataSourceProperties.class
+        SpringApplicationJpaProperties.class,
+        SpringApplicationRoutingProperties.class
 })
 @ExtendWith(SpringExtension.class)
 @Testcontainers(disabledWithoutDocker = true)

@@ -1,12 +1,13 @@
 package com.olsonsolution.common.data.domain.service.sql;
 
+import com.ibm.db2.jcc.DB2SimpleDataSource;
+import com.olsonsolution.common.data.domain.model.sql.SqlVendors;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSource;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlPermission;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlUser;
 import com.olsonsolution.common.property.domain.port.stereotype.PropertySpec;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.postgresql.ds.PGSimpleDataSource;
 
 import javax.sql.DataSource;
 import java.lang.reflect.Method;
@@ -16,52 +17,46 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.olsonsolution.common.data.domain.model.sql.SqlPermissions.RO;
-import static com.olsonsolution.common.data.domain.model.sql.SqlVendors.POSTGRESQL;
+import static com.olsonsolution.common.data.domain.model.sql.SqlVendors.DB2;
 
 @Slf4j
-public class PostgresDataSourceModeler extends AbstractDataSourceModeler {
+public class Db2DataSourceModeler extends AbstractDataSourceModeler {
 
     private static final String[] IGNORE_PROPERTIES = new String[]{
             "serverName",
-            "serverNames",
-            "port",
-            "portNumbers",
+            "portNumber",
+            "databaseName",
             "user",
             "password",
-            "readOnly",
-            "databaseName",
-            "logWriter",
-            "uRL",
-            "url"
+            "readOnly"
     };
 
     private static final List<Map.Entry<PropertySpec, Method>> PROPERTY_SETTERS =
-            AbstractDataSourceModeler.loadPropertySpecSetters(PGSimpleDataSource.class).stream()
-                    .filter(PostgresDataSourceModeler::isPreDefinedPropertySpecSetter)
+            AbstractDataSourceModeler.loadPropertySpecSetters(DB2SimpleDataSource.class).stream()
+                    .filter(Db2DataSourceModeler::isPreDefinedPropertySpecSetter)
                     .toList();
 
     private static final List<? extends PropertySpec> PROPERTIES = PROPERTY_SETTERS.stream()
             .map(Map.Entry::getKey)
             .toList();
 
-    public PostgresDataSourceModeler() {
-        super(POSTGRESQL, log, Collections.emptyList(), PROPERTIES);
+    public Db2DataSourceModeler() {
+        super(DB2, log, Collections.emptyList(), PROPERTIES);
     }
 
     @Override
     public DataSource create(SqlDataSource dataSource, SqlUser user, SqlPermission permission) {
-        PGSimpleDataSource postgresDataSource = new PGSimpleDataSource();
-        postgresDataSource.setServerNames(new String[]{dataSource.getHost()});
-        Optional.ofNullable(dataSource.getPort()).map(port -> new int[]{port})
-                .ifPresent(postgresDataSource::setPortNumbers);
-        postgresDataSource.setDatabaseName(dataSource.getDatabase());
-        postgresDataSource.setUser(user.getUsername());
-        postgresDataSource.setPassword(user.getPassword());
+        DB2SimpleDataSource db2DataSource = new DB2SimpleDataSource();
+        db2DataSource.setServerName(db2DataSource.getServerName());
+        Optional.ofNullable(dataSource.getPort()).ifPresent(db2DataSource::setPortNumber);
+        db2DataSource.setDatabaseName(db2DataSource.getDatabaseName());
+        db2DataSource.setUser(user.getUsername());
+        db2DataSource.setPassword(user.getPassword());
         if (permission.isSameAs(RO)) {
-            postgresDataSource.setReadOnly(true);
+            db2DataSource.setReadOnly(true);
         }
-        loadProperties(postgresDataSource, dataSource, PROPERTY_SETTERS);
-        return postgresDataSource;
+        loadProperties(db2DataSource, dataSource, PROPERTY_SETTERS);
+        return db2DataSource;
     }
 
     private static boolean isPreDefinedPropertySpecSetter(Map.Entry<PropertySpec, Method> propertySpecSetter) {
