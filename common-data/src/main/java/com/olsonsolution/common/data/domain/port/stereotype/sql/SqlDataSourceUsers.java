@@ -1,15 +1,15 @@
 package com.olsonsolution.common.data.domain.port.stereotype.sql;
 
-import java.util.Collection;
+import java.util.List;
 
 public interface SqlDataSourceUsers {
 
-    Collection<? extends SqlUser> getReadOnly();
+    List<? extends SqlUser> getReadOnly();
 
-    Collection<? extends SqlUser> getWriteOnly();
+    List<? extends SqlUser> getWriteOnly();
 
-    Collection<? extends SqlUser> getReadWrite();
+    List<? extends SqlUser> getReadWrite();
 
-    Collection<? extends SqlUser> getReadWriteExecute();
+    List<? extends SqlUser> getReadWriteExecute();
 
 }

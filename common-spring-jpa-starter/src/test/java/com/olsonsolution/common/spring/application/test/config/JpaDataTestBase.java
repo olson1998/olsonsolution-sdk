@@ -12,10 +12,7 @@ import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSou
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.postgresql.ds.PGSimpleDataSource;
-import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.event.EventListener;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -29,14 +26,14 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.olsonsolution.common.data.domain.model.sql.SqlPermissions.RWX;
-import static com.olsonsolution.common.data.domain.model.sql.SqlVendors.*;
+import static com.olsonsolution.common.data.domain.model.sql.SqlVendors.POSTGRESQL;
+import static com.olsonsolution.common.data.domain.model.sql.SqlVendors.SQL_SERVER;
 import static com.olsonsolution.common.spring.application.test.config.JpaDataTestBase.POSTGRES_DATASOURCE;
 
 @EnableConfigurationProperties
@@ -47,8 +44,9 @@ import static com.olsonsolution.common.spring.application.test.config.JpaDataTes
         ApplicationJpaProperties.class,
         DestinationDataSourceProperties.class
 })
+@ExtendWith(SpringExtension.class)
 @Testcontainers(disabledWithoutDocker = true)
-@SpringBootTest(classes = JpaDataTestBase.class, properties = {
+@TestPropertySource(properties = {
         "common.spring.application.jpa.entity-manager-factory.0.schema=company_structure",
         "common.spring.application.jpa.entity-manager-factory.0.log-sql=true",
         "common.spring.application.jpa.entity-manager-factory.0.format-sql=true",
@@ -278,7 +276,7 @@ public abstract class JpaDataTestBase {
         sqlServerDataSource.setEncrypt("false");
         sqlServerDataSource.setTrustServerCertificate(true);
         try (Connection connection = sqlServerDataSource.getConnection();
-            PreparedStatement query = connection.prepareStatement("CREATE DATABASE " + DATABASE)) {
+             PreparedStatement query = connection.prepareStatement("CREATE DATABASE " + DATABASE)) {
             query.execute();
         }
         sqlServerDataSource = new SQLServerDataSource();
@@ -290,8 +288,8 @@ public abstract class JpaDataTestBase {
         sqlServerDataSource.setEncrypt("false");
         sqlServerDataSource.setTrustServerCertificate(true);
         try (Connection connection = sqlServerDataSource.getConnection()) {
-            for(String sql : SQL_SERVER_QUERIES) {
-                try(PreparedStatement query = connection.prepareStatement(sql)) {
+            for (String sql : SQL_SERVER_QUERIES) {
+                try (PreparedStatement query = connection.prepareStatement(sql)) {
                     query.execute();
                 }
             }
@@ -320,8 +318,8 @@ public abstract class JpaDataTestBase {
         postgresDataSource.setUser(username);
         postgresDataSource.setPassword(password);
         try (Connection connection = postgresDataSource.getConnection()) {
-            for(String sql : POSTGRES_QUERIES) {
-                try(PreparedStatement query = connection.prepareStatement(sql)) {
+            for (String sql : POSTGRES_QUERIES) {
+                try (PreparedStatement query = connection.prepareStatement(sql)) {
                     query.execute();
                 }
             }

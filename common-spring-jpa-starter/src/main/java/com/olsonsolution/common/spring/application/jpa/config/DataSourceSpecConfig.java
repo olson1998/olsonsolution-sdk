@@ -4,9 +4,9 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.olsonsolution.common.caching.application.props.DefaultCachingProperties;
 import com.olsonsolution.common.caching.domain.port.props.CachingProperties;
 import com.olsonsolution.common.caching.domain.port.repository.InMemoryCacheFactory;
-import com.olsonsolution.common.data.domain.port.repository.sql.DataSourceModeler;
+import com.olsonsolution.common.data.domain.port.repository.sql.DataSourceFactory;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSource;
-import com.olsonsolution.common.data.domain.service.sql.DataSourceModelingService;
+import com.olsonsolution.common.data.domain.service.sql.DataSourceFabricatingService;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.RoutingDataSourceProperties;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DataSourceEvictor;
@@ -48,8 +48,8 @@ public class DataSourceSpecConfig {
     }
 
     @Bean
-    public DataSourceModeler dataSourceModeler() {
-        return new DataSourceModelingService();
+    public DataSourceFactory dataSourceModeler() {
+        return new DataSourceFabricatingService();
     }
 
     @Bean(ROUTING_DATA_SOURCE_EVICTOR_BEAN)
@@ -89,7 +89,7 @@ public class DataSourceSpecConfig {
     @Bean
     public RoutingDataSourceManager routingDataSourceManager(JpaProperties jpaProperties,
                                                              InMemoryCacheFactory inMemoryCacheFactory,
-                                                             DataSourceModeler dataSourceModeler,
+                                                             DataSourceFactory dataSourceFactory,
                                                              DataSourceEvictor dataSourceEvictor,
                                                              DestinationDataSourceManager destinationDataSourceManager) {
         RoutingDataSourceProperties routingDataSourceProperties = jpaProperties.getRoutingDataSourceProperties();
@@ -105,7 +105,7 @@ public class DataSourceSpecConfig {
                 inMemoryCacheFactory.fabricate(cachingProperties, null, null, dataSourceEvictor);
         return new RoutingDataSourceManagingService(
                 jpaProperties.getDefaultDataSourceProperties().getSpecProperties(),
-                dataSourceModeler,
+                dataSourceFactory,
                 destinationDataSourceManager,
                 destinationDataSourceCache
         );

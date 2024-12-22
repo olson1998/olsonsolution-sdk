@@ -4,4 +4,6 @@ public interface SqlPermission {
 
     String name();
 
+    boolean isSameAs(SqlPermission permission);
+
 }

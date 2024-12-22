@@ -31,8 +31,8 @@
         </dependency>
 
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
+            <groupId>com.olsonsolution.common</groupId>
+            <artifactId>common-properties</artifactId>
         </dependency>
 
         <dependency>

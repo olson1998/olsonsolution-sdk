@@ -4,4 +4,6 @@ public interface SqlVendor {
 
     String name();
 
+    boolean isSameAs(SqlVendor vendor);
+
 }

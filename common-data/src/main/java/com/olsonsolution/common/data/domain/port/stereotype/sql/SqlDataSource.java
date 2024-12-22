@@ -1,6 +1,6 @@
 package com.olsonsolution.common.data.domain.port.stereotype.sql;
 
-import java.util.Properties;
+import java.util.Map;
 
 public interface SqlDataSource {
 
@@ -14,6 +14,6 @@ public interface SqlDataSource {
 
     SqlDataSourceUsers getUsers();
 
-    Properties getProperties();
+    Map<String, String> getProperties();
 
 }

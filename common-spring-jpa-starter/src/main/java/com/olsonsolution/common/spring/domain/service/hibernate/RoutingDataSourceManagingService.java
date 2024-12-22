@@ -1,7 +1,7 @@
 package com.olsonsolution.common.spring.domain.service.hibernate;
 
 import com.github.benmanes.caffeine.cache.Cache;
-import com.olsonsolution.common.data.domain.port.repository.sql.DataSourceModeler;
+import com.olsonsolution.common.data.domain.port.repository.sql.DataSourceFactory;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSource;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.hibernate.RoutingDataSourceManager;
@@ -17,7 +17,7 @@ public class RoutingDataSourceManagingService extends RoutingDataSourceManager {
 
     private final DataSourceSpec defaultDataSourceSpec;
 
-    private final DataSourceModeler dataSourceModeler;
+    private final DataSourceFactory dataSourceFactory;
 
     private final DestinationDataSourceManager destinationDataSourceManager;
 
@@ -41,7 +41,7 @@ public class RoutingDataSourceManagingService extends RoutingDataSourceManager {
     private DataSource createDataSource(DataSourceSpec dataSourceSpec) {
         String name = dataSourceSpec.getName();
         SqlDataSource sqlDataSource = destinationDataSourceManager.obtainSqlDataSource(name);
-        DataSource dataSource = dataSourceModeler.createDataSource(sqlDataSource, dataSourceSpec.getPermission());
+        DataSource dataSource = dataSourceFactory.createDataSource(sqlDataSource, dataSourceSpec.getPermission());
         log.info(
                 "Routing data source spec: {} vendor: '{}' host: '{}'",
                 dataSourceSpec,

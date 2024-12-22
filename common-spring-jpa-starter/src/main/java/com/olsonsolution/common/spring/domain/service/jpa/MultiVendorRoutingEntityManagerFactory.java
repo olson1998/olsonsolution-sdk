@@ -38,6 +38,8 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
             entry(SqlVendors.MARIADB, MariaDBDialect.class)
     );
 
+    private boolean initialized;
+
     private final String schema;
 
     private final JpaProperties jpaProperties;
@@ -64,22 +66,38 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     @Override
     public EntityManager createEntityManager() {
-        return getDelegate().createEntityManager();
+        if (initialized) {
+            return getDelegate().createEntityManager();
+        } else {
+            return new InitializingEntityManager();
+        }
     }
 
     @Override
     public EntityManager createEntityManager(Map map) {
-        return getDelegate().createEntityManager(map);
+        if (initialized) {
+            return getDelegate().createEntityManager(map);
+        } else {
+            return new InitializingEntityManager();
+        }
     }
 
     @Override
     public EntityManager createEntityManager(SynchronizationType synchronizationType) {
-        return getDelegate().createEntityManager(synchronizationType);
+        if (initialized) {
+            return getDelegate().createEntityManager(synchronizationType);
+        } else {
+            return new InitializingEntityManager();
+        }
     }
 
     @Override
     public EntityManager createEntityManager(SynchronizationType synchronizationType, Map map) {
-        return getDelegate().createEntityManager(synchronizationType, map);
+        if (initialized) {
+            return getDelegate().createEntityManager(synchronizationType, map);
+        } else {
+            return new InitializingEntityManager();
+        }
     }
 
     @Override
@@ -89,12 +107,20 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     @Override
     public Metamodel getMetamodel() {
-        return getDelegate().getMetamodel();
+        if (initialized) {
+            return getDelegate().getMetamodel();
+        } else {
+            return new InitializingMetamodel();
+        }
     }
 
     @Override
     public boolean isOpen() {
-        return getDelegate().isOpen();
+        if (initialized) {
+            return false;
+        } else {
+            return getDelegate().isOpen();
+        }
     }
 
     @Override
@@ -123,7 +149,11 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     @Override
     public PersistenceUnitUtil getPersistenceUnitUtil() {
-        return getDelegate().getPersistenceUnitUtil();
+        if (initialized) {
+            return getDelegate().getPersistenceUnitUtil();
+        } else {
+            return new InitializingPersistenceUnitUtil();
+        }
     }
 
     @Override
