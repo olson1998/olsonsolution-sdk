@@ -42,8 +42,6 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     private final JpaProperties jpaProperties;
 
-    private final ThreadLocal<SqlVendor> currentSqlVendor;
-
     private final RoutingDataSourceManager routingDataSourceManager;
 
     private final CurrentTenantIdentifierResolver<DataSourceSpec> dataSourceSpecResolver;
@@ -57,7 +55,6 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
         super(dataSourceSpecManager, destinationDataSourceManager);
         this.schema = schema;
         this.jpaProperties = jpaProperties;
-        this.currentSqlVendor = new ThreadLocal<>();
         this.routingDataSourceManager = routingDataSourceManager;
         this.dataSourceSpecResolver = dataSourceSpecResolver;
     }
