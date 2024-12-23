@@ -20,7 +20,7 @@ import com.olsonsolution.common.spring.domain.service.datasource.DataSourceEvict
 import com.olsonsolution.common.spring.domain.service.datasource.DestinationDataSourceManagingService;
 import com.olsonsolution.common.spring.domain.service.hibernate.DataSourceSpecIdentifierResolver;
 import com.olsonsolution.common.spring.domain.service.datasource.RoutingDataSourceManagingService;
-import com.olsonsolution.common.spring.domain.service.jpa.MultiVendorManagingService;
+import com.olsonsolution.common.spring.domain.service.datasource.DataSourceSpecificationManagingService;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -51,7 +51,7 @@ public class DataSourceSpecConfig {
 
     @Bean
     public DataSourceSpecManager jpaEnvironmentManager() {
-        DataSourceSpecManager manager = new MultiVendorManagingService();
+        DataSourceSpecManager manager = new DataSourceSpecificationManagingService();
         manager.setThreadLocal(H2_INITIAL_DATA_SOURCE_SPEC);
         return manager;
     }

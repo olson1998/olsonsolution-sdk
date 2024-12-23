@@ -27,7 +27,7 @@ import static org.hibernate.cfg.MultiTenancySettings.MULTI_TENANT_CONNECTION_PRO
 import static org.hibernate.cfg.MultiTenancySettings.MULTI_TENANT_IDENTIFIER_RESOLVER;
 
 @Slf4j
-public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfigurable<EntityManagerFactory> implements EntityManagerFactoryDelegate {
+public class MultiVendorEntityManagerFactory extends MultiVendorJpaConfigurable<EntityManagerFactory> implements EntityManagerFactoryDelegate {
 
     private static final String PERSISTENCE_UNIT_NAME = "%s_%s_jpa_env";
 
@@ -46,12 +46,12 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     private final CurrentTenantIdentifierResolver<DataSourceSpec> dataSourceSpecResolver;
 
-    public MultiVendorRoutingEntityManagerFactory(String schema,
-                                                  JpaProperties jpaProperties,
-                                                  DataSourceSpecManager dataSourceSpecManager,
-                                                  DestinationDataSourceManager destinationDataSourceManager,
-                                                  RoutingDataSourceManager routingDataSourceManager,
-                                                  CurrentTenantIdentifierResolver<DataSourceSpec> dataSourceSpecResolver) {
+    public MultiVendorEntityManagerFactory(String schema,
+                                           JpaProperties jpaProperties,
+                                           DataSourceSpecManager dataSourceSpecManager,
+                                           DestinationDataSourceManager destinationDataSourceManager,
+                                           RoutingDataSourceManager routingDataSourceManager,
+                                           CurrentTenantIdentifierResolver<DataSourceSpec> dataSourceSpecResolver) {
         super(dataSourceSpecManager, destinationDataSourceManager);
         this.schema = schema;
         this.jpaProperties = jpaProperties;

@@ -9,7 +9,7 @@ import com.olsonsolution.common.spring.domain.port.repository.jpa.EntityManagerF
 import com.olsonsolution.common.spring.domain.port.repository.jpa.PlatformTransactionManagerDelegate;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import com.olsonsolution.common.spring.domain.service.jpa.MultiVendorPlatformTransactionManager;
-import com.olsonsolution.common.spring.domain.service.jpa.MultiVendorRoutingEntityManagerFactory;
+import com.olsonsolution.common.spring.domain.service.jpa.MultiVendorEntityManagerFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
@@ -86,7 +86,7 @@ public class MultiVendorJpaConfigurer implements InitializingBean, ApplicationCo
         Set<String> jpaRepoPackagesToScan = properties.getJpaRepositoryProperties().getPackagesToScan();
         String entityMangerFactoryBean = schema + "_entityManagerFactory";
         String platformTransactionManagerBean = schema + "_platformTransactionManager";
-        EntityManagerFactoryDelegate entityManagerFactoryDelegate = new MultiVendorRoutingEntityManagerFactory(
+        EntityManagerFactoryDelegate entityManagerFactoryDelegate = new MultiVendorEntityManagerFactory(
                 schema,
                 jpaProperties,
                 dataSourceSpecManager,
