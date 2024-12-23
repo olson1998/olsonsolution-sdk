@@ -16,29 +16,25 @@ abstract class MultiVendorJpaConfigurable<D> implements DataSourceSpecConfigurab
 
     private final ThreadLocal<D> threadLocalDelegate;
 
-    protected final DataSourceSpecManager dataSourceSpecManager;
-
     private final DestinationDataSourceManager destinationDataSourceManager;
 
-    public MultiVendorJpaConfigurable(DataSourceSpecManager dataSourceSpecManager,
-                                      DestinationDataSourceManager destinationDataSourceManager) {
+    public MultiVendorJpaConfigurable(DestinationDataSourceManager destinationDataSourceManager) {
         this.delegatesRegistry = new ConcurrentHashMap<>();
         this.threadLocalDelegate = new ThreadLocal<>();
-        this.dataSourceSpecManager = dataSourceSpecManager;
         this.destinationDataSourceManager = destinationDataSourceManager;
     }
 
     @Override
+    public void setThreadLocal(DataSourceSpec dataSourceSpec) {
+        SqlDataSource sqlDataSource = destinationDataSourceManager.obtainSqlDataSource(dataSourceSpec.getName());
+        SqlVendor sqlVendor = sqlDataSource.getVendor();
+        D delegate = obtainDelegate(sqlVendor);
+        threadLocalDelegate.set(delegate);
+    }
+
+    @Override
     public D getDelegate() {
-        D delegate = threadLocalDelegate.get();
-        if (delegate == null) {
-            DataSourceSpec dataSourceSpec = dataSourceSpecManager.getThreadLocal();
-            SqlDataSource sqlDataSource = destinationDataSourceManager.obtainSqlDataSource(dataSourceSpec.getName());
-            SqlVendor sqlVendor = sqlDataSource.getVendor();
-            delegate = obtainDelegate(sqlVendor);
-            threadLocalDelegate.set(delegate);
-        }
-        return delegate;
+        return threadLocalDelegate.get();
     }
 
     @Override

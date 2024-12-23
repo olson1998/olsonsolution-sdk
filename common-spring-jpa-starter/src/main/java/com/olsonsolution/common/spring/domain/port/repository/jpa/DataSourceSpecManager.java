@@ -6,10 +6,12 @@ public interface DataSourceSpecManager {
 
     DataSourceSpec getThreadLocal();
 
-    void setCurrent(DataSourceSpec dataSourceSpec);
+    void configureThreadLocal(DataSourceSpec dataSourceSpec);
 
-    void clear();
+    void register(EntityManagerFactoryDelegate entityManagerFactory);
 
-    void setInitDataSourceSpec(DataSourceSpec dataSourceSpec);
+    void register(PlatformTransactionManagerDelegate platformTransactionManager);
+
+    void clearThreadLocalConfig();
 
 }

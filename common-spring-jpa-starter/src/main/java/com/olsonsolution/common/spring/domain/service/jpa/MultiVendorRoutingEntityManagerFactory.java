@@ -50,11 +50,10 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     public MultiVendorRoutingEntityManagerFactory(String schema,
                                                   JpaProperties jpaProperties,
-                                                  DataSourceSpecManager dataSourceSpecManager,
                                                   DestinationDataSourceManager destinationDataSourceManager,
                                                   RoutingDataSourceManager routingDataSourceManager,
                                                   CurrentTenantIdentifierResolver<DataSourceSpec> dataSourceSpecResolver) {
-        super(dataSourceSpecManager, destinationDataSourceManager);
+        super(destinationDataSourceManager);
         this.schema = schema;
         this.jpaProperties = jpaProperties;
         this.currentSqlVendor = new ThreadLocal<>();

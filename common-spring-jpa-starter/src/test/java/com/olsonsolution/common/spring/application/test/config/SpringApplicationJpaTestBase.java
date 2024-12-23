@@ -5,7 +5,7 @@ import com.microsoft.sqlserver.jdbc.SQLServerException;
 import com.olsonsolution.common.spring.application.caching.InMemoryCachingConfig;
 import com.olsonsolution.common.spring.application.jpa.config.DataSourceModelersConfig;
 import com.olsonsolution.common.spring.application.jpa.config.DataSourceSpecConfig;
-import com.olsonsolution.common.spring.application.jpa.config.RoutingJpaConfigurer;
+import com.olsonsolution.common.spring.application.jpa.config.MultiVendorJpaConfigurer;
 import com.olsonsolution.common.spring.application.jpa.config.SqlVendorPropertiesResolverConfig;
 import com.olsonsolution.common.spring.application.jpa.props.SpringApplicationDestinationDataSourceProperties;
 import com.olsonsolution.common.spring.application.jpa.props.SpringApplicationJpaProperties;
@@ -45,7 +45,7 @@ import static com.olsonsolution.common.spring.application.test.config.SpringAppl
 @ContextConfiguration(classes = {
         DataSourceSpecConfig.class,
         DataSourceModelersConfig.class,
-        RoutingJpaConfigurer.class,
+        MultiVendorJpaConfigurer.class,
         InMemoryCachingConfig.class,
         SqlVendorPropertiesResolverConfig.class,
         SpringApplicationJpaProperties.class,

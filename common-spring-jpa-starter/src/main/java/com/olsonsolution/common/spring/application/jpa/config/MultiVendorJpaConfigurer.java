@@ -4,6 +4,7 @@ import com.olsonsolution.common.spring.domain.port.props.jpa.EntityManagerFactor
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.hibernate.RoutingDataSourceManager;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecConfigurable;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.EntityManagerFactoryDelegate;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.PlatformTransactionManagerDelegate;
@@ -15,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
@@ -33,13 +35,14 @@ import org.springframework.data.repository.config.RepositoryConfigurationDelegat
 import org.springframework.data.repository.config.RepositoryConfigurationExtension;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
-public class RoutingJpaConfigurer implements InitializingBean, ApplicationContextAware {
+public class MultiVendorJpaConfigurer implements InitializingBean, ApplicationContextAware {
 
     public static final String LOG_MSG = "Jpa configured for schema: '{}'\n" +
             "Entity manager factory: '{}' instance: '{}'\n" +
@@ -89,17 +92,17 @@ public class RoutingJpaConfigurer implements InitializingBean, ApplicationContex
         EntityManagerFactoryDelegate entityManagerFactoryDelegate = new MultiVendorRoutingEntityManagerFactory(
                 schema,
                 jpaProperties,
-                dataSourceSpecManager,
                 destinationDataSourceManager,
                 routingDataSourceManager,
                 dataSourceSpecResolver
         );
         PlatformTransactionManagerDelegate platformTransactionManagerDelegate =
                 new MultiVendorPlatformTransactionManager(
-                        dataSourceSpecManager,
                         destinationDataSourceManager,
                         entityManagerFactoryDelegate
                 );
+        dataSourceSpecManager.register(entityManagerFactoryDelegate);
+        dataSourceSpecManager.register(platformTransactionManagerDelegate);
         beanFactory.registerSingleton(entityMangerFactoryBean, entityManagerFactoryDelegate);
         beanFactory.registerSingleton(platformTransactionManagerBean, platformTransactionManagerDelegate);
         log.info(
