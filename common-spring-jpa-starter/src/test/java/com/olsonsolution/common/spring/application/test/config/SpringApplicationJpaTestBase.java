@@ -247,8 +247,10 @@ public abstract class SpringApplicationJpaTestBase {
         registry.add(prefix + ".0.data-source.database", () -> DATABASE);
         registry.add(prefix + ".0.data-source.user.rwx.0.username", SQL_SERVER_CONTAINER::getUsername);
         registry.add(prefix + ".0.data-source.user.rwx.0.password", SQL_SERVER_CONTAINER::getPassword);
-        registry.add(prefix + ".0.data-source.properties.trust-server-certificate", () -> "true");
-        registry.add(prefix + ".0.data-source.properties.encrypt", () -> "false");
+        registry.add(prefix + ".0.data-source.property.0.name", () -> "trustServerCertificate");
+        registry.add(prefix + ".0.data-source.property.0.value", () -> "true");
+        registry.add(prefix + ".0.data-source.property.1.name", () -> "encrypt");
+        registry.add(prefix + ".0.data-source.property.1.value", () -> "false");
         registry.add(prefix + ".1.name", () -> POSTGRES_DATASOURCE);
         registry.add(prefix + ".1.data-source.vendor", POSTGRESQL::name);
         registry.add(prefix + ".1.data-source.host", POSTGRES_CONTAINER::getHost);

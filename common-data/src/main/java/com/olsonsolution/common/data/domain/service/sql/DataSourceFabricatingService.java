@@ -22,7 +22,7 @@ public class DataSourceFabricatingService implements DataSourceFactory {
         if (dataSourceModelers != null && !dataSourceModelers.isEmpty()) {
             DataSourceModeler modeler = selectModeler(sqlDataSource.getVendor());
             SqlUser user = selectUser(sqlDataSource, permission);
-            Objects.requireNonNull(user);
+            Objects.requireNonNull(user, "user with role %s not found".formatted(permission));
             return modeler.create(sqlDataSource, user, permission);
         } else {
             throw new IllegalArgumentException("No data modelers specified");

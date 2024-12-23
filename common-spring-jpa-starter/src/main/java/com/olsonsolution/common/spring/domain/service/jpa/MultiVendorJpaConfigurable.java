@@ -10,7 +10,7 @@ import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSou
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-abstract class MultiVendorJpaConfigurable<D> implements DataSourceSpecConfigurable<D> {
+abstract class MultiVendorJpaConfigurable<D> implements DataSourceSpecConfigurable<D>, AutoCloseable {
 
     protected final Map<SqlVendor, D> delegatesRegistry;
 
@@ -46,6 +46,15 @@ abstract class MultiVendorJpaConfigurable<D> implements DataSourceSpecConfigurab
                 closeableDelegate.close();
             }
             delegatesRegistry.remove(vendor);
+        }
+    }
+
+    @Override
+    public void close() throws Exception {
+        for(Map.Entry<SqlVendor, D> registedDelegate : delegatesRegistry.entrySet()) {
+            if(registedDelegate.getValue() instanceof AutoCloseable closeableDelegate) {
+                closeableDelegate.close();
+            }
         }
     }
 

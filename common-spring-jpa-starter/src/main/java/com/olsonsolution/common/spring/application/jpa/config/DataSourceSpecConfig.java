@@ -104,7 +104,7 @@ public class DataSourceSpecConfig {
         Cache<DataSourceSpec, DataSource> destinationDataSourceCache =
                 inMemoryCacheFactory.fabricate(cachingProperties, null, null, dataSourceEvictor);
         return new RoutingDataSourceManagingService(
-                jpaProperties.getDefaultDataSourceSpecProperties(),
+                H2_INITIAL_DATA_SOURCE_SPEC,
                 dataSourceFactory,
                 destinationDataSourceManager,
                 destinationDataSourceCache
@@ -118,13 +118,12 @@ public class DataSourceSpecConfig {
                 null,
                 "INITIAL_DB"
         );
-        SpringApplicationDestinationDataSourceProperties.DataSourceProperties.UsersProperties.UserProperties user =
-                new SpringApplicationDestinationDataSourceProperties.DataSourceProperties
-                .UsersProperties.UserProperties(
+        SpringApplicationDestinationDataSourceProperties.UserProperties user =
+                new SpringApplicationDestinationDataSourceProperties.UserProperties(
                 "user",
                 "pass"
         );
-        dataSource.getUser().getRo().add(user);
+        dataSource.getUser().getRwx().add(user);
         return dataSource;
     }
 

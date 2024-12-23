@@ -26,13 +26,7 @@ public class SpringApplicationJpaProperties implements JpaProperties {
 
     private final Map<String, String> dataSourceModeler = new HashMap<>();
     private final List<ApplicationEntityManagerFactoryProperties> config = new ArrayList<>();
-    private final DataSourceSpecification defaultDataSource = new DataSourceSpecification();
     private final ApplicationRoutingDataSourceProperties routingDataSource = new ApplicationRoutingDataSourceProperties();
-
-    @Override
-    public DataSourceSpec getDefaultDataSourceSpecProperties() {
-        return defaultDataSource;
-    }
 
     @Override
     public Map<String, String> getDataSourceModelersEnableProperties() {
