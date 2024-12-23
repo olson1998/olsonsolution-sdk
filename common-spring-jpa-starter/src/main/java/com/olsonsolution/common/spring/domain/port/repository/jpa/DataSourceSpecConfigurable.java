@@ -6,10 +6,6 @@ public interface DataSourceSpecConfigurable<D> {
 
     D getDelegate();
 
-    void setThreadLocal(DataSourceSpec dataSourceSpec);
-
     void unregisterDelegate(DataSourceSpec dataSourceSpec) throws Exception;
-
-    void clear();
 
 }

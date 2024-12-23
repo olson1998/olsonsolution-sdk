@@ -92,17 +92,17 @@ public class MultiVendorJpaConfigurer implements InitializingBean, ApplicationCo
         EntityManagerFactoryDelegate entityManagerFactoryDelegate = new MultiVendorRoutingEntityManagerFactory(
                 schema,
                 jpaProperties,
+                dataSourceSpecManager,
                 destinationDataSourceManager,
                 routingDataSourceManager,
                 dataSourceSpecResolver
         );
         PlatformTransactionManagerDelegate platformTransactionManagerDelegate =
                 new MultiVendorPlatformTransactionManager(
+                        dataSourceSpecManager,
                         destinationDataSourceManager,
                         entityManagerFactoryDelegate
                 );
-        dataSourceSpecManager.register(entityManagerFactoryDelegate);
-        dataSourceSpecManager.register(platformTransactionManagerDelegate);
         beanFactory.registerSingleton(entityMangerFactoryBean, entityManagerFactoryDelegate);
         beanFactory.registerSingleton(platformTransactionManagerBean, platformTransactionManagerDelegate);
         log.info(

@@ -2,6 +2,7 @@ package com.olsonsolution.common.spring.domain.service.jpa;
 
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlVendor;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.EntityManagerFactoryDelegate;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.PlatformTransactionManagerDelegate;
 import lombok.extern.slf4j.Slf4j;
@@ -16,9 +17,10 @@ public class MultiVendorPlatformTransactionManager extends MultiVendorJpaConfigu
 
     private final EntityManagerFactoryDelegate entityManagerFactoryDelegate;
 
-    public MultiVendorPlatformTransactionManager(DestinationDataSourceManager destinationDataSourceManager,
+    public MultiVendorPlatformTransactionManager(DataSourceSpecManager dataSourceSpecManager,
+                                                 DestinationDataSourceManager destinationDataSourceManager,
                                                  EntityManagerFactoryDelegate entityManagerFactoryDelegate) {
-        super(destinationDataSourceManager);
+        super(dataSourceSpecManager, destinationDataSourceManager);
         this.entityManagerFactoryDelegate = entityManagerFactoryDelegate;
     }
 

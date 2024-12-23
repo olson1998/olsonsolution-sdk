@@ -26,23 +26,17 @@ public class SpringApplicationJpaProperties implements JpaProperties {
 
     private final Map<String, String> dataSourceModeler = new HashMap<>();
     private final List<ApplicationEntityManagerFactoryProperties> config = new ArrayList<>();
-    private final InitialDataSourceSpecProperties initialDataSource = new InitialDataSourceSpecProperties();
-    private final ApplicationDefaultDataSourceProperties defaultDataSource = new ApplicationDefaultDataSourceProperties();
+    private final DataSourceSpecification defaultDataSource = new DataSourceSpecification();
     private final ApplicationRoutingDataSourceProperties routingDataSource = new ApplicationRoutingDataSourceProperties();
 
     @Override
-    public DataSourceSpec getInitialDataSourceSpecProperties() {
-        return initialDataSource;
+    public DataSourceSpec getDefaultDataSourceSpecProperties() {
+        return defaultDataSource;
     }
 
     @Override
     public Map<String, String> getDataSourceModelersEnableProperties() {
         return dataSourceModeler;
-    }
-
-    @Override
-    public DefaultDataSourceSpecProperties getDefaultDataSourceProperties() {
-        return defaultDataSource;
     }
 
     @Override
@@ -53,17 +47,6 @@ public class SpringApplicationJpaProperties implements JpaProperties {
     @Override
     public Collection<? extends EntityManagerFactoryProperties> getEntityManagerFactoryProperties() {
         return config;
-    }
-
-    @Data
-    public static class InitialDataSourceSpecProperties implements DataSourceSpec {
-
-        private SqlVendor vendor;
-
-        private String name;
-
-        private SqlPermission permission = RWX;
-
     }
 
     @Data

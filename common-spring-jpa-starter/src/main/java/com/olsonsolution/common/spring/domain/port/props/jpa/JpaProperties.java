@@ -7,11 +7,9 @@ import java.util.Map;
 
 public interface JpaProperties {
 
-    DataSourceSpec getInitialDataSourceSpecProperties();
+    DataSourceSpec getDefaultDataSourceSpecProperties();
 
     Map<String, String> getDataSourceModelersEnableProperties();
-
-    DefaultDataSourceSpecProperties getDefaultDataSourceProperties();
 
     RoutingDataSourceProperties getRoutingDataSourceProperties();
 

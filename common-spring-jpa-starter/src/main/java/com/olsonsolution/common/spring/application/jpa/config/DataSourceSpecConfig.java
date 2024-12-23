@@ -6,7 +6,6 @@ import com.olsonsolution.common.caching.domain.port.props.CachingProperties;
 import com.olsonsolution.common.caching.domain.port.repository.InMemoryCacheFactory;
 import com.olsonsolution.common.data.domain.port.repository.sql.DataSourceFactory;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSource;
-import com.olsonsolution.common.data.domain.service.sql.DataSourceFabricatingService;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.RoutingDataSourceProperties;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DataSourceEvictor;
@@ -53,8 +52,10 @@ public class DataSourceSpecConfig {
     }
 
     @Bean
-    public DataSourceSpecManager jpaEnvironmentManager() {
-        return new MultiVendorManagingService();
+    public DataSourceSpecManager jpaEnvironmentManager(JpaProperties jpaProperties) {
+        DataSourceSpecManager manager = new MultiVendorManagingService();
+        manager.setThreadLocal(jpaProperties.getDefaultDataSourceSpecProperties());
+        return manager;
     }
 
     @Bean
@@ -99,7 +100,7 @@ public class DataSourceSpecConfig {
         Cache<DataSourceSpec, DataSource> destinationDataSourceCache =
                 inMemoryCacheFactory.fabricate(cachingProperties, null, null, dataSourceEvictor);
         return new RoutingDataSourceManagingService(
-                jpaProperties.getDefaultDataSourceProperties().getSpecProperties(),
+                jpaProperties.getDefaultDataSourceSpecProperties(),
                 dataSourceFactory,
                 destinationDataSourceManager,
                 destinationDataSourceCache

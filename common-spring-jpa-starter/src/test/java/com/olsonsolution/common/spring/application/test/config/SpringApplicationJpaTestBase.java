@@ -54,8 +54,9 @@ import static com.olsonsolution.common.spring.application.test.config.SpringAppl
 @ExtendWith(SpringExtension.class)
 @Testcontainers(disabledWithoutDocker = true)
 @TestPropertySource(properties = {
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".initial-data-source.name=" + SQL_SERVER_DATASOURCE,
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".initial-data-source.vendor=SQL_SERVER",
+        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".default-data-source.name=" + SQL_SERVER_DATASOURCE,
+        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".default-data-source.vendor=SQL_SERVER",
+        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".default-data-source.permissions=RWX",
         SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".sql-server=enabled",
         SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".postgresql=enabled",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.schema=company",

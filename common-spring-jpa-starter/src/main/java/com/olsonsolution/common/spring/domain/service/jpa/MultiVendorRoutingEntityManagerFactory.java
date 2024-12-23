@@ -50,10 +50,11 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
 
     public MultiVendorRoutingEntityManagerFactory(String schema,
                                                   JpaProperties jpaProperties,
+                                                  DataSourceSpecManager dataSourceSpecManager,
                                                   DestinationDataSourceManager destinationDataSourceManager,
                                                   RoutingDataSourceManager routingDataSourceManager,
                                                   CurrentTenantIdentifierResolver<DataSourceSpec> dataSourceSpecResolver) {
-        super(destinationDataSourceManager);
+        super(dataSourceSpecManager, destinationDataSourceManager);
         this.schema = schema;
         this.jpaProperties = jpaProperties;
         this.currentSqlVendor = new ThreadLocal<>();
@@ -138,12 +139,6 @@ public class MultiVendorRoutingEntityManagerFactory extends MultiVendorJpaConfig
     @Override
     public <T> void addNamedEntityGraph(String graphName, EntityGraph<T> entityGraph) {
         getDelegate().addNamedEntityGraph(graphName, entityGraph);
-    }
-
-    @Override
-    public void clear() {
-        currentSqlVendor.remove();
-        super.clear();
     }
 
     @Override

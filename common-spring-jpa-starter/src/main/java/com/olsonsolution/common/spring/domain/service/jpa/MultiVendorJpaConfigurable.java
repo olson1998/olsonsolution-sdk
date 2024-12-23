@@ -14,27 +14,26 @@ abstract class MultiVendorJpaConfigurable<D> implements DataSourceSpecConfigurab
 
     protected final Map<SqlVendor, D> delegatesRegistry;
 
-    private final ThreadLocal<D> threadLocalDelegate;
+    private final DataSourceSpecManager dataSourceSpecManager;
 
     private final DestinationDataSourceManager destinationDataSourceManager;
 
-    public MultiVendorJpaConfigurable(DestinationDataSourceManager destinationDataSourceManager) {
+    public MultiVendorJpaConfigurable(DataSourceSpecManager dataSourceSpecManager,
+                                      DestinationDataSourceManager destinationDataSourceManager) {
+        this.dataSourceSpecManager = dataSourceSpecManager;
         this.delegatesRegistry = new ConcurrentHashMap<>();
-        this.threadLocalDelegate = new ThreadLocal<>();
         this.destinationDataSourceManager = destinationDataSourceManager;
     }
 
     @Override
-    public void setThreadLocal(DataSourceSpec dataSourceSpec) {
-        SqlDataSource sqlDataSource = destinationDataSourceManager.obtainSqlDataSource(dataSourceSpec.getName());
-        SqlVendor sqlVendor = sqlDataSource.getVendor();
-        D delegate = obtainDelegate(sqlVendor);
-        threadLocalDelegate.set(delegate);
-    }
-
-    @Override
     public D getDelegate() {
-        return threadLocalDelegate.get();
+        DataSourceSpec dataSourceSpec = dataSourceSpecManager.getThreadLocal();
+        if (dataSourceSpec == null) {
+            throw new IllegalStateException("No DataSourceSpec configured for current thread");
+        }
+        SqlDataSource sqlDataSource = destinationDataSourceManager.obtainSqlDataSource(dataSourceSpec.getName());
+        SqlVendor vendor = sqlDataSource.getVendor();
+        return obtainDelegate(vendor);
     }
 
     @Override
@@ -50,15 +49,10 @@ abstract class MultiVendorJpaConfigurable<D> implements DataSourceSpecConfigurab
         }
     }
 
-    @Override
-    public void clear() {
-        threadLocalDelegate.remove();
-    }
-
     protected D obtainDelegate(SqlVendor sqlVendor) {
         return delegatesRegistry.computeIfAbsent(
                 sqlVendor,
-                c -> constructDelegate(sqlVendor)
+                this::constructDelegate
         );
     }
 

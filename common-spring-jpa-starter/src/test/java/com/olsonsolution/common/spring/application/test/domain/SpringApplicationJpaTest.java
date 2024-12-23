@@ -32,14 +32,14 @@ class SpringApplicationJpaTest extends SpringApplicationJpaTestBase {
 
     @AfterEach
     void clearDataSourceSpec() {
-        dataSourceSpecManager.clearThreadLocalConfig();
+        dataSourceSpecManager.clearThreadLocal();
     }
 
     @ParameterizedTest
     @MethodSource("com.olsonsolution.common.spring.application.test.config.SpringApplicationJpaTestBase" +
             "#dataSourceSpecStream")
     void shouldSaveTestData(DataSourceSpec spec) {
-        dataSourceSpecManager.configureThreadLocal(spec);
+        dataSourceSpecManager.setThreadLocal(spec);
         saveTestData();
     }
 
