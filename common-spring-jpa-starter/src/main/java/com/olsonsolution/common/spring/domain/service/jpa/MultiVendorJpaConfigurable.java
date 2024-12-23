@@ -31,14 +31,14 @@ abstract class MultiVendorJpaConfigurable<D> implements DataSourceSpecConfigurab
         if (dataSourceSpec == null) {
             throw new IllegalStateException("No DataSourceSpec configured for current thread");
         }
-        SqlDataSource sqlDataSource = destinationDataSourceManager.obtainSqlDataSource(dataSourceSpec.getName());
+        SqlDataSource sqlDataSource = destinationDataSourceManager.obtainSqlDataSource(dataSourceSpec);
         SqlVendor vendor = sqlDataSource.getVendor();
         return obtainDelegate(vendor);
     }
 
     @Override
     public void unregisterDelegate(DataSourceSpec dataSourceSpec) throws Exception {
-        SqlDataSource sqlDataSource = destinationDataSourceManager.obtainSqlDataSource(dataSourceSpec.getName());
+        SqlDataSource sqlDataSource = destinationDataSourceManager.obtainSqlDataSource(dataSourceSpec);
         SqlVendor vendor = sqlDataSource.getVendor();
         D delegate = delegatesRegistry.get(vendor);
         if (delegate != null) {

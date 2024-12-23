@@ -6,45 +6,43 @@ import com.olsonsolution.common.caching.domain.port.props.CachingProperties;
 import com.olsonsolution.common.caching.domain.port.repository.InMemoryCacheFactory;
 import com.olsonsolution.common.data.domain.port.repository.sql.DataSourceFactory;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSource;
+import com.olsonsolution.common.spring.application.jpa.props.SpringApplicationDestinationDataSourceProperties;
+import com.olsonsolution.common.spring.domain.model.datasource.DataSourceSpecification;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.RoutingDataSourceProperties;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DataSourceEvictor;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceProvider;
-import com.olsonsolution.common.spring.domain.port.repository.hibernate.RoutingDataSourceManager;
+import com.olsonsolution.common.spring.domain.port.repository.datasource.RoutingDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import com.olsonsolution.common.spring.domain.service.datasource.DataSourceEvictionService;
 import com.olsonsolution.common.spring.domain.service.datasource.DestinationDataSourceManagingService;
 import com.olsonsolution.common.spring.domain.service.hibernate.DataSourceSpecIdentifierResolver;
-import com.olsonsolution.common.spring.domain.service.hibernate.RoutingDataSourceManagingService;
+import com.olsonsolution.common.spring.domain.service.datasource.RoutingDataSourceManagingService;
 import com.olsonsolution.common.spring.domain.service.jpa.MultiVendorManagingService;
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import javax.sql.DataSource;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
+
+import static com.olsonsolution.common.data.domain.model.sql.SqlPermissions.RWX;
+import static com.olsonsolution.common.data.domain.model.sql.SqlVendors.H2;
 
 @Configuration
 public class DataSourceSpecConfig {
 
-    public static final String ROUTING_DATA_SOURCE_EXECUTOR_BEAN = "routingDataSourceExecutor";
     public static final String ROUTING_DATA_SOURCE_EVICTOR_BEAN = "routingDataSourceEvictor";
 
-    @Bean(ROUTING_DATA_SOURCE_EXECUTOR_BEAN)
-    public Executor executor(JpaProperties jpaProperties) {
-        ThreadFactory threadFactory = new BasicThreadFactory.Builder()
-                .namingPattern("routing-data-source-%s")
-                .build();
-        return Executors.newFixedThreadPool(
-                jpaProperties.getRoutingDataSourceProperties().getMaxDataSources(),
-                threadFactory
-        );
-    }
+    private static final String H2_INITIAL_DATA_SOURCE_NAME = "H2_INITIAL";
+
+    private static final DataSourceSpec H2_INITIAL_DATA_SOURCE_SPEC = DataSourceSpecification.builder()
+            .name(H2_INITIAL_DATA_SOURCE_NAME)
+            .permissions(RWX)
+            .build();
+
+    private static final SqlDataSource H2_INITIAL_DATA_SOURCE = initialDataSource();
 
     @Bean(ROUTING_DATA_SOURCE_EVICTOR_BEAN)
     public DataSourceEvictor routingDataSourceEvictor() {
@@ -52,14 +50,15 @@ public class DataSourceSpecConfig {
     }
 
     @Bean
-    public DataSourceSpecManager jpaEnvironmentManager(JpaProperties jpaProperties) {
+    public DataSourceSpecManager jpaEnvironmentManager() {
         DataSourceSpecManager manager = new MultiVendorManagingService();
-        manager.setThreadLocal(jpaProperties.getDefaultDataSourceSpecProperties());
+        manager.setThreadLocal(H2_INITIAL_DATA_SOURCE_SPEC);
         return manager;
     }
 
     @Bean
-    public CurrentTenantIdentifierResolver<DataSourceSpec> jpaEnvironmentCurrentTenantIdentifierResolver(DataSourceSpecManager dataSourceSpecManager) {
+    public CurrentTenantIdentifierResolver<DataSourceSpec> jpaEnvironmentCurrentTenantIdentifierResolver(
+            DataSourceSpecManager dataSourceSpecManager) {
         return new DataSourceSpecIdentifierResolver(dataSourceSpecManager);
 
     }
@@ -79,7 +78,12 @@ public class DataSourceSpecConfig {
         );
         Cache<String, SqlDataSource> sqlDataSourceCache =
                 inMemoryCacheFactory.fabricate(cachingProperties, null, null, null);
-        return new DestinationDataSourceManagingService(destinationDataSourceProvider, sqlDataSourceCache);
+        return new DestinationDataSourceManagingService(
+                H2_INITIAL_DATA_SOURCE_SPEC,
+                H2_INITIAL_DATA_SOURCE,
+                destinationDataSourceProvider,
+                sqlDataSourceCache
+        );
     }
 
     @Bean
@@ -105,6 +109,23 @@ public class DataSourceSpecConfig {
                 destinationDataSourceManager,
                 destinationDataSourceCache
         );
+    }
+
+    private static SqlDataSource initialDataSource() {
+        var dataSource = new SpringApplicationDestinationDataSourceProperties.DataSourceProperties(
+                H2,
+                "mem",
+                null,
+                "INITIAL_DB"
+        );
+        SpringApplicationDestinationDataSourceProperties.DataSourceProperties.UsersProperties.UserProperties user =
+                new SpringApplicationDestinationDataSourceProperties.DataSourceProperties
+                .UsersProperties.UserProperties(
+                "user",
+                "pass"
+        );
+        dataSource.getUser().getRo().add(user);
+        return dataSource;
     }
 
 }

@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 
 public enum SqlVendors implements SqlVendor {
 
+    H2,
     SQL_SERVER,
     POSTGRESQL,
     DB2,

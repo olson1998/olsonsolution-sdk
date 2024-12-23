@@ -1,4 +1,4 @@
-package com.olsonsolution.common.spring.domain.port.repository.hibernate;
+package com.olsonsolution.common.spring.domain.port.repository.datasource;
 
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import org.hibernate.engine.jdbc.connections.spi.AbstractDataSourceBasedMultiTenantConnectionProviderImpl;

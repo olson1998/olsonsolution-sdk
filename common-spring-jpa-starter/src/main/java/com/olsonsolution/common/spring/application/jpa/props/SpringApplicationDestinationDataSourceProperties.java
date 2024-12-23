@@ -101,7 +101,7 @@ public class SpringApplicationDestinationDataSourceProperties implements Destina
 
         private String database;
 
-        private final SqlDataSourceUsers user = new UsersProperties();
+        private final UsersProperties user = new UsersProperties();
 
         @Getter
         private final Map<String, String> properties = new HashMap<>();

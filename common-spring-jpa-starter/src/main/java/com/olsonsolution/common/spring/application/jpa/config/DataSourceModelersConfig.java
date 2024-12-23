@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.Collection;
 import java.util.List;
 
+import static com.olsonsolution.common.data.domain.model.sql.SqlVendors.H2;
 import static com.olsonsolution.common.spring.application.jpa.props.SpringApplicationJpaProperties.SPRING_APPLICATION_JPA_PROPERTIES_PREFIX;
 
 @Slf4j
@@ -22,6 +23,11 @@ public class DataSourceModelersConfig {
 
     public static final String SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX =
             SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".data-source-modeler";
+
+    @Bean
+    public DataSourceModeler h2DataSourceModeler() {
+        return new H2DataSourceModeler();
+    }
 
     @Bean
     @ConditionalOnProperty(
@@ -62,6 +68,7 @@ public class DataSourceModelersConfig {
     @Bean
     public DataSourceFactory dataSourceFactory(List<DataSourceModeler> dataSourceModelers) {
         Collection<SqlVendor> enabledVendors = dataSourceModelers.stream()
+                .filter(modeler -> !H2.isSameAs(modeler.getSqlVendor()))
                 .map(DataSourceModeler::getSqlVendor)
                 .toList();
         if(enabledVendors.isEmpty()) {
