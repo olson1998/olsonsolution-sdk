@@ -21,6 +21,7 @@
         <module>common-data</module>
         <module>common-spring-caching</module>
         <module>common-properties</module>
+        <module>common-ssl</module>
     </modules>
 
     <properties>
