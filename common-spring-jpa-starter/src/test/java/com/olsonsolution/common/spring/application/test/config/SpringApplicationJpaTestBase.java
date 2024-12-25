@@ -58,11 +58,13 @@ import static com.olsonsolution.common.spring.application.test.config.SpringAppl
 @TestPropertySource(properties = {
         SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".sql-server=enabled",
         SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".postgresql=enabled",
+        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.name=classic",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.schema=company",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.log-sql=true",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.format-sql-log=true",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.entity.packages-to-scan.0=" + CLASSIC_ENTITY_PACKAGE,
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.repository.packages-to-scan.0=" + CLASSIC_REPO_PACKAGE,
+        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.name=modern",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.schema=company_structure",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.log-sql=true",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.format-sql-log=true",

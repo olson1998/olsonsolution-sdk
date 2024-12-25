@@ -1,6 +1,6 @@
 package com.olsonsolution.common.spring.application.jpa.config;
 
-import com.olsonsolution.common.spring.domain.port.props.jpa.EntityManagerFactoryProperties;
+import com.olsonsolution.common.spring.domain.port.props.jpa.JpaSpecProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.RoutingDataSourceManager;
@@ -60,14 +60,10 @@ public class MultiVendorJpaConfigurer implements InitializingBean, ApplicationCo
 
     private final CurrentTenantIdentifierResolver<DataSourceSpec> dataSourceSpecResolver;
 
-    private final Map<String, EntityManagerFactoryDelegate> entityManagerFactories = new HashMap<>();
-
-    private final Map<String, PlatformTransactionManagerDelegate> platformTransactionManagers = new HashMap<>();
-
     @Override
     public void afterPropertiesSet() throws Exception {
         ConfigurableListableBeanFactory beanFactory = applicationContext.getBeanFactory();
-        for (EntityManagerFactoryProperties properties : jpaProperties.getEntityManagerFactoryProperties()) {
+        for (JpaSpecProperties properties : jpaProperties.getJpaSpecificationsProperties()) {
             registerJpaBeansDelegates(properties, beanFactory);
         }
     }
@@ -79,15 +75,17 @@ public class MultiVendorJpaConfigurer implements InitializingBean, ApplicationCo
         }
     }
 
-    private void registerJpaBeansDelegates(EntityManagerFactoryProperties properties,
+    private void registerJpaBeansDelegates(JpaSpecProperties properties,
                                            ConfigurableListableBeanFactory beanFactory) {
         String schema = properties.getSchema();
+        String name = properties.getName();
         Set<String> entityPackagesToScan = properties.getEntityProperties().getPackagesToScan();
         Set<String> jpaRepoPackagesToScan = properties.getJpaRepositoryProperties().getPackagesToScan();
-        String entityMangerFactoryBean = schema + "_entityManagerFactory";
-        String platformTransactionManagerBean = schema + "_platformTransactionManager";
+        String entityMangerFactoryBean = name + "_entityManagerFactory";
+        String platformTransactionManagerBean = name + "_platformTransactionManager";
         EntityManagerFactoryDelegate entityManagerFactoryDelegate = new MultiVendorEntityManagerFactory(
                 schema,
+                name,
                 jpaProperties,
                 dataSourceSpecManager,
                 destinationDataSourceManager,
@@ -111,8 +109,6 @@ public class MultiVendorJpaConfigurer implements InitializingBean, ApplicationCo
                 platformTransactionManagerDelegate,
                 entityPackagesToScan
         );
-        entityManagerFactories.put(schema, entityManagerFactoryDelegate);
-        platformTransactionManagers.put(schema, platformTransactionManagerDelegate);
         enableJpaRepositories(schema, entityMangerFactoryBean, platformTransactionManagerBean, jpaRepoPackagesToScan);
     }
 

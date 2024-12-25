@@ -2,7 +2,9 @@ package com.olsonsolution.common.spring.domain.port.props.jpa;
 
 import java.util.Properties;
 
-public interface EntityManagerFactoryProperties {
+public interface JpaSpecProperties {
+
+    String getName();
 
     String getSchema();
 

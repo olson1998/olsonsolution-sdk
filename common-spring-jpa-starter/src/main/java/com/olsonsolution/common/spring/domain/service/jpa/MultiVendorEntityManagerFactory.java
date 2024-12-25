@@ -2,7 +2,7 @@ package com.olsonsolution.common.spring.domain.service.jpa;
 
 import com.olsonsolution.common.data.domain.model.sql.SqlVendors;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlVendor;
-import com.olsonsolution.common.spring.domain.port.props.jpa.EntityManagerFactoryProperties;
+import com.olsonsolution.common.spring.domain.port.props.jpa.JpaSpecProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.RoutingDataSourceManager;
@@ -13,6 +13,7 @@ import jakarta.persistence.*;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.metamodel.Metamodel;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.hibernate.dialect.*;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
@@ -29,7 +30,7 @@ import static org.hibernate.cfg.MultiTenancySettings.MULTI_TENANT_IDENTIFIER_RES
 @Slf4j
 public class MultiVendorEntityManagerFactory extends MultiVendorJpaConfigurable<EntityManagerFactory> implements EntityManagerFactoryDelegate {
 
-    private static final String PERSISTENCE_UNIT_NAME = "%s_%s_jpa_env";
+    private static final String PERSISTENCE_UNIT_NAME = "%s_%s_jpa";
 
     private static final Map<SqlVendor, Class<? extends Dialect>> SQL_VENDOR_DIALECT = Map.ofEntries(
             entry(SqlVendors.SQL_SERVER, SQLServerDialect.class),
@@ -40,6 +41,8 @@ public class MultiVendorEntityManagerFactory extends MultiVendorJpaConfigurable<
 
     private final String schema;
 
+    private final String jpaSpecName;
+
     private final JpaProperties jpaProperties;
 
     private final RoutingDataSourceManager routingDataSourceManager;
@@ -47,6 +50,7 @@ public class MultiVendorEntityManagerFactory extends MultiVendorJpaConfigurable<
     private final CurrentTenantIdentifierResolver<DataSourceSpec> dataSourceSpecResolver;
 
     public MultiVendorEntityManagerFactory(String schema,
+                                           String jpaSpecName,
                                            JpaProperties jpaProperties,
                                            DataSourceSpecManager dataSourceSpecManager,
                                            DestinationDataSourceManager destinationDataSourceManager,
@@ -54,6 +58,7 @@ public class MultiVendorEntityManagerFactory extends MultiVendorJpaConfigurable<
                                            CurrentTenantIdentifierResolver<DataSourceSpec> dataSourceSpecResolver) {
         super(dataSourceSpecManager, destinationDataSourceManager);
         this.schema = schema;
+        this.jpaSpecName = jpaSpecName;
         this.jpaProperties = jpaProperties;
         this.routingDataSourceManager = routingDataSourceManager;
         this.dataSourceSpecResolver = dataSourceSpecResolver;
@@ -140,12 +145,12 @@ public class MultiVendorEntityManagerFactory extends MultiVendorJpaConfigurable<
 
     @Override
     protected EntityManagerFactory constructDelegate(SqlVendor sqlVendor) {
-        String unitName = PERSISTENCE_UNIT_NAME.formatted(sqlVendor.name(), schema);
-        Optional<? extends EntityManagerFactoryProperties> properties = findEntityManagerFactoryProperties();
+        String unitName = PERSISTENCE_UNIT_NAME.formatted(schema, sqlVendor.name());
+        Optional<? extends JpaSpecProperties> properties = findEntityManagerFactoryProperties();
         Properties jpaProperties = properties
                 .map(p -> resolveProperties(p, sqlVendor))
                 .orElseGet(Properties::new);
-        String[] basePackages = properties.map(EntityManagerFactoryProperties::getEntityProperties)
+        String[] basePackages = properties.map(JpaSpecProperties::getEntityProperties)
                 .map(props -> props.getPackagesToScan()
                         .toArray(String[]::new))
                 .orElseGet(() -> new String[0]);
@@ -157,30 +162,29 @@ public class MultiVendorEntityManagerFactory extends MultiVendorJpaConfigurable<
         entityManagerFactoryBean.afterPropertiesSet();
         EntityManagerFactory entityManagerFactory = Objects.requireNonNull(entityManagerFactoryBean.getObject());
         log.info(
-                "Created entity manager factory, schema: '{}' SQL vendor: '{}' base packages: {}",
-                schema, sqlVendor, Arrays.toString(basePackages)
+                "Created entity manager factory, Jpa Spec: '{}' schema: '{}' SQL vendor: '{}'",
+                jpaSpecName, schema, sqlVendor
         );
         return entityManagerFactory;
     }
 
-    private Properties resolveProperties(EntityManagerFactoryProperties entityManagerFactoryProperties,
+    private Properties resolveProperties(JpaSpecProperties jpaSpecProperties,
                                          SqlVendor vendor) {
-        Properties properties = new Properties(entityManagerFactoryProperties.getProperties());
-        properties.put(DEFAULT_SCHEMA, entityManagerFactoryProperties.getSchema());
-        properties.put(SHOW_SQL, entityManagerFactoryProperties.isLogSql());
-        properties.put(FORMAT_SQL, entityManagerFactoryProperties.isFormatSqlLog());
+        Properties properties = new Properties(jpaSpecProperties.getProperties());
+        properties.put(DEFAULT_SCHEMA, jpaSpecProperties.getSchema());
+        properties.put(SHOW_SQL, jpaSpecProperties.isLogSql());
+        properties.put(FORMAT_SQL, jpaSpecProperties.isFormatSqlLog());
         properties.put(MULTI_TENANT_CONNECTION_PROVIDER, routingDataSourceManager);
         properties.put(MULTI_TENANT_IDENTIFIER_RESOLVER, dataSourceSpecResolver);
-        properties.put("initialization-mode", "never");
         Optional.ofNullable(SQL_VENDOR_DIALECT.get(vendor))
                 .ifPresent(dialect -> properties.put(DIALECT, dialect));
         return properties;
     }
 
-    private Optional<? extends EntityManagerFactoryProperties> findEntityManagerFactoryProperties() {
-        return jpaProperties.getEntityManagerFactoryProperties()
+    private Optional<? extends JpaSpecProperties> findEntityManagerFactoryProperties() {
+        return jpaProperties.getJpaSpecificationsProperties()
                 .stream()
-                .filter(props -> schema.equals(props.getSchema()))
+                .filter(props -> StringUtils.equals(jpaSpecName, props.getName()))
                 .findFirst();
     }
 

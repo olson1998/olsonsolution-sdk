@@ -1,14 +1,13 @@
 package com.olsonsolution.common.spring.application.jpa.props;
 
-import com.olsonsolution.common.spring.domain.model.datasource.DataSourceSpecification;
-import com.olsonsolution.common.spring.domain.port.props.jpa.EntityManagerFactoryProperties;
+import com.olsonsolution.common.spring.domain.port.props.jpa.JpaSpecProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.PackagesToScanProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.RoutingDataSourceProperties;
-import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.validation.annotation.Validated;
 
 import java.time.Duration;
 import java.util.*;
@@ -16,6 +15,7 @@ import java.util.*;
 import static com.olsonsolution.common.spring.application.jpa.props.SpringApplicationJpaProperties.SPRING_APPLICATION_JPA_PROPERTIES_PREFIX;
 
 @Data
+@Validated
 @Configuration
 @ConfigurationProperties(prefix = SPRING_APPLICATION_JPA_PROPERTIES_PREFIX)
 public class SpringApplicationJpaProperties implements JpaProperties {
@@ -25,7 +25,7 @@ public class SpringApplicationJpaProperties implements JpaProperties {
     public static final String SPRING_APPLICATION_JPA_PROPERTIES_PREFIX = SPRING_APPLICATION_PROPERTIES_PREFIX + ".jpa";
 
     private final Map<String, String> dataSourceModeler = new HashMap<>();
-    private final List<ApplicationEntityManagerFactoryProperties> config = new ArrayList<>();
+    private final List<ApplicationJpaSpecProperties> config = new ArrayList<>();
     private final ApplicationRoutingDataSourceProperties routingDataSource = new ApplicationRoutingDataSourceProperties();
 
     @Override
@@ -39,7 +39,7 @@ public class SpringApplicationJpaProperties implements JpaProperties {
     }
 
     @Override
-    public Collection<? extends EntityManagerFactoryProperties> getEntityManagerFactoryProperties() {
+    public Collection<? extends JpaSpecProperties> getJpaSpecificationsProperties() {
         return config;
     }
 
@@ -53,7 +53,9 @@ public class SpringApplicationJpaProperties implements JpaProperties {
     }
 
     @Data
-    public static class ApplicationEntityManagerFactoryProperties implements EntityManagerFactoryProperties {
+    public static class ApplicationJpaSpecProperties implements JpaSpecProperties {
+
+        private String name = "Jpa";
 
         private String schema;
 

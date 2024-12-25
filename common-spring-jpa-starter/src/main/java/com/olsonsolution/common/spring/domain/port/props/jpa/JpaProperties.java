@@ -9,6 +9,6 @@ public interface JpaProperties {
 
     RoutingDataSourceProperties getRoutingDataSourceProperties();
 
-    Collection<? extends EntityManagerFactoryProperties> getEntityManagerFactoryProperties();
+    Collection<? extends JpaSpecProperties> getJpaSpecificationsProperties();
 
 }
