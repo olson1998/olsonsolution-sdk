@@ -16,6 +16,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 class SpringApplicationJpaTest extends SpringApplicationJpaTestBase {
 
     @Autowired
@@ -43,7 +45,7 @@ class SpringApplicationJpaTest extends SpringApplicationJpaTestBase {
         saveTestData();
     }
 
-    @Transactional(transactionManager = "COMPANY_platformTransactionManager")
+    @Transactional
     void saveTestData() {
         ClassicTeamData classicTeamData = new ClassicTeamData(1L, "TEAM1", "team1");
         ClassicPersonData classicPersonData = new ClassicPersonData(1L, "John", "Doe", "M");
@@ -54,9 +56,15 @@ class SpringApplicationJpaTest extends SpringApplicationJpaTestBase {
         ClassicTeamData persistedTeam = classicTeamJpaRepository.save(classicTeamData);
         ClassicPersonData persistedPerson = classicPersonJpaRepository.save(classicPersonData);
         ClassicPersonTeamBoundData persistedBound = classicPersonTeamBoundJpaRepository.save(bound);
-        classicTeamJpaRepository.existsById(persistedTeam.getId());
-        classicPersonJpaRepository.existsById(persistedPerson.getId());
-        classicPersonTeamBoundJpaRepository.existsById(persistedBound.getValueMap());
+        assertThat(classicTeamJpaRepository.existsById(persistedTeam.getId())).isTrue();
+        assertThat( classicPersonJpaRepository.existsById(persistedPerson.getId())).isTrue();
+        assertThat(classicPersonTeamBoundJpaRepository.existsById(persistedBound.getValueMap())).isTrue();
+        classicPersonTeamBoundJpaRepository.deleteById(persistedBound.getValueMap());
+        classicPersonJpaRepository.deleteById(persistedPerson.getId());
+        classicTeamJpaRepository.deleteById(persistedTeam.getId());
+        assertThat(classicTeamJpaRepository.existsById(persistedTeam.getId())).isFalse();
+        assertThat( classicPersonJpaRepository.existsById(persistedPerson.getId())).isFalse();
+        assertThat(classicPersonTeamBoundJpaRepository.existsById(persistedBound.getValueMap())).isFalse();
     }
 
 }

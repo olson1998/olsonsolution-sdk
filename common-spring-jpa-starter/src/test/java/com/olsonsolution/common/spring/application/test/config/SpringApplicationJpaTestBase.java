@@ -20,6 +20,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.testcontainers.containers.MSSQLServerContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -41,6 +42,7 @@ import static com.olsonsolution.common.spring.application.jpa.props.SpringApplic
 import static com.olsonsolution.common.spring.application.jpa.props.SpringApplicationJpaProperties.SPRING_APPLICATION_JPA_PROPERTIES_PREFIX;
 import static com.olsonsolution.common.spring.application.test.config.SpringApplicationJpaTestBase.*;
 
+@EnableTransactionManagement
 @EnableConfigurationProperties
 @ContextConfiguration(classes = {
         DataSourceSpecConfig.class,
@@ -54,9 +56,6 @@ import static com.olsonsolution.common.spring.application.test.config.SpringAppl
 @ExtendWith(SpringExtension.class)
 @Testcontainers(disabledWithoutDocker = true)
 @TestPropertySource(properties = {
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".default-data-source.name=" + SQL_SERVER_DATASOURCE,
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".default-data-source.vendor=SQL_SERVER",
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".default-data-source.permissions=RWX",
         SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".sql-server=enabled",
         SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".postgresql=enabled",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.schema=company",
@@ -69,6 +68,7 @@ import static com.olsonsolution.common.spring.application.test.config.SpringAppl
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.format-sql-log=true",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.entity.packages-to-scan.0=" + ENTITY_PACKAGE,
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.repository.packages-to-scan.0=" + REPO_PACKAGE,
+        "spring.jpa.show-sql=true"
 })
 public abstract class SpringApplicationJpaTestBase {
 
