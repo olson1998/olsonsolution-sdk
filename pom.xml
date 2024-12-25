@@ -22,6 +22,7 @@
         <module>common-spring-caching</module>
         <module>common-properties</module>
         <module>common-ssl</module>
+        <module>common-spring-ssl</module>
     </modules>
 
     <properties>
@@ -68,6 +69,11 @@
             </dependency>
             <dependency>
                 <groupId>com.olsonsolution.common</groupId>
+                <artifactId>common-ssl</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.olsonsolution.common</groupId>
                 <artifactId>common-time-utils</artifactId>
                 <version>${revision}</version>
             </dependency>
@@ -104,6 +110,11 @@
             <dependency>
                 <groupId>com.olsonsolution.common</groupId>
                 <artifactId>common-spring-config</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.olsonsolution.common</groupId>
+                <artifactId>common-spring-ssl</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
