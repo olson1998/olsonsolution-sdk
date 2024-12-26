@@ -23,6 +23,7 @@
         <module>common-properties</module>
         <module>common-ssl</module>
         <module>common-spring-ssl</module>
+        <module>common-datasource-migration</module>
     </modules>
 
     <properties>
