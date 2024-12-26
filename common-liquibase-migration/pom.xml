@@ -22,7 +22,6 @@
         <dependency>
             <groupId>com.olsonsolution.common</groupId>
             <artifactId>common-datasource-migration</artifactId>
-            <version>${revision}</version>
         </dependency>
         <dependency>
             <groupId>org.liquibase</groupId>

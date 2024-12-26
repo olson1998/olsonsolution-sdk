@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -54,8 +55,8 @@ public class LiquibaseMigrationService implements MigrationService {
     private final ConcurrentMap<DataSource, CompletableFuture<Void>> ongoingDataSourceMigrations =
             new ConcurrentHashMap<>();
 
-    private final ConcurrentMap<DataSource, MigrationResultsConsumers> dataSourceMigrationsResultsConsumers =
-            new ConcurrentHashMap<>();
+    private final ConcurrentMap<DataSource, ConcurrentLinkedQueue<Consumer<MigrationResults>>>
+            dataSourceMigrationsResultsConsumers = new ConcurrentHashMap<>();
 
     @Override
     public void migrate(@NonNull DataSource dataSource, @NonNull Collection<? extends ChangeLog> changeLogs) {
@@ -114,6 +115,7 @@ public class LiquibaseMigrationService implements MigrationService {
     private Mono<MigrationResult> migrateChangeLog(@NonNull JdbcConnection jdbcConnection,
                                                    @NonNull ChangeLog changeLog) {
         MutableDateTime startTimestamp = MutableDateTime.now();
+        log.info("Liquibase migration changelog: '{}' started. Timestamp: '{}'", changeLog.getPath(), startTimestamp);
         return createLiquibase(changeLog, jdbcConnection)
                 .flatMap(liquibase -> updateLiquibase(liquibase, changeLog, startTimestamp)
                         .flatMap(migrationResult -> closeLiquibaseAndReturn(migrationResult, liquibase)))
@@ -123,7 +125,7 @@ public class LiquibaseMigrationService implements MigrationService {
                 ).onErrorResume(
                         ChangeLogMigrationException.class,
                         e -> supplyFailedResult(e, startTimestamp)
-                );
+                ).doOnNext(migrationResult -> logMigrationFinish(migrationResult, changeLog));
     }
 
     private Mono<MigrationResult> updateLiquibase(@NonNull Liquibase liquibase,
@@ -271,14 +273,23 @@ public class LiquibaseMigrationService implements MigrationService {
         return migrationResults;
     }
 
+    private void logMigrationFinish(MigrationResult migrationResult, ChangeLog changeLog) {
+        log.info(
+                "Liquibase migration changelog: '{}' finished. Timestamp: '{}'. Successful: '{}'",
+                changeLog.getPath(),
+                migrationResult.getFinishTimestamp(),
+                migrationResult.isSuccessful()
+        );
+    }
+
     private void appendResultsConsumer(@NonNull DataSource dataSource,
                                        Consumer<MigrationResults> migrationResultsConsumer) {
         if (migrationResultsConsumer != null) {
-            MigrationResultsConsumers consumers = dataSourceMigrationsResultsConsumers.computeIfAbsent(
-                    dataSource,
-                    ds -> new MigrationResultsConsumers()
-            );
-            boolean consumerAdded = consumers.add(migrationResultsConsumer);
+            ConcurrentLinkedQueue<Consumer<MigrationResults>> consumersQueue =
+                    dataSourceMigrationsResultsConsumers.computeIfAbsent(
+                            dataSource, ds -> new ConcurrentLinkedQueue<>()
+                    );
+            boolean consumerAdded = consumersQueue.add(migrationResultsConsumer);
             if (!consumerAdded) {
                 log.warn("Migration results consumer has not been added since results consumer is locked");
             }
@@ -287,9 +298,11 @@ public class LiquibaseMigrationService implements MigrationService {
 
     private void publishResults(MigrationResults migrationResults, DataSource dataSource) {
         if (dataSourceMigrationsResultsConsumers.containsKey(dataSource)) {
-            MigrationResultsConsumers consumers = dataSourceMigrationsResultsConsumers.get(dataSource);
-            consumers.forEach(consumer -> publishResults(consumer, migrationResults));
-            dataSourceMigrationsResultsConsumers.remove(dataSource);
+            ConcurrentLinkedQueue<Consumer<MigrationResults>> consumersQueue =
+                    dataSourceMigrationsResultsConsumers.get(dataSource);
+            for (Consumer<MigrationResults> consumer : consumersQueue) {
+                publishResults(consumer, migrationResults);
+            }
         }
     }
 
