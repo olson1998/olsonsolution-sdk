@@ -1,5 +1,6 @@
 package com.olsonsolution.common.migration.domain.model;
 
+import com.olsonsolution.common.migration.domain.port.stereotype.ChangeLog;
 import com.olsonsolution.common.migration.domain.port.stereotype.MigrationResult;
 import com.olsonsolution.common.migration.domain.port.stereotype.MigrationResults;
 import lombok.*;

@@ -2,8 +2,20 @@ package com.olsonsolution.common.migration.domain.port.stereotype.exception;
 
 import com.olsonsolution.common.migration.domain.port.stereotype.ChangeLog;
 
-public abstract class MigrationException extends Exception{
+import java.util.Collection;
 
-    public abstract ChangeLog getChangeLog();
+public abstract class MigrationException extends Exception {
 
+    public abstract Collection<? extends ChangeLog> getChangeLogs();
+
+    protected MigrationException() {
+    }
+
+    protected MigrationException(Throwable cause) {
+        super(cause);
+    }
+
+    protected MigrationException(String message) {
+        super(message);
+    }
 }
