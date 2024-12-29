@@ -3,6 +3,7 @@ package com.olsonsolution.common.spring.domain.service.jpa;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSource;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlVendor;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
+import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecConfigurable;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
@@ -14,15 +15,15 @@ abstract class MultiVendorJpaConfigurable<D> implements DataSourceSpecConfigurab
 
     protected final Map<SqlVendor, D> delegatesRegistry;
 
-    private final DataSourceSpecManager dataSourceSpecManager;
+    protected final DataSourceSpecManager dataSourceSpecManager;
 
-    private final DestinationDataSourceManager destinationDataSourceManager;
+    private final SqlDataSourceProvider sqlDataSourceProvider;
 
     public MultiVendorJpaConfigurable(DataSourceSpecManager dataSourceSpecManager,
-                                      DestinationDataSourceManager destinationDataSourceManager) {
+                                      SqlDataSourceProvider sqlDataSourceProvider) {
         this.dataSourceSpecManager = dataSourceSpecManager;
+        this.sqlDataSourceProvider = sqlDataSourceProvider;
         this.delegatesRegistry = new ConcurrentHashMap<>();
-        this.destinationDataSourceManager = destinationDataSourceManager;
     }
 
     @Override
@@ -31,14 +32,16 @@ abstract class MultiVendorJpaConfigurable<D> implements DataSourceSpecConfigurab
         if (dataSourceSpec == null) {
             throw new IllegalStateException("No DataSourceSpec configured for current thread");
         }
-        SqlDataSource sqlDataSource = destinationDataSourceManager.obtainSqlDataSource(dataSourceSpec);
+        SqlDataSource sqlDataSource = sqlDataSourceProvider.findDestination(dataSourceSpec.getName())
+                .orElseThrow();
         SqlVendor vendor = sqlDataSource.getVendor();
         return obtainDelegate(vendor);
     }
 
     @Override
     public void unregisterDelegate(DataSourceSpec dataSourceSpec) throws Exception {
-        SqlDataSource sqlDataSource = destinationDataSourceManager.obtainSqlDataSource(dataSourceSpec);
+        SqlDataSource sqlDataSource = sqlDataSourceProvider.findDestination(dataSourceSpec.getName())
+                .orElseThrow();
         SqlVendor vendor = sqlDataSource.getVendor();
         D delegate = delegatesRegistry.get(vendor);
         if (delegate != null) {
@@ -51,8 +54,8 @@ abstract class MultiVendorJpaConfigurable<D> implements DataSourceSpecConfigurab
 
     @Override
     public void close() throws Exception {
-        for(Map.Entry<SqlVendor, D> registedDelegate : delegatesRegistry.entrySet()) {
-            if(registedDelegate.getValue() instanceof AutoCloseable closeableDelegate) {
+        for(Map.Entry<SqlVendor, D> registeredDelegate : delegatesRegistry.entrySet()) {
+            if(registeredDelegate.getValue() instanceof AutoCloseable closeableDelegate) {
                 closeableDelegate.close();
             }
         }

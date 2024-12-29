@@ -1,6 +1,6 @@
 package com.olsonsolution.common.data.domain.service.sql;
 
-import com.olsonsolution.common.data.domain.port.repository.sql.DataSourceModeler;
+import com.olsonsolution.common.data.domain.port.repository.sql.SqlDataSourceModeler;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSource;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlVendor;
 import com.olsonsolution.common.property.domain.model.BooleanPropertySpec;
@@ -28,7 +28,7 @@ import java.util.Optional;
 import static java.util.Map.entry;
 
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-public abstract class AbstractDataSourceModeler implements DataSourceModeler {
+public abstract class AbstractDataSourceModeler implements SqlDataSourceModeler {
 
     @Getter
     private final SqlVendor sqlVendor;
@@ -50,7 +50,7 @@ public abstract class AbstractDataSourceModeler implements DataSourceModeler {
     }
 
     protected static List<Map.Entry<PropertySpec, Method>> loadPropertySpecSetters(@NonNull
-                                                                                 Class<? extends DataSource> dsc) {
+                                                                                   Class<? extends DataSource> dsc) {
         return ReflectionUtils.listSetters(dsc, true)
                 .stream()
                 .filter(method -> !method.isAnnotationPresent(Deprecated.class))
@@ -68,7 +68,7 @@ public abstract class AbstractDataSourceModeler implements DataSourceModeler {
 
     private static PropertySpec createPropertySpec(@NonNull Method method) {
         String property = StringUtils.substringAfter(method.getName(), "set");
-        if(!StringUtils.isAllUpperCase(property)) {
+        if (!StringUtils.isAllUpperCase(property)) {
             property = StringUtils.uncapitalize(property);
         }
         Type propertyType = method.getGenericParameterTypes()[0];
@@ -80,7 +80,7 @@ public abstract class AbstractDataSourceModeler implements DataSourceModeler {
             } else {
                 builder.required(false);
             }
-            return builder .name(property)
+            return builder.name(property)
                     .description(StringUtils.EMPTY)
                     .build();
         } else if (propertyType instanceof Class<?> javaClass && javaClass.isEnum()) {

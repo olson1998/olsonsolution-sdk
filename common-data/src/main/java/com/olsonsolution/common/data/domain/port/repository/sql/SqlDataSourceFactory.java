@@ -5,7 +5,7 @@ import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlPermission;
 
 import javax.sql.DataSource;
 
-public interface DataSourceFactory {
+public interface SqlDataSourceFactory {
 
     DataSource fabricate(SqlDataSource sqlDataSource, SqlPermission permission);
 

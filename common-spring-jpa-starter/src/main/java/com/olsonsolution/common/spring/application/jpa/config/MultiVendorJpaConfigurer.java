@@ -1,15 +1,15 @@
 package com.olsonsolution.common.spring.application.jpa.config;
 
-import com.olsonsolution.common.spring.domain.port.props.jpa.JpaSpecProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
+import com.olsonsolution.common.spring.domain.port.props.jpa.JpaSpecProperties;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
-import com.olsonsolution.common.spring.domain.port.repository.datasource.RoutingDataSourceManager;
+import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.EntityManagerFactoryDelegate;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.PlatformTransactionManagerDelegate;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
-import com.olsonsolution.common.spring.domain.service.jpa.MultiVendorPlatformTransactionManager;
 import com.olsonsolution.common.spring.domain.service.jpa.MultiVendorEntityManagerFactory;
+import com.olsonsolution.common.spring.domain.service.jpa.MultiVendorPlatformTransactionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
@@ -32,8 +32,6 @@ import org.springframework.data.repository.config.AnnotationRepositoryConfigurat
 import org.springframework.data.repository.config.RepositoryConfigurationDelegate;
 import org.springframework.data.repository.config.RepositoryConfigurationExtension;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 
 @Slf4j
@@ -54,9 +52,9 @@ public class MultiVendorJpaConfigurer implements InitializingBean, ApplicationCo
 
     private final DataSourceSpecManager dataSourceSpecManager;
 
-    private final DestinationDataSourceManager destinationDataSourceManager;
+    private final SqlDataSourceProvider sqlDataSourceProvider;
 
-    private final RoutingDataSourceManager routingDataSourceManager;
+    private final DestinationDataSourceManager destinationDataSourceManager;
 
     private final CurrentTenantIdentifierResolver<DataSourceSpec> dataSourceSpecResolver;
 
@@ -88,14 +86,14 @@ public class MultiVendorJpaConfigurer implements InitializingBean, ApplicationCo
                 name,
                 jpaProperties,
                 dataSourceSpecManager,
+                sqlDataSourceProvider,
                 destinationDataSourceManager,
-                routingDataSourceManager,
                 dataSourceSpecResolver
         );
         PlatformTransactionManagerDelegate platformTransactionManagerDelegate =
                 new MultiVendorPlatformTransactionManager(
                         dataSourceSpecManager,
-                        destinationDataSourceManager,
+                        sqlDataSourceProvider,
                         entityManagerFactoryDelegate
                 );
         beanFactory.registerSingleton(entityMangerFactoryBean, entityManagerFactoryDelegate);

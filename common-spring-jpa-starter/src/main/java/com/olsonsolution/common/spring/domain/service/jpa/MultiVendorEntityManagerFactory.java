@@ -5,7 +5,7 @@ import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlVendor;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaSpecProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
-import com.olsonsolution.common.spring.domain.port.repository.datasource.RoutingDataSourceManager;
+import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.EntityManagerFactoryDelegate;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
@@ -45,23 +45,20 @@ public class MultiVendorEntityManagerFactory extends MultiVendorJpaConfigurable<
 
     private final JpaProperties jpaProperties;
 
-    private final RoutingDataSourceManager routingDataSourceManager;
-
-    private final CurrentTenantIdentifierResolver<DataSourceSpec> dataSourceSpecResolver;
+    private final DestinationDataSourceManager destinationDataSourceManager;
 
     public MultiVendorEntityManagerFactory(String schema,
                                            String jpaSpecName,
                                            JpaProperties jpaProperties,
                                            DataSourceSpecManager dataSourceSpecManager,
-                                           DestinationDataSourceManager destinationDataSourceManager,
-                                           RoutingDataSourceManager routingDataSourceManager,
+                                           SqlDataSourceProvider sqlDataSourceProvider,
+                                           DestinationDataSourceManager routingDataSourceManager,
                                            CurrentTenantIdentifierResolver<DataSourceSpec> dataSourceSpecResolver) {
-        super(dataSourceSpecManager, destinationDataSourceManager);
+        super(dataSourceSpecManager, sqlDataSourceProvider);
         this.schema = schema;
         this.jpaSpecName = jpaSpecName;
         this.jpaProperties = jpaProperties;
-        this.routingDataSourceManager = routingDataSourceManager;
-        this.dataSourceSpecResolver = dataSourceSpecResolver;
+        this.destinationDataSourceManager = routingDataSourceManager;
     }
 
     @Override
@@ -174,8 +171,8 @@ public class MultiVendorEntityManagerFactory extends MultiVendorJpaConfigurable<
         properties.put(DEFAULT_SCHEMA, jpaSpecProperties.getSchema());
         properties.put(SHOW_SQL, jpaSpecProperties.isLogSql());
         properties.put(FORMAT_SQL, jpaSpecProperties.isFormatSqlLog());
-        properties.put(MULTI_TENANT_CONNECTION_PROVIDER, routingDataSourceManager);
-        properties.put(MULTI_TENANT_IDENTIFIER_RESOLVER, dataSourceSpecResolver);
+        properties.put(MULTI_TENANT_CONNECTION_PROVIDER, destinationDataSourceManager);
+        properties.put(MULTI_TENANT_IDENTIFIER_RESOLVER, dataSourceSpecManager);
         Optional.ofNullable(SQL_VENDOR_DIALECT.get(vendor))
                 .ifPresent(dialect -> properties.put(DIALECT, dialect));
         return properties;

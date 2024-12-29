@@ -9,7 +9,7 @@ import com.olsonsolution.common.property.domain.port.stereotype.PropertySpec;
 import javax.sql.DataSource;
 import java.util.Collection;
 
-public interface DataSourceModeler {
+public interface SqlDataSourceModeler {
 
     SqlVendor getSqlVendor();
 

@@ -1,7 +1,7 @@
 package com.olsonsolution.common.spring.application.jpa.config;
 
-import com.olsonsolution.common.data.domain.port.repository.sql.DataSourceFactory;
-import com.olsonsolution.common.data.domain.port.repository.sql.DataSourceModeler;
+import com.olsonsolution.common.data.domain.port.repository.sql.SqlDataSourceFactory;
+import com.olsonsolution.common.data.domain.port.repository.sql.SqlDataSourceModeler;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlVendor;
 import com.olsonsolution.common.data.domain.service.sql.*;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +25,7 @@ public class DataSourceModelersConfig {
             SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".data-source-modeler";
 
     @Bean
-    public DataSourceModeler h2DataSourceModeler() {
+    public SqlDataSourceModeler h2DataSourceModeler() {
         return new H2DataSourceModeler();
     }
 
@@ -34,7 +34,7 @@ public class DataSourceModelersConfig {
             value = SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".sql-server",
             havingValue = ENABLED_VALUE
     )
-    public DataSourceModeler sqlServerDataSourceModeler() {
+    public SqlDataSourceModeler sqlServerDataSourceModeler() {
         return new SqlServerDataSourceModeler();
     }
 
@@ -43,7 +43,7 @@ public class DataSourceModelersConfig {
             value = SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".postgresql",
             havingValue = ENABLED_VALUE
     )
-    public DataSourceModeler posgresqlDataSourceModeler() {
+    public SqlDataSourceModeler posgresqlDataSourceModeler() {
         return new PostgresDataSourceModeler();
     }
 
@@ -52,7 +52,7 @@ public class DataSourceModelersConfig {
             value = SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".mariadb",
             havingValue = ENABLED_VALUE
     )
-    public DataSourceModeler mariadbDataSourceModeler() {
+    public SqlDataSourceModeler mariadbDataSourceModeler() {
         return new MariaDbDataSourceModeler();
     }
 
@@ -61,21 +61,21 @@ public class DataSourceModelersConfig {
             value = SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".db2",
             havingValue = ENABLED_VALUE
     )
-    public DataSourceModeler db2DataSourceModeler() {
+    public SqlDataSourceModeler db2DataSourceModeler() {
         return new Db2DataSourceModeler();
     }
 
     @Bean
-    public DataSourceFactory dataSourceFactory(List<DataSourceModeler> dataSourceModelers) {
-        Collection<SqlVendor> enabledVendors = dataSourceModelers.stream()
+    public SqlDataSourceFactory dataSourceFactory(List<SqlDataSourceModeler> sqlDataSourceModelers) {
+        Collection<SqlVendor> enabledVendors = sqlDataSourceModelers.stream()
                 .filter(modeler -> !H2.isSameAs(modeler.getSqlVendor()))
-                .map(DataSourceModeler::getSqlVendor)
+                .map(SqlDataSourceModeler::getSqlVendor)
                 .toList();
         if(enabledVendors.isEmpty()) {
             throw new IllegalStateException("No Data Source Modeler registered");
         }
         log.info("Data Source Modelers enabled for vendors: {}", enabledVendors);
-        return new DataSourceFabricatingService(dataSourceModelers);
+        return new DataSourceFabricatingService(sqlDataSourceModelers);
     }
 
 }
