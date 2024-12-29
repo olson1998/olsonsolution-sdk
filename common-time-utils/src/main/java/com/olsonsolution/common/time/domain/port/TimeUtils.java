@@ -12,4 +12,8 @@ public interface TimeUtils {
 
     MutableDateTime getTimestamp();
 
+    String writeTimestamp(MutableDateTime timestamp);
+
+    MutableDateTime readTimestamp(String timestamp);
+
 }

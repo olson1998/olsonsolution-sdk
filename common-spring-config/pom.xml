@@ -18,12 +18,26 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.olsonsolution.common</groupId>
+            <artifactId>common-time-utils</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot</artifactId>
+            <version>3.3.5</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 

@@ -162,14 +162,14 @@
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-test</artifactId>
-                <version>${spring-boot-starter-test.version}</version>
-                <scope>test</scope>
+                <artifactId>spring-boot-configuration-processor</artifactId>
+                <version>${spring-boot-configuration-processor.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-configuration-processor</artifactId>
-                <version>${spring-boot-configuration-processor.version}</version>
+                <artifactId>spring-boot-starter-test</artifactId>
+                <version>${spring-boot-starter-test.version}</version>
+                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.testcontainers</groupId>

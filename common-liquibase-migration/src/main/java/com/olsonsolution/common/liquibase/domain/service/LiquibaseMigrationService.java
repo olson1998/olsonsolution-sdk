@@ -12,6 +12,7 @@ import com.olsonsolution.common.migration.domain.port.stereotype.MigrationResult
 import com.olsonsolution.common.migration.domain.port.stereotype.MigrationResults;
 import com.olsonsolution.common.migration.domain.port.stereotype.exception.ChangeLogMigrationException;
 import com.olsonsolution.common.migration.domain.port.stereotype.exception.ChangeLogSkippedException;
+import com.olsonsolution.common.time.domain.port.TimeUtils;
 import liquibase.Liquibase;
 import liquibase.database.jvm.JdbcConnection;
 import liquibase.exception.LiquibaseException;
@@ -51,6 +52,8 @@ public class LiquibaseMigrationService implements MigrationService {
     private final Scheduler executorScheduler;
 
     private final ResourceAccessor resourceAccessor;
+
+    private final TimeUtils timeUtils;
 
     private final ConcurrentMap<DataSource, CompletableFuture<Void>> ongoingDataSourceMigrations =
             new ConcurrentHashMap<>();
@@ -114,8 +117,12 @@ public class LiquibaseMigrationService implements MigrationService {
 
     private Mono<MigrationResult> migrateChangeLog(@NonNull JdbcConnection jdbcConnection,
                                                    @NonNull ChangeLog changeLog) {
-        MutableDateTime startTimestamp = MutableDateTime.now();
-        log.info("Liquibase migration changelog: '{}' started. Timestamp: '{}'", changeLog.getPath(), startTimestamp);
+        MutableDateTime startTimestamp = timeUtils.getTimestamp();
+        log.info(
+                "Liquibase migration changelog: '{}' started. Timestamp: '{}'",
+                changeLog.getPath(),
+                timeUtils.writeTimestamp(startTimestamp)
+        );
         return createLiquibase(changeLog, jdbcConnection)
                 .flatMap(liquibase -> updateLiquibase(liquibase, changeLog, startTimestamp)
                         .flatMap(migrationResult -> closeLiquibaseAndReturn(migrationResult, liquibase)))
@@ -146,9 +153,9 @@ public class LiquibaseMigrationService implements MigrationService {
 
     private Mono<Connection> createConnection(@NonNull DataSource dataSource,
                                               @NonNull Collection<? extends ChangeLog> changeLogs) {
-        AtomicReference<MutableDateTime> attemptTimestamp = new AtomicReference<>(MutableDateTime.now());
+        AtomicReference<MutableDateTime> attemptTimestamp = new AtomicReference<>(timeUtils.getTimestamp());
         return Mono.fromCallable(() -> {
-            attemptTimestamp.set(MutableDateTime.now());
+            attemptTimestamp.set(timeUtils.getTimestamp());
             return dataSource.getConnection();
         }).onErrorMap(
                 SQLException.class,
@@ -195,7 +202,7 @@ public class LiquibaseMigrationService implements MigrationService {
         return Mono.fromSupplier(() -> DomainMigrationResult.failedResult()
                 .failureCause(e)
                 .startTimestamp(startTimestamp)
-                .finishTimestamp(MutableDateTime.now())
+                .finishTimestamp(timeUtils.getTimestamp())
                 .build());
     }
 
@@ -277,7 +284,7 @@ public class LiquibaseMigrationService implements MigrationService {
         log.info(
                 "Liquibase migration changelog: '{}' finished. Timestamp: '{}'. Successful: '{}'",
                 changeLog.getPath(),
-                migrationResult.getFinishTimestamp(),
+                timeUtils.writeTimestamp(migrationResult.getFinishTimestamp()),
                 migrationResult.isSuccessful()
         );
     }

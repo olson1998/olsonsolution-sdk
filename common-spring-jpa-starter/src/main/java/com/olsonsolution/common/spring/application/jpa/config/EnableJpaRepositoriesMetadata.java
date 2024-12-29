@@ -15,11 +15,11 @@ import java.util.Set;
 import static java.util.Map.entry;
 import static org.springframework.data.repository.query.QueryLookupStrategy.Key.CREATE_IF_NOT_FOUND;
 
-public class EnableJpaRepositoriesMetadata implements AnnotationMetadata {
+class EnableJpaRepositoriesMetadata implements AnnotationMetadata {
 
     private final Map<String, Object> annotationAttributes;
 
-    public EnableJpaRepositoriesMetadata(String entityManagerFactoryRef,
+    EnableJpaRepositoriesMetadata(String entityManagerFactoryRef,
                                          String transactionManagerRef,
                                          Set<String> jpaRepoPackagesScan) {
         String[] basePackages = jpaRepoPackagesScan.toArray(String[]::new);

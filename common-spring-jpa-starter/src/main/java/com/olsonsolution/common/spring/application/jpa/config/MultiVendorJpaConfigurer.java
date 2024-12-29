@@ -56,8 +56,6 @@ public class MultiVendorJpaConfigurer implements InitializingBean, ApplicationCo
 
     private final DestinationDataSourceManager destinationDataSourceManager;
 
-    private final CurrentTenantIdentifierResolver<DataSourceSpec> dataSourceSpecResolver;
-
     @Override
     public void afterPropertiesSet() throws Exception {
         ConfigurableListableBeanFactory beanFactory = applicationContext.getBeanFactory();
@@ -87,8 +85,7 @@ public class MultiVendorJpaConfigurer implements InitializingBean, ApplicationCo
                 jpaProperties,
                 dataSourceSpecManager,
                 sqlDataSourceProvider,
-                destinationDataSourceManager,
-                dataSourceSpecResolver
+                destinationDataSourceManager
         );
         PlatformTransactionManagerDelegate platformTransactionManagerDelegate =
                 new MultiVendorPlatformTransactionManager(

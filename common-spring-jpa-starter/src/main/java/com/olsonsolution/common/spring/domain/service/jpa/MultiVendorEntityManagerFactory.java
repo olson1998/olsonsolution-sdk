@@ -52,8 +52,7 @@ public class MultiVendorEntityManagerFactory extends MultiVendorJpaConfigurable<
                                            JpaProperties jpaProperties,
                                            DataSourceSpecManager dataSourceSpecManager,
                                            SqlDataSourceProvider sqlDataSourceProvider,
-                                           DestinationDataSourceManager routingDataSourceManager,
-                                           CurrentTenantIdentifierResolver<DataSourceSpec> dataSourceSpecResolver) {
+                                           DestinationDataSourceManager routingDataSourceManager) {
         super(dataSourceSpecManager, sqlDataSourceProvider);
         this.schema = schema;
         this.jpaSpecName = jpaSpecName;
