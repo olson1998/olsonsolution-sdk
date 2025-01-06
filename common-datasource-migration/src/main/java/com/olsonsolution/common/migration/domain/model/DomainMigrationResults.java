@@ -1,13 +1,13 @@
 package com.olsonsolution.common.migration.domain.model;
 
-import com.olsonsolution.common.migration.domain.port.stereotype.ChangeLog;
 import com.olsonsolution.common.migration.domain.port.stereotype.MigrationResult;
 import com.olsonsolution.common.migration.domain.port.stereotype.MigrationResults;
-import lombok.*;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
+import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Objects;
 
 @Getter
 @ToString
@@ -20,6 +20,8 @@ public class DomainMigrationResults implements MigrationResults {
 
     private final int skipped;
 
+    private final int total;
+
     private final Collection<? extends MigrationResult> successfulResults;
 
     private final Collection<? extends MigrationResult> failedResults;
@@ -29,16 +31,21 @@ public class DomainMigrationResults implements MigrationResults {
     public DomainMigrationResults(Collection<? extends MigrationResult> successfulResults,
                                   Collection<? extends MigrationResult> failedResults,
                                   Collection<? extends MigrationResult> skippedResults) {
-        this.successfulResults = Objects.requireNonNullElseGet(successfulResults, Collections::emptyList);
-        this.failedResults = Objects.requireNonNullElseGet(failedResults, Collections::emptyList);
-        this.skippedResults = Objects.requireNonNullElseGet(skippedResults, Collections::emptyList);
+        this.successfulResults = CollectionUtils.emptyIfNull(skippedResults);
+        this.failedResults = CollectionUtils.emptyIfNull(failedResults);
+        this.skippedResults = CollectionUtils.emptyIfNull(successfulResults);
         this.successful = successfulResults.size();
         this.failed = failedResults.size();
         this.skipped = skippedResults.size();
+        this.total = successful + failed + skipped;
     }
 
     public static MigrationResults empty() {
-        return new DomainMigrationResults(null, null, null);
+        return new DomainMigrationResults(
+                null,
+                null,
+                null
+        );
     }
 
 }

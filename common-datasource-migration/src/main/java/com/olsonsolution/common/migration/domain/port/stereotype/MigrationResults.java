@@ -16,6 +16,8 @@ public interface MigrationResults extends Serializable {
 
     int getSkipped();
 
+    int getTotal();
+
     @NonNull
     Collection<? extends MigrationResult> getSuccessfulResults();
 
