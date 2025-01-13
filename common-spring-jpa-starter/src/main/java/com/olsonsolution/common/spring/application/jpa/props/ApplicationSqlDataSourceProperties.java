@@ -25,7 +25,7 @@ public class ApplicationSqlDataSourceProperties implements SqlDataSource {
 
     private final ApplicationSqlDataSourceUsersProperties user = new ApplicationSqlDataSourceUsersProperties();
 
-    private final Set<ApplicationSqlDataSourceProperty> properties = new HashSet<>();
+    private final Set<ApplicationSqlDataSourceProperty> property = new HashSet<>();
 
     @Override
     public SqlDataSourceUsers getUsers() {
@@ -34,7 +34,7 @@ public class ApplicationSqlDataSourceProperties implements SqlDataSource {
 
     @Override
     public Map<String, String> getProperties() {
-        return properties.stream()
+        return property.stream()
                 .collect(Collectors.toUnmodifiableMap(
                         ApplicationSqlDataSourceProperty::getName,
                         ApplicationSqlDataSourceProperty::getValue
