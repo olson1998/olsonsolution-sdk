@@ -5,7 +5,9 @@ import com.olsonsolution.common.migration.domain.port.stereotype.exception.Migra
 import lombok.NonNull;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 public interface MigrationResults extends Serializable {
@@ -19,12 +21,12 @@ public interface MigrationResults extends Serializable {
     int getTotal();
 
     @NonNull
-    Collection<? extends MigrationResult> getSuccessfulResults();
+    ArrayList<? extends MigrationResult> getSuccessfulResults();
 
     @NonNull
-    Map<MigrationResult, MigrationException> getFailedResults();
+    HashMap<MigrationResult, MigrationException> getFailedResults();
 
     @NonNull
-    Map<MigrationResult, ChangeLogSkippedException> getSkippedResults();
+    HashMap<MigrationResult, ChangeLogSkippedException> getSkippedResults();
 
 }

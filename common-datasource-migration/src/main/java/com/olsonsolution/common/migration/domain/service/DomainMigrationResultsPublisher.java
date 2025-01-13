@@ -10,9 +10,6 @@ import java.util.function.Consumer;
 
 @Getter
 @ToString
-
-@Builder
-@RequiredArgsConstructor
 public class DomainMigrationResultsPublisher implements MigrationResultsPublisher {
 
     @Setter
@@ -30,8 +27,17 @@ public class DomainMigrationResultsPublisher implements MigrationResultsPublishe
     private final Consumer<MigrationResults> consumer;
 
     @NonNull
-    @Builder.Default
     @ToString.Exclude
     private final Sinks.One<Boolean> publishedObservable = Sinks.one();
 
+    @Builder
+    public DomainMigrationResultsPublisher(boolean executeAsync,
+                                           int priority,
+                                           @NonNull String operationName,
+                                           @NonNull Consumer<MigrationResults> consumer) {
+        this.executeAsync = executeAsync;
+        this.priority = priority;
+        this.operationName = operationName;
+        this.consumer = consumer;
+    }
 }

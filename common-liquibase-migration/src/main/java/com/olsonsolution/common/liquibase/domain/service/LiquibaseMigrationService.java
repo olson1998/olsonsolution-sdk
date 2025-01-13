@@ -1,5 +1,6 @@
 package com.olsonsolution.common.liquibase.domain.service;
 
+import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlVendor;
 import com.olsonsolution.common.liquibase.domain.model.exception.ConnectionFailedException;
 import com.olsonsolution.common.liquibase.domain.model.exception.DataSourceConnectionException;
 import com.olsonsolution.common.liquibase.domain.model.exception.LiquibaseCreationException;
@@ -9,11 +10,13 @@ import com.olsonsolution.common.migration.domain.model.DomainMigrationResults;
 import com.olsonsolution.common.migration.domain.port.repository.ChangelogProvider;
 import com.olsonsolution.common.migration.domain.port.repository.MigrationResultsPublisher;
 import com.olsonsolution.common.migration.domain.port.repository.MigrationService;
+import com.olsonsolution.common.migration.domain.port.repository.SqlVendorVariablesProvider;
 import com.olsonsolution.common.migration.domain.port.stereotype.ChangeLog;
 import com.olsonsolution.common.migration.domain.port.stereotype.MigrationResult;
 import com.olsonsolution.common.migration.domain.port.stereotype.MigrationResults;
 import com.olsonsolution.common.migration.domain.port.stereotype.exception.ChangeLogMigrationException;
 import com.olsonsolution.common.migration.domain.port.stereotype.exception.ChangeLogSkippedException;
+import com.olsonsolution.common.migration.domain.service.ChangeLogUtils;
 import com.olsonsolution.common.time.domain.port.TimeUtils;
 import liquibase.Liquibase;
 import liquibase.database.jvm.JdbcConnection;
@@ -21,6 +24,7 @@ import liquibase.exception.LiquibaseException;
 import liquibase.resource.ResourceAccessor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.KeyValue;
 import org.apache.commons.collections4.keyvalue.DefaultMapEntry;
 import org.joda.time.MutableDateTime;
@@ -57,6 +61,8 @@ public class LiquibaseMigrationService implements MigrationService {
 
     private final Collection<? extends ChangeLog> changelogs;
 
+    private final Map<SqlVendor, Map<String, String>> sqlVendorVariables;
+
     private final Scheduler executorScheduler;
 
     private final TimeUtils timeUtils;
@@ -68,10 +74,10 @@ public class LiquibaseMigrationService implements MigrationService {
     public LiquibaseMigrationService(Scheduler executorScheduler,
                                      TimeUtils timeUtils,
                                      ResourceAccessor resourceAccessor,
-                                     Collection<ChangelogProvider> changelogProviders) {
-        this.changelogs = changelogProviders.stream()
-                .flatMap(changelogProvider -> changelogProvider.getChangelogs().stream())
-                .toList();
+                                     Collection<ChangelogProvider> changelogProviders,
+                                     Collection<SqlVendorVariablesProvider> sqlVendorVariablesProviders) {
+        this.changelogs = ChangeLogUtils.collectChangeLogs(changelogProviders);
+        this.sqlVendorVariables = ChangeLogUtils.collectVendorVariables(sqlVendorVariablesProviders);
         this.executorScheduler = executorScheduler;
         this.timeUtils = timeUtils;
         this.resourceAccessor = resourceAccessor;
@@ -79,8 +85,11 @@ public class LiquibaseMigrationService implements MigrationService {
     }
 
     @Override
-    public Boolean migrate(DataSource dataSource, MigrationResultsPublisher publisher) {
-        ongoingMigrations.computeIfAbsent(dataSource, this::innitAsyncMigration);
+    public Boolean migrate(DataSource dataSource, SqlVendor sqlVendor, MigrationResultsPublisher publisher) {
+        ongoingMigrations.computeIfAbsent(
+                dataSource,
+                migratedDataSource -> innitAsyncMigration(migratedDataSource, sqlVendor)
+        );
         appendResultsPublisher(dataSource, publisher);
         return publisher.getPublishedObservable()
                 .asMono()
@@ -88,8 +97,13 @@ public class LiquibaseMigrationService implements MigrationService {
     }
 
     @Override
-    public CompletableFuture<Boolean> migrateAsync(DataSource dataSource, MigrationResultsPublisher publisher) {
-        ongoingMigrations.computeIfAbsent(dataSource, this::innitAsyncMigration);
+    public CompletableFuture<Boolean> migrateAsync(DataSource dataSource,
+                                                   SqlVendor sqlVendor,
+                                                   MigrationResultsPublisher publisher) {
+        ongoingMigrations.computeIfAbsent(
+                dataSource,
+                migratedDataSource -> innitAsyncMigration(migratedDataSource, sqlVendor)
+        );
         appendResultsPublisher(dataSource, publisher);
         return publisher.getPublishedObservable()
                 .asMono()
@@ -105,20 +119,20 @@ public class LiquibaseMigrationService implements MigrationService {
     }
 
     @NonNull
-    private LiquibaseAsyncMigration innitAsyncMigration(@NonNull DataSource dataSource) {
+    private LiquibaseAsyncMigration innitAsyncMigration(@NonNull DataSource dataSource, SqlVendor sqlVendor) {
         CompletableFuture<Void> migration = createLiquibaseConnection(dataSource, changelogs)
                 .subscribeOn(executorScheduler)
-                .flatMap(this::migrateChangeLogs)
+                .flatMap(jdbcConnection -> migrateChangeLogs(jdbcConnection, sqlVendor))
                 .onErrorResume(ConnectionFailedException.class, this::supplyConnectionFailedResults)
                 .flatMap(migrationResults -> publishResults(migrationResults, dataSource))
                 .toFuture();
         return new LiquibaseAsyncMigration(migration, new ConcurrentLinkedQueue<>());
     }
 
-    private Mono<MigrationResults> migrateChangeLogs(@NonNull JdbcConnection jdbcConnection) {
+    private Mono<MigrationResults> migrateChangeLogs(@NonNull JdbcConnection jdbcConnection, SqlVendor sqlVendor) {
         return Flux.fromIterable(changelogs)
-                .flatMap(changeLog -> migrateChangeLog(jdbcConnection, changeLog))
-                .collect(Collectors.collectingAndThen(Collectors.toList(), this::collectToResults))
+                .flatMap(changeLog -> migrateChangeLog(jdbcConnection, sqlVendor, changeLog))
+                .collect(Collectors.collectingAndThen(Collectors.toList(), DomainMigrationResults::new))
                 .flatMap(migrationResults -> closeJdbcConnectionAndReturn(
                         migrationResults,
                         jdbcConnection
@@ -126,14 +140,16 @@ public class LiquibaseMigrationService implements MigrationService {
     }
 
     private Mono<MigrationResult> migrateChangeLog(@NonNull JdbcConnection jdbcConnection,
+                                                   @NonNull SqlVendor sqlVendor,
                                                    @NonNull ChangeLog changeLog) {
         MutableDateTime startTimestamp = timeUtils.getTimestamp();
         log.info(
-                "Liquibase migration changelog: '{}' started. Timestamp: '{}'",
+                "Liquibase migration changelog: '{}' started. SQL Vendor: '{}' Timestamp: '{}'",
+                sqlVendor.name(),
                 changeLog.getPath(),
                 timeUtils.writeTimestamp(startTimestamp)
         );
-        return createLiquibase(changeLog, jdbcConnection)
+        return createLiquibase(changeLog, jdbcConnection, sqlVendor)
                 .flatMap(liquibase -> updateLiquibase(liquibase, changeLog, startTimestamp)
                         .flatMap(migrationResult -> closeLiquibaseAndReturn(migrationResult, liquibase)))
                 .onErrorResume(
@@ -189,9 +205,10 @@ public class LiquibaseMigrationService implements MigrationService {
     }
 
     private Mono<Liquibase> createLiquibase(@NonNull ChangeLog changeLog,
-                                            @NonNull JdbcConnection jdbcConnection) {
+                                            @NonNull JdbcConnection jdbcConnection,
+                                            @NonNull SqlVendor sqlVendor) {
         MutableDateTime startTimestamp = timeUtils.getTimestamp();
-        return Mono.fromCallable(() -> createLiquibase(jdbcConnection, changeLog))
+        return Mono.fromCallable(() -> createLiquibase(jdbcConnection, sqlVendor, changeLog))
                 .onErrorMap(
                         LiquibaseException.class,
                         e -> new LiquibaseCreationException(e, changeLog, startTimestamp)
@@ -224,13 +241,16 @@ public class LiquibaseMigrationService implements MigrationService {
                         .startTimestamp(e.getConnectionAttemptTimestamp())
                         .finishTimestamp(e.getExceptionCreationTimestamp())
                         .build())
-                .collect(Collectors.collectingAndThen(Collectors.toList(), this::collectToResults));
+                .collect(Collectors.collectingAndThen(Collectors.toList(), DomainMigrationResults::new));
     }
 
     private Liquibase createLiquibase(@NonNull JdbcConnection jdbcConnection,
+                                      @NonNull SqlVendor sqlVendor,
                                       @NonNull ChangeLog changeLog) throws LiquibaseException {
         String path = changeLog.getPath();
         Liquibase liquibase = new Liquibase(path, resourceAccessor, jdbcConnection);
+        Optional.ofNullable(sqlVendorVariables.get(sqlVendor))
+                .ifPresent(variables -> variables.forEach(liquibase::setChangeLogParameter));
         return liquibase;
     }
 
@@ -240,7 +260,7 @@ public class LiquibaseMigrationService implements MigrationService {
         liquibase.update();
         return DomainMigrationResult.successfulResult()
                 .startTimestamp(startTimestamp)
-                .finishTimestamp(MutableDateTime.now())
+                .finishTimestamp(timeUtils.getTimestamp())
                 .createdSchema(changeLog.isCreateSchema())
                 .build();
     }
@@ -393,39 +413,6 @@ public class LiquibaseMigrationService implements MigrationService {
         );
         publisher.getPublishedObservable().emitError(e, FAIL_FAST);
         return Mono.just(false);
-    }
-
-    private MigrationResults collectToResults(List<MigrationResult> migrationResults) {
-        Collection<? extends MigrationResult> successfulResults =
-                collectResults(migrationResults, SUCCESSFUL_RESULT_CODE);
-        Collection<? extends MigrationResult> failureResults =
-                collectResults(migrationResults, FAILURE_RESULT_CODE);
-        Collection<? extends MigrationResult> skippedResults =
-                collectResults(migrationResults, SKIPPED_RESULT_CODE);
-        return new DomainMigrationResults(
-                successfulResults,
-                failureResults,
-                skippedResults
-        );
-    }
-
-    private Collection<? extends MigrationResult> collectResults(List<MigrationResult> migrationResults,
-                                                                 int resultCode) {
-        return migrationResults.stream()
-                .filter(migrationResult -> isMatchingResultCode(migrationResult, resultCode))
-                .toList();
-
-    }
-
-    private boolean isMatchingResultCode(MigrationResult migrationResult, int resultCode) {
-        if (resultCode == SKIPPED_RESULT_CODE) {
-            return migrationResult.isSkipped();
-        } else if (resultCode == FAILURE_RESULT_CODE) {
-            return migrationResult.isFailed();
-        } else if (resultCode == SUCCESSFUL_RESULT_CODE) {
-            return migrationResult.isSuccessful();
-        }
-        return false;
     }
 
 }

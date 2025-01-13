@@ -3,6 +3,7 @@ package com.olsonsolution.common.liquibase.application.config;
 import com.olsonsolution.common.liquibase.domain.service.LiquibaseMigrationService;
 import com.olsonsolution.common.migration.domain.port.repository.ChangelogProvider;
 import com.olsonsolution.common.migration.domain.port.repository.MigrationService;
+import com.olsonsolution.common.migration.domain.port.repository.SqlVendorVariablesProvider;
 import com.olsonsolution.common.time.domain.port.TimeUtils;
 import liquibase.integration.spring.SpringResourceAccessor;
 import liquibase.resource.ResourceAccessor;
@@ -20,13 +21,15 @@ public class LiquibaseMigrationConfig {
     @Bean
     public MigrationService liquibaseMigrationService(ResourceLoader resourceLoader,
                                                       TimeUtils timeUtils,
-                                                      List<ChangelogProvider> changelogProviders) {
+                                                      List<ChangelogProvider> changelogProviders,
+                                                      List<SqlVendorVariablesProvider> vendorVariablesProviders) {
         ResourceAccessor resourceAccessor = new SpringResourceAccessor(resourceLoader);
         return new LiquibaseMigrationService(
                 null,
                 timeUtils,
                 resourceAccessor,
-                changelogProviders
+                changelogProviders,
+                vendorVariablesProviders
         );
     }
 
