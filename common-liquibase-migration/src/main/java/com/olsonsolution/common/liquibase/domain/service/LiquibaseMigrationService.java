@@ -5,12 +5,11 @@ import com.olsonsolution.common.liquibase.domain.model.exception.ConnectionFaile
 import com.olsonsolution.common.liquibase.domain.model.exception.DataSourceConnectionException;
 import com.olsonsolution.common.liquibase.domain.model.exception.LiquibaseCreationException;
 import com.olsonsolution.common.liquibase.domain.model.exception.LiquibaseUpdateExecutionException;
+import com.olsonsolution.common.liquibase.domain.port.props.LiquibaseManagerProperties;
+import com.olsonsolution.common.liquibase.domain.port.repository.LiquibaseContextProvider;
 import com.olsonsolution.common.migration.domain.model.DomainMigrationResult;
 import com.olsonsolution.common.migration.domain.model.DomainMigrationResults;
-import com.olsonsolution.common.migration.domain.port.repository.ChangelogProvider;
-import com.olsonsolution.common.migration.domain.port.repository.MigrationResultsPublisher;
-import com.olsonsolution.common.migration.domain.port.repository.MigrationService;
-import com.olsonsolution.common.migration.domain.port.repository.SqlVendorVariablesProvider;
+import com.olsonsolution.common.migration.domain.port.repository.*;
 import com.olsonsolution.common.migration.domain.port.stereotype.ChangeLog;
 import com.olsonsolution.common.migration.domain.port.stereotype.MigrationResult;
 import com.olsonsolution.common.migration.domain.port.stereotype.MigrationResults;
@@ -18,13 +17,14 @@ import com.olsonsolution.common.migration.domain.port.stereotype.exception.Chang
 import com.olsonsolution.common.migration.domain.port.stereotype.exception.ChangeLogSkippedException;
 import com.olsonsolution.common.migration.domain.service.ChangeLogUtils;
 import com.olsonsolution.common.time.domain.port.TimeUtils;
+import liquibase.Contexts;
+import liquibase.LabelExpression;
 import liquibase.Liquibase;
 import liquibase.database.jvm.JdbcConnection;
 import liquibase.exception.LiquibaseException;
 import liquibase.resource.ResourceAccessor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.KeyValue;
 import org.apache.commons.collections4.keyvalue.DefaultMapEntry;
 import org.joda.time.MutableDateTime;
@@ -44,16 +44,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static liquibase.UpdateSummaryOutputEnum.LOG;
 import static reactor.core.publisher.Sinks.EmitFailureHandler.FAIL_FAST;
 
 @Slf4j
 public class LiquibaseMigrationService implements MigrationService {
-
-    private static final int SKIPPED_RESULT_CODE = -1;
-
-    private static final int FAILURE_RESULT_CODE = 0;
-
-    private static final int SUCCESSFUL_RESULT_CODE = 1;
 
     private static final Comparator<KeyValue<MigrationResultsPublisher, ?>> PUBLISHER_PRIORITY = Comparator
             .comparing(LiquibaseMigrationService::resolvePriority)
@@ -61,7 +56,11 @@ public class LiquibaseMigrationService implements MigrationService {
 
     private final Collection<? extends ChangeLog> changelogs;
 
+    private final Collection<? extends VariablesProvider> variablesProviders;
+
     private final Map<SqlVendor, Map<String, String>> sqlVendorVariables;
+
+    private final LiquibaseManagerProperties liquibaseManagerProperties;
 
     private final Scheduler executorScheduler;
 
@@ -69,18 +68,26 @@ public class LiquibaseMigrationService implements MigrationService {
 
     private final ResourceAccessor resourceAccessor;
 
+    private final LiquibaseContextProvider liquibaseContextProvider;
+
     private final ConcurrentMap<DataSource, LiquibaseAsyncMigration> ongoingMigrations;
 
-    public LiquibaseMigrationService(Scheduler executorScheduler,
+    public LiquibaseMigrationService(LiquibaseManagerProperties liquibaseManagerProperties,
+                                     Scheduler executorScheduler,
                                      TimeUtils timeUtils,
                                      ResourceAccessor resourceAccessor,
-                                     Collection<ChangelogProvider> changelogProviders,
-                                     Collection<SqlVendorVariablesProvider> sqlVendorVariablesProviders) {
+                                     LiquibaseContextProvider liquibaseContextProvider,
+                                     Collection<? extends ChangelogProvider> changelogProviders,
+                                     Collection<? extends VariablesProvider> variablesProviders,
+                                     Collection<? extends SqlVendorVariablesProvider> sqlVendorVariablesProviders) {
         this.changelogs = ChangeLogUtils.collectChangeLogs(changelogProviders);
+        this.variablesProviders = variablesProviders;
         this.sqlVendorVariables = ChangeLogUtils.collectVendorVariables(sqlVendorVariablesProviders);
+        this.liquibaseManagerProperties = liquibaseManagerProperties;
         this.executorScheduler = executorScheduler;
         this.timeUtils = timeUtils;
         this.resourceAccessor = resourceAccessor;
+        this.liquibaseContextProvider = liquibaseContextProvider;
         this.ongoingMigrations = new ConcurrentHashMap<>();
     }
 
@@ -249,15 +256,24 @@ public class LiquibaseMigrationService implements MigrationService {
                                       @NonNull ChangeLog changeLog) throws LiquibaseException {
         String path = changeLog.getPath();
         Liquibase liquibase = new Liquibase(path, resourceAccessor, jdbcConnection);
-        Optional.ofNullable(sqlVendorVariables.get(sqlVendor))
-                .ifPresent(variables -> variables.forEach(liquibase::setChangeLogParameter));
+        Map<String, String> variables = obtainVariables(sqlVendor);
+        Optional.ofNullable(liquibaseManagerProperties.getUpdateSummary()).ifPresent(liquibase::setShowSummary);
+        liquibase.setShowSummaryOutput(LOG);
+        variables.forEach(liquibase::setChangeLogParameter);
         return liquibase;
     }
 
     private MigrationResult executeUpdateLiquibase(@NonNull Liquibase liquibase,
                                                    @NonNull ChangeLog changeLog,
                                                    @NonNull MutableDateTime startTimestamp) throws LiquibaseException {
-        liquibase.update();
+        if (liquibaseContextProvider != null) {
+            Contexts contexts = new Contexts(liquibaseContextProvider.getContextName());
+            LabelExpression labelExpression =
+                    new LabelExpression(liquibaseContextProvider.getLabels().toArray(String[]::new));
+            liquibase.update(contexts, labelExpression);
+        } else {
+            liquibase.update();
+        }
         return DomainMigrationResult.successfulResult()
                 .startTimestamp(startTimestamp)
                 .finishTimestamp(timeUtils.getTimestamp())
@@ -355,6 +371,16 @@ public class LiquibaseMigrationService implements MigrationService {
         return Mono.empty();
     }
 
+    private Mono<Boolean> onResultPublishException(Throwable e, MigrationResultsPublisher publisher) {
+        log.error(
+                "Liquibase migration results publisher: '{}'. Notified observable with thrown error:",
+                publisher.getOperationName(),
+                e
+        );
+        publisher.getPublishedObservable().emitError(e, FAIL_FAST);
+        return Mono.just(false);
+    }
+
     private void onMigrationFinished(MigrationResult migrationResult, ChangeLog changeLog) {
         log.info(
                 "Liquibase migration changelog: '{}' finished. Timestamp: '{}'. Successful: '{}'",
@@ -405,14 +431,23 @@ public class LiquibaseMigrationService implements MigrationService {
         return migrationResults;
     }
 
-    private Mono<Boolean> onResultPublishException(Throwable e, MigrationResultsPublisher publisher) {
-        log.error(
-                "Liquibase migration results publisher: '{}'. Notified observable with thrown error:",
-                publisher.getOperationName(),
-                e
-        );
-        publisher.getPublishedObservable().emitError(e, FAIL_FAST);
-        return Mono.just(false);
+    private Map<String, String> obtainVariables(SqlVendor sqlVendor) {
+        Stream.Builder<Map.Entry<String, String>> variables = Stream.builder();
+        Optional.ofNullable(sqlVendorVariables.get(sqlVendor))
+                .stream()
+                .flatMap(vendorVariables -> vendorVariables.entrySet().stream())
+                .forEach(variables::add);
+        variablesProviders.stream()
+                .flatMap(this::streamVariables)
+                .forEach(variables::add);
+        return variables.build()
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    private Stream<Map.Entry<String, String>> streamVariables(VariablesProvider provider) {
+        return provider.getVariables()
+                .entrySet()
+                .stream();
     }
 
 }

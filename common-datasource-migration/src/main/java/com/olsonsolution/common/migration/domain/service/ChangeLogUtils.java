@@ -18,7 +18,7 @@ import java.util.stream.Stream;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ChangeLogUtils {
 
-    public static Collection<? extends ChangeLog> collectChangeLogs(Collection<ChangelogProvider> providers) {
+    public static Collection<? extends ChangeLog> collectChangeLogs(Collection<? extends ChangelogProvider> providers) {
         return providers.stream()
                 .map(ChangelogProvider::getChangelogs)
                 .flatMap(Collection::stream)
