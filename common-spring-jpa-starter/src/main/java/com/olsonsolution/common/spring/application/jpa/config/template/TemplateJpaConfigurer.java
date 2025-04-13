@@ -1,5 +1,7 @@
 package com.olsonsolution.common.spring.application.jpa.config.template;
 
+import com.olsonsolution.common.metadata.application.annotation.Generated;
+import com.olsonsolution.common.spring.application.jpa.config.EnableJpaSpecAnnotationProcessor;
 import com.olsonsolution.common.spring.application.jpa.config.JpaSpecConfigurer;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;
@@ -11,6 +13,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@Generated(
+        timestamp = "",
+        annotationProcessor = EnableJpaSpecAnnotationProcessor.class
+)
 public class TemplateJpaConfigurer {
 
     private static final String JPA_SPEC_NAME = "jpa";

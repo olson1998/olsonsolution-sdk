@@ -12,7 +12,11 @@ import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import java.io.IOException;
 import java.io.Writer;
-import java.util.*;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 @AutoService(Processor.class)
 @SupportedSourceVersion(SourceVersion.RELEASE_17)
@@ -53,8 +57,11 @@ public class EnableJpaSpecAnnotationProcessor extends AbstractProcessor {
                 Diagnostic.Kind.NOTE,
                 "Jpa Spec: %s Base package: %s".formatted(jpaSpec.value(), basePackage)
         );
+        Instant timestamp = Instant.now();
         String generatedClass = JPA_CONFIGURER_CLASS_TEMPLATE.replace("${BASE_PACKAGE}", basePackage);
         generatedClass = generatedClass.replace("${JPA_SPEC}", jpaSpec.value());
+        generatedClass = generatedClass.replace("${TIMESTAMP}", timestamp.toString());
+        generatedClass = generatedClass.replace("${EPOCH_MILLI}", String.valueOf(timestamp.toEpochMilli()));
         generateClass(className, generatedClass);
     }
 
@@ -66,9 +73,12 @@ public class EnableJpaSpecAnnotationProcessor extends AbstractProcessor {
                 Diagnostic.Kind.NOTE,
                 "Jpa Spec: %s Base package: %s".formatted(jpaSpec.value(), basePackage)
         );
+        Instant timestamp = Instant.now();
         String generatedClass = ENABLE_JPA_REPOSITORIES_CLASS_TEMPLATE.replace("${BASE_PACKAGE}", basePackage);
         generatedClass = generatedClass.replace("${JPA_REPOSITORIES_PACKAGES}", repositoriesBasePackages);
         generatedClass = generatedClass.replace("${JPA_SPEC}", jpaSpec.value());
+        generatedClass = generatedClass.replace("${TIMESTAMP}", timestamp.toString());
+        generatedClass = generatedClass.replace("${EPOCH_MILLI}", String.valueOf(timestamp.toEpochMilli()));
         generateClass(className, generatedClass);
     }
 
@@ -100,6 +110,8 @@ public class EnableJpaSpecAnnotationProcessor extends AbstractProcessor {
     private static final String ENABLE_JPA_REPOSITORIES_CLASS_TEMPLATE = """
             package ${BASE_PACKAGE};
             
+            import com.olsonsolution.common.metadata.application.annotation.Generated;
+            import com.olsonsolution.common.spring.application.jpa.config.EnableJpaSpecAnnotationProcessor;
             import org.springframework.context.annotation.Configuration;
             import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
             
@@ -109,6 +121,10 @@ public class EnableJpaSpecAnnotationProcessor extends AbstractProcessor {
                     entityManagerFactoryRef = "${JPA_SPEC}_entityManagerFactory"
             )
             @Configuration
+            @Generated(
+                    timestamp = "${TIMESTAMP}",
+                    annotationProcessor = EnableJpaSpecAnnotationProcessor.class
+            )
             public class Enable${JPA_SPEC}JpaRepositoriesConfig {
             }
             
@@ -117,6 +133,8 @@ public class EnableJpaSpecAnnotationProcessor extends AbstractProcessor {
     private static final String JPA_CONFIGURER_CLASS_TEMPLATE = """
             package ${BASE_PACKAGE};
             
+            import com.olsonsolution.common.metadata.application.annotation.Generated;
+            import com.olsonsolution.common.spring.application.jpa.config.EnableJpaSpecAnnotationProcessor;
             import com.olsonsolution.common.spring.application.jpa.config.JpaSpecConfigurer;
             import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
             import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;
@@ -128,6 +146,10 @@ public class EnableJpaSpecAnnotationProcessor extends AbstractProcessor {
             import org.springframework.context.annotation.Configuration;
             
             @Configuration
+            @Generated(
+                    timestamp = "${TIMESTAMP}",
+                    annotationProcessor = EnableJpaSpecAnnotationProcessor.class
+            )
             public class ${JPA_SPEC}JpaConfigurer {
             
                 private static final String JPA_SPEC_NAME = "${JPA_SPEC}";

@@ -19,6 +19,10 @@
     <dependencies>
         <dependency>
             <groupId>com.olsonsolution.common</groupId>
+            <artifactId>common-annotation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.olsonsolution.common</groupId>
             <artifactId>common-time-utils</artifactId>
         </dependency>
         <dependency>
