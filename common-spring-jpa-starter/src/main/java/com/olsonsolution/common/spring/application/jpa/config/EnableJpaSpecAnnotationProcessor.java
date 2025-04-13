@@ -3,6 +3,8 @@ package com.olsonsolution.common.spring.application.jpa.config;
 import com.google.auto.service.AutoService;
 import com.olsonsolution.common.spring.domain.model.annotation.EnableJpaSpec;
 import com.olsonsolution.common.spring.domain.model.annotation.JpaSpec;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.context.annotation.Configuration;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
@@ -12,6 +14,7 @@ import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import java.io.IOException;
 import java.io.Writer;
+import java.lang.annotation.Annotation;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -23,17 +26,22 @@ import java.util.Set;
 @SupportedAnnotationTypes("com.olsonsolution.common.spring.domain.model.annotation.EnableJpaSpec")
 public class EnableJpaSpecAnnotationProcessor extends AbstractProcessor {
 
+    private static final Set<Class<? extends Annotation>> SPRING_CONFIG_ANNOTATION = Set.of(
+            Configuration.class,
+            AutoConfiguration.class
+    );
+
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        Set<? extends Element> elements = roundEnv.getElementsAnnotatedWith(EnableJpaSpec.class);
-        for (Element element : elements) {
-            EnableJpaSpec enableJpaSpec = element.getAnnotation(EnableJpaSpec.class);
-            processElement(element, enableJpaSpec);
-        }
+        roundEnv.getElementsAnnotatedWith(EnableJpaSpec.class)
+                .stream()
+                .filter(this::isSpringConfig)
+                .forEach(this::processElement);
         return true;
     }
 
-    private void processElement(Element element, EnableJpaSpec enableJpaSpec) {
+    private void processElement(Element element) {
+        EnableJpaSpec enableJpaSpec = element.getAnnotation(EnableJpaSpec.class);
         for (JpaSpec jpaSpec : enableJpaSpec.value()) {
             if (element instanceof TypeElement typeElement) {
                 processAnnotatedClass(typeElement, jpaSpec);
@@ -105,6 +113,11 @@ public class EnableJpaSpecAnnotationProcessor extends AbstractProcessor {
             }
         }
         return basePackageBuilder.append("}").toString();
+    }
+
+    private boolean isSpringConfig(Element element) {
+        return SPRING_CONFIG_ANNOTATION.stream()
+                .anyMatch(annotation -> element.getAnnotation(annotation) != null);
     }
 
     private static final String ENABLE_JPA_REPOSITORIES_CLASS_TEMPLATE = """

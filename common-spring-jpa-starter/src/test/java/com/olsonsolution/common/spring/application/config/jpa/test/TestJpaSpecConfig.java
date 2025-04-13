@@ -2,9 +2,9 @@ package com.olsonsolution.common.spring.application.config.jpa.test;
 
 import com.olsonsolution.common.spring.domain.model.annotation.EnableJpaSpec;
 import com.olsonsolution.common.spring.domain.model.annotation.JpaSpec;
-import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Configuration;
 
-@TestConfiguration
+@Configuration
 @EnableJpaSpec({
         @JpaSpec(
                 value = "Classic",
