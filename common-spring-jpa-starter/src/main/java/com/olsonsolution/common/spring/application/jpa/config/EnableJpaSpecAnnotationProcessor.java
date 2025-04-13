@@ -12,28 +12,29 @@ import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import java.io.IOException;
 import java.io.Writer;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @AutoService(Processor.class)
 @SupportedSourceVersion(SourceVersion.RELEASE_17)
 @SupportedAnnotationTypes("com.olsonsolution.common.spring.domain.model.annotation.EnableJpaSpec")
-public class JpaSpecAnnotationProcessor extends AbstractProcessor {
+public class EnableJpaSpecAnnotationProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         Set<? extends Element> elements = roundEnv.getElementsAnnotatedWith(EnableJpaSpec.class);
         for (Element element : elements) {
             EnableJpaSpec enableJpaSpec = element.getAnnotation(EnableJpaSpec.class);
-            for (JpaSpec jpaSpec : enableJpaSpec.value()) {
-                if (element instanceof TypeElement typeElement) {
-                    processAnnotatedClass(typeElement, jpaSpec);
-                }
-            }
+            processElement(element, enableJpaSpec);
         }
         return true;
+    }
+
+    private void processElement(Element element, EnableJpaSpec enableJpaSpec) {
+        for (JpaSpec jpaSpec : enableJpaSpec.value()) {
+            if (element instanceof TypeElement typeElement) {
+                processAnnotatedClass(typeElement, jpaSpec);
+            }
+        }
     }
 
     private void processAnnotatedClass(TypeElement typeElement, JpaSpec jpaSpec) {
@@ -130,7 +131,7 @@ public class JpaSpecAnnotationProcessor extends AbstractProcessor {
             public class ${JPA_SPEC}JpaConfigurer {
             
                 private static final String JPA_SPEC_NAME = "${JPA_SPEC}";
-              
+            
                 @Bean(JPA_SPEC_NAME + "_entityManagerFactory")
                 public EntityManagerFactoryDelegate entityManagerFactoryDelegate(
                         JpaSpecConfigurer jpaSpecConfigurer,
