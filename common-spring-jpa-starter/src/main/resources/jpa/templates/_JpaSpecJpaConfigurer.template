@@ -1,4 +1,4 @@
-package com.olsonsolution.common.spring.application.jpa.config.template;
+package ${BASE_PACKAGE};
 
 import com.olsonsolution.common.metadata.application.annotation.Generated;
 import com.olsonsolution.common.spring.application.jpa.config.EnableJpaSpecAnnotationProcessor;
@@ -14,12 +14,12 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @Generated(
-        timestamp = "",
+        timestamp = "${TIMESTAMP}",
         annotationProcessor = EnableJpaSpecAnnotationProcessor.class
 )
-public class TemplateJpaConfigurer {
+public class ${JPA_SPEC}JpaConfigurer {
 
-    private static final String JPA_SPEC_NAME = "jpa";
+    private static final String JPA_SPEC_NAME = "${JPA_SPEC}";
 
     @Bean(JPA_SPEC_NAME + "_entityManagerFactory")
     public EntityManagerFactoryDelegate entityManagerFactoryDelegate(
