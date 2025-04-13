@@ -3,10 +3,8 @@ package com.olsonsolution.common.spring.application.databind.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.olsonsolution.common.databind.domain.port.repository.DatabindConfigurer;
 import com.olsonsolution.common.databind.domain.port.repository.DatabindSupplier;
-import com.olsonsolution.common.databind.domain.port.repository.JacksonFormatterSpecManager;
 import com.olsonsolution.common.databind.domain.port.repository.ObjectMapperConfigurer;
 import com.olsonsolution.common.databind.domain.service.DatabindConfigurationService;
-import com.olsonsolution.common.databind.domain.service.JacksonFormatterSpecManagingService;
 import com.olsonsolution.common.databind.domain.service.ObjectMapperConfigurationService;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
@@ -25,19 +23,12 @@ public class JacksonObjectMapperConfig {
     private final DatabindSupplier databindSupplier = new DatabindConfigurationService();
 
     @Bean
-    public JacksonFormatterSpecManager jacksonFormatterSpecManager() {
-        return new JacksonFormatterSpecManagingService();
-    }
-
-    @Bean
     public DatabindConfigurer jodaDataTimeDataBindConfigurer(
             @Value(DEFAULT_TIME_ZONE_VALUE) DateTimeZone timeZone,
-            @Value(DEFAULT_DATE_TIME_FORMAT) DateTimeFormatter dateTimeFormatter,
-            JacksonFormatterSpecManager jacksonFormatterSpecManager) {
+            @Value(DEFAULT_DATE_TIME_FORMAT) DateTimeFormatter dateTimeFormatter) {
         return databindSupplier.configJodaDateTimeDataBindSupplier(
                 timeZone,
-                dateTimeFormatter,
-                jacksonFormatterSpecManager
+                dateTimeFormatter
         );
     }
 

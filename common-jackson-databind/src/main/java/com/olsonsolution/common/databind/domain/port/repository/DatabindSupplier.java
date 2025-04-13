@@ -11,7 +11,6 @@ public interface DatabindSupplier {
      * @return Joda date-time databind moudle
      */
     DatabindConfigurer configJodaDateTimeDataBindSupplier(DateTimeZone timeZone,
-                                                          DateTimeFormatter dateTimeFormatter,
-                                                          JacksonFormatterSpecManager specManager);
+                                                          DateTimeFormatter dateTimeFormatter);
 
 }
