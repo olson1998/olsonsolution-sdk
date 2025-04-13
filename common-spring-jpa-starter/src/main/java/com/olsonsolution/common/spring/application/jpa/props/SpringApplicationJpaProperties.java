@@ -55,7 +55,7 @@ public class SpringApplicationJpaProperties implements JpaProperties {
     @Data
     public static class ApplicationJpaSpecProperties implements JpaSpecProperties {
 
-        private String name = "Jpa";
+        private String name;
 
         private String schema;
 
@@ -67,16 +67,9 @@ public class SpringApplicationJpaProperties implements JpaProperties {
 
         private final ApplicationPackagesToScanProperties entity = new ApplicationPackagesToScanProperties();
 
-        private final ApplicationPackagesToScanProperties repository = new ApplicationPackagesToScanProperties();
-
         @Override
         public PackagesToScanProperties getEntityProperties() {
             return entity;
-        }
-
-        @Override
-        public PackagesToScanProperties getJpaRepositoryProperties() {
-            return repository;
         }
 
         @Data

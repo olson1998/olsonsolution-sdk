@@ -5,6 +5,7 @@ import com.microsoft.sqlserver.jdbc.SQLServerException;
 import com.olsonsolution.common.spring.application.caching.InMemoryCachingConfig;
 import com.olsonsolution.common.spring.application.jpa.config.DataSourceModelersConfig;
 import com.olsonsolution.common.spring.application.jpa.config.DataSourceSpecConfig;
+import com.olsonsolution.common.spring.application.jpa.config.JpaSpecConfigurer;
 import com.olsonsolution.common.spring.application.jpa.config.SqlVendorPropertiesResolverConfig;
 import com.olsonsolution.common.spring.application.jpa.props.SpringApplicationDestinationDataSourceProperties;
 import com.olsonsolution.common.spring.application.jpa.props.SpringApplicationJpaProperties;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -48,21 +50,23 @@ import static com.olsonsolution.common.spring.application.test.config.SpringAppl
         DataSourceModelersConfig.class,
         InMemoryCachingConfig.class,
         SqlVendorPropertiesResolverConfig.class,
+        JpaSpecConfigurer.class,
         SpringApplicationJpaProperties.class,
         SpringApplicationDestinationDataSourceProperties.class
 })
+@ComponentScan(basePackages = "com.olsonsolution.common.spring.application.config.jpa.test")
 @ExtendWith(SpringExtension.class)
 @Testcontainers(disabledWithoutDocker = true)
 @TestPropertySource(properties = {
         SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".sql-server=enabled",
         SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".postgresql=enabled",
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.name=classic",
+        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.name=Classic",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.schema=company",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.log-sql=true",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.format-sql-log=true",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.entity.packages-to-scan.0=" + CLASSIC_ENTITY_PACKAGE,
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.repository.packages-to-scan.0=" + CLASSIC_REPO_PACKAGE,
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.name=modern",
+        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.name=Modern",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.schema=company_structure",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.log-sql=true",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.format-sql-log=true",

@@ -1,0 +1,45 @@
+package com.olsonsolution.common.spring.application.jpa.config.template;
+
+import com.olsonsolution.common.spring.application.jpa.config.JpaSpecConfigurer;
+import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
+import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.EntityManagerFactoryDelegate;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.PlatformTransactionManagerDelegate;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class TemplateJpaConfigurer {
+
+    private static final String JPA_SPEC_NAME = "jpa";
+
+    @Bean(JPA_SPEC_NAME + "_entityManagerFactory")
+    public EntityManagerFactoryDelegate entityManagerFactoryDelegate(
+            JpaSpecConfigurer jpaSpecConfigurer,
+            DataSourceSpecManager dataSourceSpecManager,
+            SqlDataSourceProvider sqlDataSourceProvider,
+            DestinationDataSourceManager destinationDataSourceManager) {
+        return jpaSpecConfigurer.createEntityManagerFactoryDelegate(
+                JPA_SPEC_NAME,
+                dataSourceSpecManager,
+                sqlDataSourceProvider,
+                destinationDataSourceManager
+        );
+    }
+
+    @Bean(JPA_SPEC_NAME + "_platformTransactionManager")
+    public PlatformTransactionManagerDelegate platformTransactionManagerDelegate(
+            JpaSpecConfigurer jpaSpecConfigurer,
+            DataSourceSpecManager dataSourceSpecManager,
+            SqlDataSourceProvider sqlDataSourceProvider,
+            @Qualifier(JPA_SPEC_NAME + "_entityManagerFactory") EntityManagerFactoryDelegate entityManagerFactory) {
+        return jpaSpecConfigurer.createPlatformTransactionManagerDelegate(
+                dataSourceSpecManager,
+                sqlDataSourceProvider,
+                entityManagerFactory
+        );
+    }
+
+}

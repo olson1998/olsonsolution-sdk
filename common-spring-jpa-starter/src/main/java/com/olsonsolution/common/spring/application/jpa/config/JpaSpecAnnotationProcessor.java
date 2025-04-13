@@ -1,6 +1,7 @@
 package com.olsonsolution.common.spring.application.jpa.config;
 
 import com.google.auto.service.AutoService;
+import com.olsonsolution.common.spring.domain.model.annotation.EnableJpaSpec;
 import com.olsonsolution.common.spring.domain.model.annotation.JpaSpec;
 
 import javax.annotation.processing.*;
@@ -10,46 +11,63 @@ import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Writer;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 @AutoService(Processor.class)
 @SupportedSourceVersion(SourceVersion.RELEASE_17)
-@SupportedAnnotationTypes("com.olsonsolution.common.spring.domain.model.annotation.JpaSpec")
+@SupportedAnnotationTypes("com.olsonsolution.common.spring.domain.model.annotation.EnableJpaSpec")
 public class JpaSpecAnnotationProcessor extends AbstractProcessor {
-
-    private static final String TEMPLATE_FILE = "/src/main/resources/jpa/templates/_JpaConfigurerTemplate";
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        Set<? extends Element> elements = roundEnv.getElementsAnnotatedWith(JpaSpec.class);
+        Set<? extends Element> elements = roundEnv.getElementsAnnotatedWith(EnableJpaSpec.class);
         for (Element element : elements) {
-            JpaSpec jpaSpec = element.getAnnotation(JpaSpec.class);
-            if (element instanceof TypeElement typeElement) {
-                processAnnotatedClass(typeElement, jpaSpec);
+            EnableJpaSpec enableJpaSpec = element.getAnnotation(EnableJpaSpec.class);
+            for (JpaSpec jpaSpec : enableJpaSpec.value()) {
+                if (element instanceof TypeElement typeElement) {
+                    processAnnotatedClass(typeElement, jpaSpec);
+                }
             }
         }
         return true;
     }
 
     private void processAnnotatedClass(TypeElement typeElement, JpaSpec jpaSpec) {
-        String generatedClass;
-        String jpaSpecValue = jpaSpec.value();
         String basePackage = processingEnv.getElementUtils()
                 .getPackageOf(typeElement)
                 .getQualifiedName()
                 .toString();
-        String className = basePackage + '.' + jpaSpecValue + "JpaConfigurer";
+        generateJpaConfigurerClass(basePackage, jpaSpec);
+        generateEnableJpaRepositoriesClass(basePackage, jpaSpec);
+    }
+
+    private void generateJpaConfigurerClass(String basePackage, JpaSpec jpaSpec) {
+        String className = basePackage + '.' + jpaSpec.value() + "JpaConfigurer";
         processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Generating: " + className);
         processingEnv.getMessager().printMessage(
                 Diagnostic.Kind.NOTE,
-                "Jpa Spec: %s Base package: %s".formatted(jpaSpecValue, basePackage)
+                "Jpa Spec: %s Base package: %s".formatted(jpaSpec.value(), basePackage)
         );
-        generatedClass = CLASS_TEMPLATE.replace("${BASE_PACKAGE}", basePackage);
-        generatedClass = generatedClass.replace("${JPA_SPEC}", jpaSpecValue);
+        String generatedClass = JPA_CONFIGURER_CLASS_TEMPLATE.replace("${BASE_PACKAGE}", basePackage);
+        generatedClass = generatedClass.replace("${JPA_SPEC}", jpaSpec.value());
+        generateClass(className, generatedClass);
+    }
+
+    private void generateEnableJpaRepositoriesClass(String basePackage, JpaSpec jpaSpec) {
+        String className = basePackage + ".Enable" + jpaSpec.value() + "JpaRepositoriesConfig";
+        String repositoriesBasePackages = writeRepositoriesBasePackages(jpaSpec);
+        processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Generating: " + className);
+        processingEnv.getMessager().printMessage(
+                Diagnostic.Kind.NOTE,
+                "Jpa Spec: %s Base package: %s".formatted(jpaSpec.value(), basePackage)
+        );
+        String generatedClass = ENABLE_JPA_REPOSITORIES_CLASS_TEMPLATE.replace("${BASE_PACKAGE}", basePackage);
+        generatedClass = generatedClass.replace("${JPA_REPOSITORIES_PACKAGES}", repositoriesBasePackages);
+        generatedClass = generatedClass.replace("${JPA_SPEC}", jpaSpec.value());
         generateClass(className, generatedClass);
     }
 
@@ -64,30 +82,47 @@ public class JpaSpecAnnotationProcessor extends AbstractProcessor {
         }
     }
 
-//    private String readTemplateContent() throws IOException {
-//        ClassLoader classLoader = JpaSpecAnnotationProcessor.class.getClassLoader();
-//        try (InputStream input = classLoader.getResourceAsStream(TEMPLATE_FILE)) {
-//            if (input != null) {
-//                return new String(input.readAllBytes(), UTF_8);
-//            } else {
-//                throw new IOException("Null input stream for template file " + TEMPLATE_FILE);
-//            }
-//        }
-//    }
+    private String writeRepositoriesBasePackages(JpaSpec jpaSpec) {
+        List<String> basePackages = Arrays.asList(jpaSpec.repositoriesPackages());
+        Iterator<String> basePackagesIterator = basePackages.iterator();
+        StringBuilder basePackageBuilder = new StringBuilder("{");
+        while (basePackagesIterator.hasNext()) {
+            String basePackage = basePackagesIterator.next();
+            basePackageBuilder.append('\"').append(basePackage).append('\"');
+            if (basePackagesIterator.hasNext()) {
+                basePackageBuilder.append(", ");
+            }
+        }
+        return basePackageBuilder.append("}").toString();
+    }
 
-    private static final String CLASS_TEMPLATE = """
+    private static final String ENABLE_JPA_REPOSITORIES_CLASS_TEMPLATE = """
             package ${BASE_PACKAGE};
             
-            import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
-            import com.olsonsolution.common.spring.domain.port.props.jpa.JpaSpecProperties;
+            import org.springframework.context.annotation.Configuration;
+            import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+            
+            @EnableJpaRepositories(
+                    basePackages = ${JPA_REPOSITORIES_PACKAGES},
+                    transactionManagerRef = "${JPA_SPEC}_platformTransactionManager",
+                    entityManagerFactoryRef = "${JPA_SPEC}_entityManagerFactory"
+            )
+            @Configuration
+            public class Enable${JPA_SPEC}JpaRepositoriesConfig {
+            }
+            
+            """;
+
+    private static final String JPA_CONFIGURER_CLASS_TEMPLATE = """
+            package ${BASE_PACKAGE};
+            
+            import com.olsonsolution.common.spring.application.jpa.config.JpaSpecConfigurer;
             import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
             import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;
             import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
             import com.olsonsolution.common.spring.domain.port.repository.jpa.EntityManagerFactoryDelegate;
             import com.olsonsolution.common.spring.domain.port.repository.jpa.PlatformTransactionManagerDelegate;
-            import com.olsonsolution.common.spring.domain.service.jpa.MultiVendorEntityManagerFactory;
-            import com.olsonsolution.common.spring.domain.service.jpa.MultiVendorPlatformTransactionManager;
-            import org.apache.commons.lang3.StringUtils;
+            import org.springframework.beans.factory.annotation.Qualifier;
             import org.springframework.context.annotation.Bean;
             import org.springframework.context.annotation.Configuration;
             
@@ -95,80 +130,32 @@ public class JpaSpecAnnotationProcessor extends AbstractProcessor {
             public class ${JPA_SPEC}JpaConfigurer {
             
                 private static final String JPA_SPEC_NAME = "${JPA_SPEC}";
-            
-                private final EntityManagerFactoryDelegate entityManagerFactoryDelegate;
-            
-                private final PlatformTransactionManagerDelegate platformTransactionManagerDelegate;
-            
-                public ${JPA_SPEC}JpaConfigurer(JpaProperties jpaProperties,
-                                      DataSourceSpecManager dataSourceSpecManager,
-                                      SqlDataSourceProvider sqlDataSourceProvider,
-                                      DestinationDataSourceManager destinationDataSourceManager) {
-                    JpaSpecProperties specProperties = getJpaSpecProperties(jpaProperties);
-                    this.entityManagerFactoryDelegate = createEntityManagerFactoryDelegate(
-                            specProperties,
-                            jpaProperties,
-                            dataSourceSpecManager,
-                            sqlDataSourceProvider,
-                            destinationDataSourceManager
-                    );
-                    this.platformTransactionManagerDelegate = createPlatformTransactionManagerDelegate(
-                            dataSourceSpecManager,
-                            sqlDataSourceProvider,
-                            entityManagerFactoryDelegate
-                    );
-                }
-            
+              
                 @Bean(JPA_SPEC_NAME + "_entityManagerFactory")
-                public EntityManagerFactoryDelegate entityManagerFactoryDelegate() {
-                    return entityManagerFactoryDelegate;
-                }
-            
-                @Bean(JPA_SPEC_NAME + "_platformTransactionManager")
-                public PlatformTransactionManagerDelegate platformTransactionManagerDelegate() {
-                    return platformTransactionManagerDelegate;
-                }
-            
-                private static JpaSpecProperties getJpaSpecProperties(JpaProperties jpaProperties) {
-                    return jpaProperties.getJpaSpecificationsProperties()
-                            .stream()
-                            .filter(props -> isConfigForName(props))
-                            .findFirst()
-                            .orElseThrow();
-                }
-            
-                private static EntityManagerFactoryDelegate createEntityManagerFactoryDelegate(
-                        JpaSpecProperties properties,
-                        JpaProperties jpaProperties,
+                public EntityManagerFactoryDelegate entityManagerFactoryDelegate(
+                        JpaSpecConfigurer jpaSpecConfigurer,
                         DataSourceSpecManager dataSourceSpecManager,
                         SqlDataSourceProvider sqlDataSourceProvider,
                         DestinationDataSourceManager destinationDataSourceManager) {
-                    String schema = properties.getSchema();
-                    String name = properties.getName();
-                    return new MultiVendorEntityManagerFactory(
-                            schema,
-                            name,
-                            jpaProperties,
+                    return jpaSpecConfigurer.createEntityManagerFactoryDelegate(
+                            JPA_SPEC_NAME,
                             dataSourceSpecManager,
                             sqlDataSourceProvider,
                             destinationDataSourceManager
                     );
                 }
             
-                private static PlatformTransactionManagerDelegate createPlatformTransactionManagerDelegate(
+                @Bean(JPA_SPEC_NAME + "_platformTransactionManager")
+                public PlatformTransactionManagerDelegate platformTransactionManagerDelegate(
+                        JpaSpecConfigurer jpaSpecConfigurer,
                         DataSourceSpecManager dataSourceSpecManager,
                         SqlDataSourceProvider sqlDataSourceProvider,
-                        EntityManagerFactoryDelegate entityManagerFactoryDelegate) {
-                    return new MultiVendorPlatformTransactionManager(
+                        @Qualifier(JPA_SPEC_NAME + "_entityManagerFactory") EntityManagerFactoryDelegate entityManagerFactory) {
+                    return jpaSpecConfigurer.createPlatformTransactionManagerDelegate(
                             dataSourceSpecManager,
                             sqlDataSourceProvider,
-                            entityManagerFactoryDelegate
+                            entityManagerFactory
                     );
-                }
-            
-                private static boolean isConfigForName(JpaSpecProperties props) {
-                    String value = props.getName() == null ? props.getSchema() : props.getName();
-                    return StringUtils.equals(value, JPA_SPEC_NAME);
                 }
             
             }

@@ -14,8 +14,6 @@ public interface JpaSpecProperties {
 
     PackagesToScanProperties getEntityProperties();
 
-    PackagesToScanProperties getJpaRepositoryProperties();
-
     Properties getProperties();
 
 }

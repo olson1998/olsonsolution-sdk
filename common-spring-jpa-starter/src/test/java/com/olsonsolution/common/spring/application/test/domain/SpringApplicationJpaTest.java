@@ -57,13 +57,13 @@ class SpringApplicationJpaTest extends SpringApplicationJpaTestBase {
         ClassicPersonData persistedPerson = classicPersonJpaRepository.save(classicPersonData);
         ClassicPersonTeamBoundData persistedBound = classicPersonTeamBoundJpaRepository.save(bound);
         assertThat(classicTeamJpaRepository.existsById(persistedTeam.getId())).isTrue();
-        assertThat( classicPersonJpaRepository.existsById(persistedPerson.getId())).isTrue();
+        assertThat(classicPersonJpaRepository.existsById(persistedPerson.getId())).isTrue();
         assertThat(classicPersonTeamBoundJpaRepository.existsById(persistedBound.getValueMap())).isTrue();
         classicPersonTeamBoundJpaRepository.deleteById(persistedBound.getValueMap());
         classicPersonJpaRepository.deleteById(persistedPerson.getId());
         classicTeamJpaRepository.deleteById(persistedTeam.getId());
         assertThat(classicTeamJpaRepository.existsById(persistedTeam.getId())).isFalse();
-        assertThat( classicPersonJpaRepository.existsById(persistedPerson.getId())).isFalse();
+        assertThat(classicPersonJpaRepository.existsById(persistedPerson.getId())).isFalse();
         assertThat(classicPersonTeamBoundJpaRepository.existsById(persistedBound.getValueMap())).isFalse();
     }
 

@@ -7,10 +7,8 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.TYPE)
-public @interface JpaSpec {
+public @interface EnableJpaSpec {
 
-    String value();
-
-    String[] repositoriesPackages() default {};
+    JpaSpec[] value() default {};
 
 }
