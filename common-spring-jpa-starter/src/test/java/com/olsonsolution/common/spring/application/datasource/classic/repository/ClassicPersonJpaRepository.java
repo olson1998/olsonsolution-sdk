@@ -1,6 +1,7 @@
 package com.olsonsolution.common.spring.application.datasource.classic.repository;
 
 import com.olsonsolution.common.spring.application.datasource.classic.entity.ClassicPersonData;
+import com.olsonsolution.common.spring.domain.model.annotation.JpaSpec;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
+@JpaSpec("Classic")
 public interface ClassicPersonJpaRepository extends JpaRepository<ClassicPersonData, Long> {
 
     @Query(

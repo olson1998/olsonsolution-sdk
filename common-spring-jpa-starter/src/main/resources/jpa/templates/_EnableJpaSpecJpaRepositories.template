@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @EnableJpaRepositories(
-        basePackages = ${JPA_REPOSITORIES_PACKAGES},
+        basePackages = ${REPO_BASE_PACKAGES},
         transactionManagerRef = "${JPA_SPEC}_platformTransactionManager",
         entityManagerFactoryRef = "${JPA_SPEC}_entityManagerFactory"
 )

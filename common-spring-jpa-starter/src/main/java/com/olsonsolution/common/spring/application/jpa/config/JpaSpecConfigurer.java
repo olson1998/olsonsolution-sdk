@@ -24,6 +24,7 @@ public class JpaSpecConfigurer {
 
     public EntityManagerFactoryDelegate createEntityManagerFactoryDelegate(
             @NonNull String jpaSpecName,
+            @NonNull String[] entityBasePackages,
             DataSourceSpecManager dataSourceSpecManager,
             SqlDataSourceProvider sqlDataSourceProvider,
             DestinationDataSourceManager destinationDataSourceManager) {
@@ -34,6 +35,7 @@ public class JpaSpecConfigurer {
         return new MultiVendorEntityManagerFactory(
                 schema,
                 name,
+                entityBasePackages,
                 jpaProperties,
                 dataSourceSpecManager,
                 sqlDataSourceProvider,

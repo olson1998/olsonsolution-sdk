@@ -20,6 +20,7 @@ import org.springframework.context.annotation.Configuration;
 public class ${JPA_SPEC}JpaConfigurer {
 
     private static final String JPA_SPEC_NAME = "${JPA_SPEC}";
+    private static final String[] ENTITY_BASE_PACKAGES = ${ENTITY_BASE_PACKAGES};
 
     @Bean(JPA_SPEC_NAME + "_entityManagerFactory")
     public EntityManagerFactoryDelegate entityManagerFactoryDelegate(
@@ -29,6 +30,7 @@ public class ${JPA_SPEC}JpaConfigurer {
             DestinationDataSourceManager destinationDataSourceManager) {
         return jpaSpecConfigurer.createEntityManagerFactoryDelegate(
                 JPA_SPEC_NAME,
+                ENTITY_BASE_PACKAGES,
                 dataSourceSpecManager,
                 sqlDataSourceProvider,
                 destinationDataSourceManager

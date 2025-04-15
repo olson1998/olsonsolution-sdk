@@ -35,12 +35,15 @@ public class MultiVendorEntityManagerFactory extends MultiVendorJpaConfigurable<
 
     private final String jpaSpecName;
 
+    private final String[] entityBasePackages;
+
     private final JpaProperties jpaProperties;
 
     private final DestinationDataSourceManager destinationDataSourceManager;
 
     public MultiVendorEntityManagerFactory(String schema,
                                            String jpaSpecName,
+                                           String[] entityBasePackages,
                                            JpaProperties jpaProperties,
                                            DataSourceSpecManager dataSourceSpecManager,
                                            SqlDataSourceProvider sqlDataSourceProvider,
@@ -48,6 +51,7 @@ public class MultiVendorEntityManagerFactory extends MultiVendorJpaConfigurable<
         super(dataSourceSpecManager, sqlDataSourceProvider);
         this.schema = schema;
         this.jpaSpecName = jpaSpecName;
+        this.entityBasePackages = entityBasePackages;
         this.jpaProperties = jpaProperties;
         this.destinationDataSourceManager = routingDataSourceManager;
     }
@@ -138,15 +142,11 @@ public class MultiVendorEntityManagerFactory extends MultiVendorJpaConfigurable<
         Properties jpaProperties = properties
                 .map(p -> resolveProperties(p, sqlVendor))
                 .orElseGet(Properties::new);
-        String[] basePackages = properties.map(JpaSpecProperties::getEntityProperties)
-                .map(props -> props.getPackagesToScan()
-                        .toArray(String[]::new))
-                .orElseGet(() -> new String[0]);
         LocalContainerEntityManagerFactoryBean entityManagerFactoryBean = new LocalContainerEntityManagerFactoryBean();
         entityManagerFactoryBean.setPersistenceUnitName(unitName);
         entityManagerFactoryBean.setJpaProperties(jpaProperties);
         entityManagerFactoryBean.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
-        entityManagerFactoryBean.setPackagesToScan(basePackages);
+        entityManagerFactoryBean.setPackagesToScan(entityBasePackages);
         entityManagerFactoryBean.afterPropertiesSet();
         EntityManagerFactory entityManagerFactory = Objects.requireNonNull(entityManagerFactoryBean.getObject());
         log.info(

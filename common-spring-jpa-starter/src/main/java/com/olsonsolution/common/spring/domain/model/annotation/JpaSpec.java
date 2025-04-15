@@ -11,6 +11,4 @@ public @interface JpaSpec {
 
     String value();
 
-    String[] repositoriesPackages() default {};
-
 }

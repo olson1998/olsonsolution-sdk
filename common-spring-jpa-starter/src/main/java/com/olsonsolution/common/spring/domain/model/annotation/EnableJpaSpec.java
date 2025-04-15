@@ -9,6 +9,8 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 public @interface EnableJpaSpec {
 
-    JpaSpec[] value() default {};
+    String value();
+
+    String[] basePackages() default {};
 
 }
