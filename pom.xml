@@ -25,7 +25,6 @@
         <module>common-spring-ssl</module>
         <module>common-datasource-migration</module>
         <module>common-liquibase-migration</module>
-        <module>common-annotation</module>
     </modules>
 
     <properties>
@@ -69,11 +68,6 @@
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>com.olsonsolution.common</groupId>
-                <artifactId>common-annotation</artifactId>
-                <version>${revision}</version>
-            </dependency>
             <dependency>
                 <groupId>com.olsonsolution.common</groupId>
                 <artifactId>common-reflection-utils</artifactId>
