@@ -1,10 +1,8 @@
 package com.olsonsolution.common.spring.application.datasource.migration.annotation.processor;
 
 import com.google.auto.service.AutoService;
-import com.olsonsolution.common.spring.application.datasource.migration.annotation.ChangeSet;
-import com.olsonsolution.common.spring.application.datasource.migration.annotation.ColumnChange;
-import com.olsonsolution.common.spring.application.datasource.migration.annotation.ColumnChanges;
-import com.olsonsolution.common.spring.application.datasource.migration.annotation.Operation;
+import com.olsonsolution.common.spring.application.datasource.migration.annotation.*;
+import com.olsonsolution.common.spring.application.datasource.migration.annotation.ForeignKey;
 import jakarta.persistence.*;
 
 import javax.annotation.processing.*;
@@ -110,7 +108,11 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
                         Collectors.toCollection(LinkedList::new),
                         f -> new CreateTableOp(tableName, f)
                 ));
-        changeSetCreateTableOperations.put(changeSet.firstVersion(), Collections.singletonList(createTableOp));
+        LinkedList<ChangeSetOperation> tableOperations = new LinkedList<>();
+        tableOperations.add(createTableOp);
+        tableOperations.addAll(collectUniqueConstraints(createTableOp));
+        tableOperations.addAll(collectAddForeignKeyConstraints(createTableOp));
+        changeSetCreateTableOperations.put(changeSet.firstVersion(), tableOperations);
     }
 
     private void collectColumnsChanges(VariableElement fieldElement,
@@ -199,9 +201,20 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
             if (column.nullable()) {
                 addColumnOp.constraint(ConstraintMetadata.builder()
                         .name("nonnull_" + tableName + '_' + columnName)
-                        .type(NULLABLE_FALSE)
+                        .type(NON_NULL)
                         .build());
             }
+        }
+        if (fieldElement.getAnnotation(ForeignKey.class) != null) {
+            ForeignKey foreignKey = fieldElement.getAnnotation(ForeignKey.class);
+            List<String> parameters = new ArrayList<>(2);
+            parameters.set(0, foreignKey.referenceTable());
+            parameters.set(1, foreignKey.referenceColumn());
+            addColumnOp.constraint(ConstraintMetadata.builder()
+                    .name(foreignKey.name())
+                    .parameters(parameters)
+                    .type(FOREIGN_KEY)
+                    .build());
         }
         return addColumnOp.build();
     }
@@ -248,6 +261,36 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
         List<ChangeSetOperation> atEndOperations =
                 changeSetAtEndOperations.computeIfAbsent(version, k -> new LinkedList<>());
         atEndOperations.addAll(buildOperations(columnChange.operation(), tableName, columnName, columnChange));
+    }
+
+    private List<AddUniqueConstraint> collectUniqueConstraints(CreateTableOp createTableOp) {
+        return createTableOp.addColumns()
+                .stream()
+                .flatMap(addColumnOp -> addColumnOp.constraints()
+                        .stream()
+                        .map(constraintMetadata -> entry(addColumnOp, constraintMetadata)))
+                .filter(constraint -> constraint.getValue().type() == UNIQUE)
+                .map(constraint -> new AddUniqueConstraint(
+                        createTableOp.table(),
+                        constraint.getKey().column(),
+                        constraint.getValue().name()
+                )).collect(Collectors.toCollection(LinkedList::new));
+    }
+
+    private List<AddForeignKeyConstraint> collectAddForeignKeyConstraints(CreateTableOp createTableOp) {
+        return createTableOp.addColumns()
+                .stream()
+                .flatMap(addColumnOp -> addColumnOp.constraints()
+                        .stream()
+                        .map(constraintMetadata -> entry(addColumnOp, constraintMetadata)))
+                .filter(columnConst -> columnConst.getValue().type() == FOREIGN_KEY)
+                .map(columnConst -> new AddForeignKeyConstraint(
+                        createTableOp.table(),
+                        columnConst.getKey().column(),
+                        columnConst.getValue().name(),
+                        columnConst.getValue().parameters().get(0),
+                        columnConst.getValue().parameters().get(1)
+                )).collect(Collectors.toCollection(LinkedList::new));
     }
 
     private List<ChangeSetOperation> buildOperations(Operation operation,

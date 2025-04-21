@@ -8,5 +8,5 @@ public @interface ForeignKey {
 
     String referenceTable();
 
-    String version();
+    String version() default "";
 }

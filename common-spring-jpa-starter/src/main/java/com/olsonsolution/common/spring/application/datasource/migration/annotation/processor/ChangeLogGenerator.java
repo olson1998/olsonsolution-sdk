@@ -14,6 +14,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.olsonsolution.common.spring.application.datasource.migration.annotation.processor.ConstraintMetadata.Type.*;
+
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class ChangeLogGenerator {
 
@@ -51,6 +53,53 @@ final class ChangeLogGenerator {
         changeSet.setAttribute("author", "${author}");
     }
 
-    private void generateCreateTable(CreateT)
+    private void generateCreateTable(CreateTableOp createTableOp, Element changeSet, Document document) {
+        Element createTable = document.createElement("createTable");
+        createTable.setAttribute("tableName", createTableOp.table());
+        createTableOp.addColumns().forEach(column -> generateColumn(column, createTable, document));
+        changeSet.appendChild(createTable);
+    }
+
+    private void generateUniqueConstraint(AddUniqueConstraint addUniqueConstraint, Element changeSet, Document document) {
+        Element unique = document.createElement("addUniqueConstraint");
+        unique.setAttribute("tableName", addUniqueConstraint.table());
+        unique.setAttribute("columnNames", addUniqueConstraint.column());
+        unique.setAttribute("constraintName", addUniqueConstraint.name());
+        changeSet.appendChild(unique);
+    }
+
+    private void generateForeignKeyConstraint(AddForeignKeyConstraint addForeignKeyConstraint,
+                                              Element changeSet,
+                                              Document document) {
+        Element foreignKey = document.createElement("addForeignKeyConstraint");
+        foreignKey.setAttribute("tableName", addForeignKeyConstraint.table());
+        foreignKey.setAttribute("columnNames", addForeignKeyConstraint.column());
+        foreignKey.setAttribute("referencedTableName", addForeignKeyConstraint.referencedTable());
+        foreignKey.setAttribute("referencedColumnNames", addForeignKeyConstraint.referencedColumn());
+        foreignKey.setAttribute("constraintName", addForeignKeyConstraint.constraintName());
+        changeSet.appendChild(foreignKey);
+    }
+
+    private void generateColumn(AddColumnOp addColumnOp, Element createTable, Document document) {
+        Element column = document.createElement("column");
+        column.setAttribute("name", addColumnOp.column());
+        column.setAttribute("type", "VARCHAR(255)");
+        Element constraints = null;
+        for (ConstraintMetadata constraint : addColumnOp.constraints()) {
+            if (constraint.type() == PRIMARY_KEY) {
+                if (constraints == null) {
+                    constraints = document.createElement("constraints");
+                }
+                constraints.setAttribute("primaryKey", "true");
+            };
+            if (constraint.type() == NON_NULL) {
+                column.setAttribute("nullabale", "false");
+            }
+        }
+        if (constraints != null) {
+            createTable.appendChild(constraints);
+        }
+        createTable.appendChild(column);
+    }
 
 }
