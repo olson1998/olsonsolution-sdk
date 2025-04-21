@@ -427,12 +427,12 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
         if (variableTypeMirror.getKind().isPrimitive()) {
             return assumePrimitiveType(variableTypeMirror);
         } else if (isAssignableFieldType(variableElement, Integer.class)) {
-            return "int(32)";
+            return "INT";
         } else if (isAssignableFieldType(variableElement, Long.class) ||
                 isAssignableFieldType(variableElement, BigInteger.class)) {
-            return "int(64)";
+            return "BIGINT";
         } else if (isAssignableFieldType(variableElement, Short.class)) {
-            return "int(16)";
+            return "SMALLINT";
         } else if (isAssignableFieldType(variableElement, Double.class) ||
                 isAssignableFieldType(variableElement, BigDecimal.class)) {
             return "double";
@@ -454,13 +454,13 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
     private String assumePrimitiveType(TypeMirror typeMirror) {
         switch (typeMirror.getKind()) {
             case INT -> {
-                return "int(32)";
+                return "INT";
             }
             case LONG -> {
-                return "int(64)";
+                return "BIGINT";
             }
             case SHORT -> {
-                return "int(16)";
+                return "SMALLINT";
             }
             case DOUBLE -> {
                 return "double";

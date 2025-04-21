@@ -1,10 +1,7 @@
 package com.olsonsolution.common.spring.application.datasource.classic.entity;
 
 import com.olsonsolution.common.spring.application.datasource.migration.annotation.ChangeSet;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 
 @Getter
@@ -21,12 +18,14 @@ public class ClassicTeamData {
 
     @Id
     @Column(name = "TMMID")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "TMMSEQ")
+    @SequenceGenerator(name = "TMMSEQ", sequenceName = "TMMSEQ", allocationSize = 1)
     private Long id;
 
-    @Column(name = "TMMCD")
+    @Column(name = "TMMCD", length = 7)
     private String code;
 
-    @Column(name = "TMMNM")
+    @Column(name = "TMMNM", length = 63)
     private String name;
 
 }

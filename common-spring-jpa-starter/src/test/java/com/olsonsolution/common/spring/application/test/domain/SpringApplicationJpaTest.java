@@ -48,7 +48,7 @@ class SpringApplicationJpaTest extends SpringApplicationJpaTestBase {
     @Transactional
     void saveTestData() {
         ClassicTeamData classicTeamData = new ClassicTeamData(1L, "TEAM1", "team1");
-        ClassicPersonData classicPersonData = new ClassicPersonData(1L, "John", "Doe", "M");
+        ClassicPersonData classicPersonData = new ClassicPersonData(1L, "John", "Doe", 'M');
         ClassicPersonTeamBoundData bound = new ClassicPersonTeamBoundData(new ClassicPersonTeamBound(
                 1L,
                 1L
