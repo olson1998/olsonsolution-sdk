@@ -2,14 +2,12 @@ package com.olsonsolution.common.spring.application.datasource.migration.annotat
 
 public @interface ChangeSet {
 
-    Version version();
+    String path() default  "src/resources/db/changelog";
 
-    @interface Version {
+    String file() default  "db.changelog-{table}-{version}.xml";
 
-        int majorVersion() default 1;
+    ColumnChange[] changes() default {};
 
-        int minorVersion() default 0;
-
-    }
+    String[] columnOrder() default {};
 
 }

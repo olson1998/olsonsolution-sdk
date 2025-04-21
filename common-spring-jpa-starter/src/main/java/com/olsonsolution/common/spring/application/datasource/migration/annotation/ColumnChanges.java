@@ -2,6 +2,8 @@ package com.olsonsolution.common.spring.application.datasource.migration.annotat
 
 public @interface ColumnChanges {
 
-    ColumnChange[] changes();
+    ColumnChange[] preScan();
+
+    ColumnChange[] postScan();
 
 }
