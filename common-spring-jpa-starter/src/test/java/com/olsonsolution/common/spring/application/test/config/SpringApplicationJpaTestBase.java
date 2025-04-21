@@ -60,14 +60,14 @@ import static com.olsonsolution.common.spring.application.test.config.SpringAppl
 @TestPropertySource(properties = {
         SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".sql-server=enabled",
         SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".postgresql=enabled",
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.name=Classic",
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.schema=company",
+        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.name=Membership",
+        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.schema=membership",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.log-sql=true",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.format-sql-log=true",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.entity.packages-to-scan.0=" + CLASSIC_ENTITY_PACKAGE,
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.repository.packages-to-scan.0=" + CLASSIC_REPO_PACKAGE,
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.name=Modern",
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.schema=company_structure",
+        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.name=Person",
+        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.schema=person",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.log-sql=true",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.format-sql-log=true",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.entity.packages-to-scan.0=" + ENTITY_PACKAGE,
@@ -196,8 +196,8 @@ public abstract class SpringApplicationJpaTestBase {
             """;
 
     private static final List<String> SQL_SERVER_QUERIES = Stream.of(
-            "CREATE SCHEMA company_structure",
-            "CREATE SCHEMA COMPANY",
+            "CREATE SCHEMA person",
+            "CREATE SCHEMA membership",
             CREATE_CLASSIC_PERSON_SQL_SERVER_QUERY,
             CREATE_CLASSIC_TEAM_SQL_SERVER_QUERY,
             CREATE_CLASSIC_PERSON_TEAM_BOUND_SQL_SERVER_QUERY,
@@ -207,8 +207,8 @@ public abstract class SpringApplicationJpaTestBase {
     ).collect(Collectors.toCollection(LinkedList::new));
 
     private static final List<String> POSTGRES_QUERIES = Stream.of(
-            "CREATE SCHEMA company_structure",
-            "CREATE SCHEMA company",
+            "CREATE SCHEMA person",
+            "CREATE SCHEMA membership",
             CREATE_CLASSIC_PERSON_POSTGRES_QUERY,
             CREATE_CLASSIC_TEAM_POSTGRES_QUERY,
             CREATE_CLASSIC_PERSON_TEAM_BOUND_POSTGRES_QUERY,
@@ -297,7 +297,7 @@ public abstract class SpringApplicationJpaTestBase {
         }
     }
 
-    private static void createPostgresEnv() throws SQLServerException, SQLException {
+    private static void createPostgresEnv() throws SQLException {
         String host = POSTGRES_CONTAINER.getHost();
         Integer port = POSTGRES_CONTAINER.getMappedPort(5432);
         String username = POSTGRES_CONTAINER.getUsername();

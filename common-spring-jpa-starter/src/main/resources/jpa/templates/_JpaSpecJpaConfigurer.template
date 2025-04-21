@@ -1,6 +1,6 @@
 package ${BASE_PACKAGE};
 
-import com.olsonsolution.common.spring.application.jpa.config.EnableJpaSpecAnnotationProcessor;
+import com.olsonsolution.common.spring.application.annotation.processor.EnableJpaSpecAnnotationProcessor;
 import com.olsonsolution.common.spring.application.jpa.config.JpaSpecConfigurer;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;

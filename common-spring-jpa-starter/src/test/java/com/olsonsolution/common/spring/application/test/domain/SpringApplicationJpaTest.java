@@ -1,12 +1,15 @@
 package com.olsonsolution.common.spring.application.test.domain;
 
-import com.olsonsolution.common.spring.application.datasource.classic.entity.ClassicPersonData;
-import com.olsonsolution.common.spring.application.datasource.classic.entity.ClassicPersonTeamBoundData;
-import com.olsonsolution.common.spring.application.datasource.classic.entity.ClassicTeamData;
-import com.olsonsolution.common.spring.application.datasource.classic.entity.embaddable.ClassicPersonTeamBound;
-import com.olsonsolution.common.spring.application.datasource.classic.repository.ClassicPersonJpaRepository;
-import com.olsonsolution.common.spring.application.datasource.classic.repository.ClassicPersonTeamBoundJpaRepository;
-import com.olsonsolution.common.spring.application.datasource.classic.repository.ClassicTeamJpaRepository;
+import com.olsonsolution.common.spring.application.datasource.organization.entity.CompanyData;
+import com.olsonsolution.common.spring.application.datasource.organization.entity.OrganizationData;
+import com.olsonsolution.common.spring.application.datasource.organization.entity.TeamData;
+import com.olsonsolution.common.spring.application.datasource.organization.repository.CompanyDataRepository;
+import com.olsonsolution.common.spring.application.datasource.organization.repository.OrganizationDataRepository;
+import com.olsonsolution.common.spring.application.datasource.organization.repository.TeamDataRepository;
+import com.olsonsolution.common.spring.application.datasource.person.entity.EmployeeData;
+import com.olsonsolution.common.spring.application.datasource.person.entity.PersonData;
+import com.olsonsolution.common.spring.application.datasource.person.repository.EmployeeDataRepository;
+import com.olsonsolution.common.spring.application.datasource.person.repository.PersonDataRepository;
 import com.olsonsolution.common.spring.application.test.config.SpringApplicationJpaTestBase;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
@@ -16,21 +19,22 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.UUID;
 
 class SpringApplicationJpaTest extends SpringApplicationJpaTestBase {
 
     @Autowired
     private DataSourceSpecManager dataSourceSpecManager;
-
     @Autowired
-    private ClassicTeamJpaRepository classicTeamJpaRepository;
-
+    private OrganizationDataRepository organizationDataRepository;
     @Autowired
-    private ClassicPersonJpaRepository classicPersonJpaRepository;
-
+    private CompanyDataRepository companyDataRepository;
     @Autowired
-    private ClassicPersonTeamBoundJpaRepository classicPersonTeamBoundJpaRepository;
+    private TeamDataRepository teamDataRepository;
+    @Autowired
+    private PersonDataRepository personDataRepository;
+    @Autowired
+    private EmployeeDataRepository employeeDataRepository;
 
     @AfterEach
     void clearDataSourceSpec() {
@@ -38,33 +42,50 @@ class SpringApplicationJpaTest extends SpringApplicationJpaTestBase {
     }
 
     @ParameterizedTest
-    @MethodSource("com.olsonsolution.common.spring.application.test.config.SpringApplicationJpaTestBase" +
-            "#dataSourceSpecStream")
+    @MethodSource("com.olsonsolution.common.spring.application.test.config.SpringApplicationJpaTestBase#" +
+            "dataSourceSpecStream")
     void shouldSaveTestData(DataSourceSpec spec) {
         dataSourceSpecManager.setThreadLocal(spec);
-        saveTestData();
+        Integer teamCode = saveMembershipData();
+        savePersonData(teamCode);
     }
 
-    @Transactional
-    void saveTestData() {
-        ClassicTeamData classicTeamData = new ClassicTeamData(1L, "TEAM1", "team1");
-        ClassicPersonData classicPersonData = new ClassicPersonData(1L, "John", "Doe", 'M');
-        ClassicPersonTeamBoundData bound = new ClassicPersonTeamBoundData(new ClassicPersonTeamBound(
-                1L,
-                1L
-        ));
-        ClassicTeamData persistedTeam = classicTeamJpaRepository.save(classicTeamData);
-        ClassicPersonData persistedPerson = classicPersonJpaRepository.save(classicPersonData);
-        ClassicPersonTeamBoundData persistedBound = classicPersonTeamBoundJpaRepository.save(bound);
-        assertThat(classicTeamJpaRepository.existsById(persistedTeam.getId())).isTrue();
-        assertThat(classicPersonJpaRepository.existsById(persistedPerson.getId())).isTrue();
-        assertThat(classicPersonTeamBoundJpaRepository.existsById(persistedBound.getValueMap())).isTrue();
-        classicPersonTeamBoundJpaRepository.deleteById(persistedBound.getValueMap());
-        classicPersonJpaRepository.deleteById(persistedPerson.getId());
-        classicTeamJpaRepository.deleteById(persistedTeam.getId());
-        assertThat(classicTeamJpaRepository.existsById(persistedTeam.getId())).isFalse();
-        assertThat(classicPersonJpaRepository.existsById(persistedPerson.getId())).isFalse();
-        assertThat(classicPersonTeamBoundJpaRepository.existsById(persistedBound.getValueMap())).isFalse();
+    @Transactional(transactionManager = "Membership_platformTransactionManager")
+    Integer saveMembershipData() {
+        OrganizationData organization = new OrganizationData(
+                20,
+                "Unit Test Organization lmtd.",
+                "Unit Test Organization",
+                "UTSTO",
+                null
+        );
+        organization = organizationDataRepository.save(organization);
+        CompanyData company = new CompanyData(
+                100,
+                organization.getCode(),
+                "Unit Test Company lmtd.",
+                "Unit Test Company",
+                "UTSTC",
+                null
+        );
+        company = companyDataRepository.save(company);
+        TeamData team = new TeamData(
+                2500,
+                company.getCode(),
+                "Unit Test Team lmtd.",
+                "Unit Test Team",
+                "UTSTT",
+                null
+        );
+        return team.getCode();
+    }
+
+    @Transactional(transactionManager = "Person_platformTransactionManager")
+    void savePersonData(Integer teamCode) {
+        PersonData person = new PersonData(null, "John", null, "Doe", 'M');
+        person = personDataRepository.save(person);
+        EmployeeData employee = new EmployeeData(null, person.getId(), teamCode, UUID.randomUUID());
+        employee = employeeDataRepository.save(employee);
     }
 
 }
