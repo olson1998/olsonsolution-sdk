@@ -110,7 +110,7 @@ final class ChangeLogGenerator {
     private static void generateColumn(AddColumnOp addColumnOp, Element createTable, Document document) {
         Element column = document.createElement("column");
         column.setAttribute("name", addColumnOp.column());
-        column.setAttribute("type", "VARCHAR(255)");
+        column.setAttribute("type", addColumnOp.type());
         Element constraints = null;
         for (ConstraintMetadata constraint : addColumnOp.constraints()) {
             if (constraint.type() == PRIMARY_KEY) {

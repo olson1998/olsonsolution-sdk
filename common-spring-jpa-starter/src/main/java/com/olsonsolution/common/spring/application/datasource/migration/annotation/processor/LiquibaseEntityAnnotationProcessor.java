@@ -10,7 +10,12 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
+import javax.lang.model.util.Elements;
+import javax.lang.model.util.Types;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -110,8 +115,6 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
                 ));
         LinkedList<ChangeSetOperation> tableOperations = new LinkedList<>();
         tableOperations.add(createTableOp);
-        tableOperations.addAll(collectUniqueConstraints(createTableOp));
-        tableOperations.addAll(collectAddForeignKeyConstraints(createTableOp));
         changeSetCreateTableOperations.put(changeSet.firstVersion(), tableOperations);
     }
 
@@ -178,6 +181,22 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
             changeSetAtBeginningOperations.computeIfAbsent(changeSet.firstVersion(), k -> new LinkedList<>())
                     .add(createSequence);
         }
+        List<ChangeSetOperation> atTheEndOperations = changeSetAtEndOperations
+                .computeIfAbsent(changeSet.firstVersion(), k -> new LinkedList<>());
+        addColumnOp.constraints().forEach(constraintMetadata -> {
+            if (constraintMetadata.type() == UNIQUE) {
+                atTheEndOperations.add(new AddUniqueConstraint(tableName, columnName, constraintMetadata.name()));
+            }
+            if (constraintMetadata.type() == FOREIGN_KEY) {
+                atTheEndOperations.add(new AddForeignKeyConstraint(
+                        tableName,
+                        columnName,
+                        constraintMetadata.name(),
+                        constraintMetadata.parameters().get(0),
+                        constraintMetadata.parameters().get(1)
+                ));
+            }
+        });
         Optional.ofNullable(fieldElement.getAnnotation(ColumnChanges.class))
                 .ifPresent(changes -> collectColumnChangesOperations(
                         changes,
@@ -194,7 +213,8 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
                                                    String columnName,
                                                    Column column) {
         AddColumnOp.AddColumnOpBuilder addColumnOp = AddColumnOp.builder()
-                .column(columnName);
+                .column(columnName)
+                .type(resolveType(fieldElement, column));
         if (isIdentifier(fieldElement)) {
             addColumnOp.constraint(ConstraintMetadata.builder()
                     .name("pk_" + tableName)
@@ -273,36 +293,6 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
         atEndOperations.addAll(buildOperations(columnChange.operation(), tableName, columnName, columnChange));
     }
 
-    private List<AddUniqueConstraint> collectUniqueConstraints(CreateTableOp createTableOp) {
-        return createTableOp.addColumns()
-                .stream()
-                .flatMap(addColumnOp -> addColumnOp.constraints()
-                        .stream()
-                        .map(constraintMetadata -> entry(addColumnOp, constraintMetadata)))
-                .filter(constraint -> constraint.getValue().type() == UNIQUE)
-                .map(constraint -> new AddUniqueConstraint(
-                        createTableOp.table(),
-                        constraint.getKey().column(),
-                        constraint.getValue().name()
-                )).collect(Collectors.toCollection(LinkedList::new));
-    }
-
-    private List<AddForeignKeyConstraint> collectAddForeignKeyConstraints(CreateTableOp createTableOp) {
-        return createTableOp.addColumns()
-                .stream()
-                .flatMap(addColumnOp -> addColumnOp.constraints()
-                        .stream()
-                        .map(constraintMetadata -> entry(addColumnOp, constraintMetadata)))
-                .filter(columnConst -> columnConst.getValue().type() == FOREIGN_KEY)
-                .map(columnConst -> new AddForeignKeyConstraint(
-                        createTableOp.table(),
-                        columnConst.getKey().column(),
-                        columnConst.getValue().name(),
-                        columnConst.getValue().parameters().get(0),
-                        columnConst.getValue().parameters().get(1)
-                )).collect(Collectors.toCollection(LinkedList::new));
-    }
-
     private List<ChangeSetOperation> buildOperations(Operation operation,
                                                      String tableName,
                                                      String columnName,
@@ -358,6 +348,74 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
                 variableElement.getAnnotation(Column.class).name();
     }
 
+    private String resolveType(VariableElement variableElement, Column column) {
+        if (column != null && !column.columnDefinition().isEmpty()) {
+            return column.columnDefinition();
+        }
+        return assumeType(variableElement, column);
+    }
+
+    private String assumeType(VariableElement variableElement, Column column) {
+        TypeMirror variableTypeMirror = variableElement.asType();
+        if (variableTypeMirror.getKind().isPrimitive()) {
+            return assumePrimitiveType(variableTypeMirror);
+        } else if (isAssignableFieldType(variableElement, Integer.class)) {
+            return "int(32)";
+        } else if (isAssignableFieldType(variableElement, Long.class) ||
+                isAssignableFieldType(variableElement, BigInteger.class)) {
+            return "int(64)";
+        } else if (isAssignableFieldType(variableElement, Short.class)) {
+            return "int(16)";
+        } else if (isAssignableFieldType(variableElement, Double.class) ||
+                isAssignableFieldType(variableElement, BigDecimal.class)) {
+            return "double";
+        } else if (isAssignableFieldType(variableElement, Float.class)) {
+            return "float";
+        } else if (isAssignableFieldType(variableElement, Boolean.class)) {
+            return "boolean";
+        } else if (isAssignableFieldType(variableElement, Character.class)) {
+            return "varchar(1)";
+        } else if (isAssignableFieldType(variableElement, String.class) && column != null) {
+            return "varchar(" + column.length() + ")";
+        } else if (isAssignableFieldType(variableElement, String.class)) {
+            return "varchar(255)";
+        } else {
+            return "";
+        }
+    }
+
+    private String assumePrimitiveType(TypeMirror typeMirror) {
+        switch (typeMirror.getKind()) {
+            case INT -> {
+                return "int(32)";
+            }
+            case LONG -> {
+                return "int(64)";
+            }
+            case SHORT -> {
+                return "int(16)";
+            }
+            case DOUBLE -> {
+                return "double";
+            }
+            case FLOAT -> {
+                return "float";
+            }
+            case BOOLEAN -> {
+                return "boolean";
+            }
+            case CHAR -> {
+                return "varchar(1)";
+            }
+        }
+        return "";
+    }
+
+    private TypeMirror getDeclaredType(Class<?> javaClass, Types typeUtils, Elements elementUtils) {
+        TypeElement typeElement = elementUtils.getTypeElement(javaClass.getCanonicalName());
+        return typeUtils.getDeclaredType(typeElement);
+    }
+
     private boolean isJpaEntity(Element element) {
         return element.getAnnotation(Entity.class) != null && element.getKind() == CLASS;
     }
@@ -372,6 +430,13 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
 
     private boolean isEmbeddableIdentifier(VariableElement variableElement) {
         return variableElement.getAnnotation(EmbeddedId.class) != null;
+    }
+
+    private boolean isAssignableFieldType(VariableElement element, Class<?> javaClass) {
+        Types typeUtils = processingEnv.getTypeUtils();
+        Elements elementUtils = processingEnv.getElementUtils();
+        TypeMirror typeMirror = getDeclaredType(javaClass, typeUtils, elementUtils);
+        return typeUtils.isAssignable(element.asType(), typeMirror);
     }
 
 }
