@@ -9,18 +9,15 @@ import org.w3c.dom.Document;
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
@@ -46,7 +43,7 @@ import static javax.xml.transform.OutputKeys.*;
 @SupportedAnnotationTypes({
         "com.olsonsolution.common.spring.application.datasource.migration.annotation.ChangeSet"
 })
-public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
+public class ChangeSetAnnotationProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
@@ -352,16 +349,18 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
                                                      String tableName,
                                                      String columnName,
                                                      ColumnChange columnChange) {
-        if (operation == Operation.REMOVE) {
-            return Collections.emptyList();
+        if (operation == Operation.ADD_NOT_NULL_CONSTRAINT) {
+            return Collections.singletonList(new AddNotNullConstraintOp(tableName, columnName));
+        } else if(operation ==Operation.DROP_DEFAULT_VALUE) {
+            return Collections.singletonList(new DropDefaultValueOp(tableName, columnName));
         } else if (operation == Operation.DEFAULT_VALUE_CHANGE) {
             List<ChangeSetOperation> operations = new LinkedList<>();
             operations.add(new DropDefaultValueOp(tableName, columnName));
             operations.add(new AddDefaultValueOp(tableName, columnName, columnChange.parameters()));
             return operations;
-        } else if (operation == Operation.NULLABILITY_CHANGE) {
+        } else if (operation == Operation.DROP_NULL_CONSTRAINT) {
             return Collections.singletonList(new DropNotNullConstraintOp(tableName, columnName));
-        } else if (operation == Operation.TYPE_CHANGE) {
+        } else if (operation == Operation.MODIFY_DATA_TYPE) {
             return Collections.singletonList(new ModifyDataTypeOp(tableName, columnName, columnChange.parameters()));
         } else {
             return Collections.emptyList();

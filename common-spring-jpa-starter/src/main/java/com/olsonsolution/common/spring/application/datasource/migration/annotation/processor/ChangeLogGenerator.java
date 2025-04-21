@@ -59,7 +59,7 @@ final class ChangeLogGenerator {
         root.setAttribute("xsi:schemaLocation", VALUE_SCHEMA_LOCATION);
         document.appendChild(root);
         Element changeSet = document.createElement("changeSet");
-        changeSet.setAttribute("id", table + "_" + version + "_changeset");
+        changeSet.setAttribute("id", "changelog-" + table + '-' + version + "-changeset");
         changeSet.setAttribute("author", "${author}");
         for (ChangeSetOperation changeSetOperation : operations) {
             if (changeSetOperation instanceof CreateTableOp createTableOp) {
@@ -71,11 +71,20 @@ final class ChangeLogGenerator {
             if (changeSetOperation instanceof AddUniqueConstraint addUniqueConstraint) {
                 generateUniqueConstraint(addUniqueConstraint, changeSet, document);
             }
+            if (changeSetOperation instanceof AddNotNullConstraintOp addNotNullConstraintOp) {
+                generateAddNotNullConstraint(addNotNullConstraintOp, changeSet, document);
+            }
             if (changeSetOperation instanceof AddForeignKeyConstraint addForeignKeyConstraint) {
                 generateForeignKeyConstraint(addForeignKeyConstraint, changeSet, document);
             }
             if (changeSetOperation instanceof DropNotNullConstraintOp dropNotNullConstraintOp) {
                 generateDropNotNullConstraint(dropNotNullConstraintOp, changeSet, document);
+            }
+            if (changeSetOperation instanceof ModifyDataTypeOp modifyDataTypeOp) {
+                generateModifyDataType(modifyDataTypeOp, changeSet, document);
+            }
+            if (changeSetOperation instanceof DropForeignKeyOp dropForeignKeyOp) {
+                generateDropForeignKey(dropForeignKeyOp, changeSet, document);
             }
         }
         root.appendChild(changeSet);
@@ -108,6 +117,15 @@ final class ChangeLogGenerator {
         changeSet.appendChild(unique);
     }
 
+    private static void generateAddNotNullConstraint(AddNotNullConstraintOp addNotNullConstraintOp,
+                                                     Element changeSet,
+                                                     Document document) {
+        Element unique = document.createElement("addUniqueConstraint");
+        unique.setAttribute("tableName", addNotNullConstraintOp.table());
+        unique.setAttribute("columnName", addNotNullConstraintOp.column());
+        changeSet.appendChild(unique);
+    }
+
     private static void generateForeignKeyConstraint(AddForeignKeyConstraint addForeignKeyConstraint,
                                                      Element changeSet,
                                                      Document document) {
@@ -127,6 +145,25 @@ final class ChangeLogGenerator {
         dropNotNullConstraint.setAttribute("tableName", dropNotNullConstraintOp.table());
         dropNotNullConstraint.setAttribute("columnName", dropNotNullConstraintOp.column());
         changeSet.appendChild(dropNotNullConstraint);
+    }
+
+    private static void generateModifyDataType(ModifyDataTypeOp modifyDataTypeOp,
+                                               Element changeSet,
+                                               Document document) {
+        Element modifyDataType = document.createElement("modifyDataType");
+        modifyDataType.setAttribute("tableName", modifyDataTypeOp.table());
+        modifyDataType.setAttribute("columnName", modifyDataTypeOp.column());
+        modifyDataType.setAttribute("newDataType", modifyDataTypeOp.columnDataType());
+        changeSet.appendChild(modifyDataType);
+    }
+
+    private static void generateDropForeignKey(DropForeignKeyOp dropForeignKeyOp,
+                                               Element changeSet,
+                                               Document document) {
+        Element dropForeignKey = document.createElement("dropForeignKeyConstraint");
+        dropForeignKey.setAttribute("baseTableName", dropForeignKeyOp.table());
+        dropForeignKey.setAttribute("constraintName", dropForeignKeyOp.constraintName());
+        changeSet.appendChild(dropForeignKey);
     }
 
     private static void generateColumn(AddColumnOp addColumnOp, Element createTable, Document document) {

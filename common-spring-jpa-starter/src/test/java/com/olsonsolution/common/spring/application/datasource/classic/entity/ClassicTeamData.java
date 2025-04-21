@@ -28,7 +28,9 @@ public class ClassicTeamData {
     @Column(name = "TMMCD", nullable = false, length = 7)
     private String code;
 
-    @ColumnChanges(atEnd = @ColumnChange(version = "1.0.1", operation = Operation.NULLABILITY_CHANGE))
+    @ColumnChanges(atBeginning = {
+            @ColumnChange(operation = Operation.TYPE_CHANGE, version = "1.0.1", parameters = "varchar(255)")
+    })
     @Column(name = "TMMNM", nullable = false, length = 63)
     private String name;
 
