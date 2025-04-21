@@ -14,7 +14,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.olsonsolution.common.spring.application.datasource.migration.annotation.processor.ConstraintMetadata.Type.*;
+import static com.olsonsolution.common.spring.application.datasource.migration.annotation.processor.ConstraintMetadata.Type.NON_NULL;
+import static com.olsonsolution.common.spring.application.datasource.migration.annotation.processor.ConstraintMetadata.Type.PRIMARY_KEY;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class ChangeLogGenerator {
@@ -51,16 +52,42 @@ final class ChangeLogGenerator {
         Element changeSet = document.createElement("changeSet");
         changeSet.setAttribute("id", table + "_" + version + "_changeset");
         changeSet.setAttribute("author", "${author}");
+        for (ChangeSetOperation changeSetOperation : operations) {
+            if (changeSetOperation instanceof CreateTableOp createTableOp) {
+                generateCreateTable(createTableOp, changeSet, document);
+            }
+            if (changeSetOperation instanceof CreateSequence createSequence) {
+                generateSequence(createSequence, changeSet, document);
+            }
+            if (changeSetOperation instanceof AddUniqueConstraint addUniqueConstraint) {
+                generateUniqueConstraint(addUniqueConstraint, changeSet, document);
+            }
+            if (changeSetOperation instanceof AddForeignKeyConstraint addForeignKeyConstraint) {
+                generateForeignKeyConstraint(addForeignKeyConstraint, changeSet, document);
+            }
+        }
     }
 
-    private void generateCreateTable(CreateTableOp createTableOp, Element changeSet, Document document) {
+    private static void generateCreateTable(CreateTableOp createTableOp,
+                                            Element changeSet,
+                                            Document document) {
         Element createTable = document.createElement("createTable");
         createTable.setAttribute("tableName", createTableOp.table());
         createTableOp.addColumns().forEach(column -> generateColumn(column, createTable, document));
         changeSet.appendChild(createTable);
     }
 
-    private void generateUniqueConstraint(AddUniqueConstraint addUniqueConstraint, Element changeSet, Document document) {
+    private static void generateSequence(CreateSequence createSequence, Element changeSet, Document document) {
+        Element sequence = document.createElement("createSequence");
+        sequence.setAttribute("sequenceName", createSequence.table());
+        sequence.setAttribute("startValue", String.valueOf(createSequence.startValue()));
+        sequence.setAttribute("incrementBy", String.valueOf(createSequence.incrementBy()));
+        changeSet.appendChild(sequence);
+    }
+
+    private static void generateUniqueConstraint(AddUniqueConstraint addUniqueConstraint,
+                                                 Element changeSet,
+                                                 Document document) {
         Element unique = document.createElement("addUniqueConstraint");
         unique.setAttribute("tableName", addUniqueConstraint.table());
         unique.setAttribute("columnNames", addUniqueConstraint.column());
@@ -68,9 +95,9 @@ final class ChangeLogGenerator {
         changeSet.appendChild(unique);
     }
 
-    private void generateForeignKeyConstraint(AddForeignKeyConstraint addForeignKeyConstraint,
-                                              Element changeSet,
-                                              Document document) {
+    private static void generateForeignKeyConstraint(AddForeignKeyConstraint addForeignKeyConstraint,
+                                                     Element changeSet,
+                                                     Document document) {
         Element foreignKey = document.createElement("addForeignKeyConstraint");
         foreignKey.setAttribute("tableName", addForeignKeyConstraint.table());
         foreignKey.setAttribute("columnNames", addForeignKeyConstraint.column());
@@ -80,7 +107,7 @@ final class ChangeLogGenerator {
         changeSet.appendChild(foreignKey);
     }
 
-    private void generateColumn(AddColumnOp addColumnOp, Element createTable, Document document) {
+    private static void generateColumn(AddColumnOp addColumnOp, Element createTable, Document document) {
         Element column = document.createElement("column");
         column.setAttribute("name", addColumnOp.column());
         column.setAttribute("type", "VARCHAR(255)");
@@ -91,7 +118,7 @@ final class ChangeLogGenerator {
                     constraints = document.createElement("constraints");
                 }
                 constraints.setAttribute("primaryKey", "true");
-            };
+            }
             if (constraint.type() == NON_NULL) {
                 column.setAttribute("nullabale", "false");
             }

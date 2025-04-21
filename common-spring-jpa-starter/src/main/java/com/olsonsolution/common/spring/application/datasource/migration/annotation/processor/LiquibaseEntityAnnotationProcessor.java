@@ -168,6 +168,16 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
                 fieldElement.getAnnotation(Column.class)
         );
         addColumnOpsBuilder.add(addColumnOp);
+        if (isIdentifier(fieldElement) && fieldElement.getAnnotation(SequenceGenerator.class) != null) {
+            SequenceGenerator sequenceGenerator = fieldElement.getAnnotation(SequenceGenerator.class);
+            CreateSequence createSequence = new CreateSequence(
+                    sequenceGenerator.name(),
+                    sequenceGenerator.initialValue(),
+                    sequenceGenerator.allocationSize()
+            );
+            changeSetAtBeginningOperations.computeIfAbsent(changeSet.firstVersion(), k -> new LinkedList<>())
+                    .add(createSequence);
+        }
         Optional.ofNullable(fieldElement.getAnnotation(ColumnChanges.class))
                 .ifPresent(changes -> collectColumnChangesOperations(
                         changes,
