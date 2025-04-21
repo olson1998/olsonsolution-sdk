@@ -28,6 +28,10 @@
             <artifactId>common-spring-config</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.olsonsolution.common</groupId>
+            <artifactId>common-time-utils</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.liquibase</groupId>
             <artifactId>liquibase-core</artifactId>
             <version>${liquibase-core.version}</version>

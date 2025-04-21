@@ -4,10 +4,7 @@ import com.olsonsolution.common.migration.domain.port.stereotype.MigrationResult
 import com.olsonsolution.common.migration.domain.port.stereotype.MigrationResults;
 import com.olsonsolution.common.migration.domain.port.stereotype.exception.ChangeLogMigrationException;
 import com.olsonsolution.common.migration.domain.port.stereotype.exception.ChangeLogSkippedException;
-import com.olsonsolution.common.migration.domain.port.stereotype.exception.MigrationException;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
+import lombok.*;
 import org.apache.commons.collections4.KeyValue;
 import org.apache.commons.collections4.keyvalue.DefaultMapEntry;
 
@@ -23,6 +20,7 @@ import java.util.stream.Stream;
 @Getter
 @ToString
 @EqualsAndHashCode
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class DomainMigrationResults implements MigrationResults {
 
     private final int successful;
@@ -33,25 +31,45 @@ public class DomainMigrationResults implements MigrationResults {
 
     private final int total;
 
-    private final ArrayList<? extends MigrationResult> successfulResults;
+    private final ArrayList<MigrationResult> successfulResults;
 
     private final HashMap<MigrationResult, ChangeLogMigrationException> failedResults;
 
     private final HashMap<MigrationResult, ChangeLogSkippedException> skippedResults;
 
-    public DomainMigrationResults(Collection<? extends MigrationResult> results) {
-        this.successfulResults = streamResults(results, MigrationResult::isSuccessful)
+    public static MigrationResults fromResults(Collection<MigrationResult> results) {
+        ArrayList<MigrationResult> successfulResults = results.stream()
+                .filter(MigrationResult::isSuccessful)
                 .collect(Collectors.toCollection(ArrayList::new));
-        this.failedResults = mapCause(results, MigrationResult::isFailed, MigrationResult::findFailureCause);
-        this.skippedResults = mapCause(results, MigrationResult::isSkipped, MigrationResult::findSkippingCause);
-        this.successful = successfulResults.size();
-        this.failed = failedResults.size();
-        this.skipped = skippedResults.size();
-        this.total = successful + failed + skipped;
+        HashMap<MigrationResult, ChangeLogMigrationException> failedResults =
+                mapCause(results, MigrationResult::isFailed, MigrationResult::findFailureCause);
+        HashMap<MigrationResult, ChangeLogSkippedException> skippedResults =
+                mapCause(results, MigrationResult::isSkipped, MigrationResult::findSkippingCause);
+        int totalQty = results.size();
+        int failedQty = failedResults.size();
+        int skippedQty = skippedResults.size();
+        int successfulQty = successfulResults.size();
+        return new DomainMigrationResults(
+                successfulQty,
+                failedQty,
+                skippedQty,
+                totalQty,
+                successfulResults,
+                failedResults,
+                skippedResults
+        );
     }
 
     public static MigrationResults empty() {
-        return new DomainMigrationResults(null);
+        return new DomainMigrationResults(
+                0,
+                0,
+                0,
+                0,
+                new ArrayList<>(0),
+                new HashMap<>(0),
+                new HashMap<>(0)
+        );
     }
 
     private static Stream<? extends MigrationResult> streamResults(Collection<? extends MigrationResult> results,
