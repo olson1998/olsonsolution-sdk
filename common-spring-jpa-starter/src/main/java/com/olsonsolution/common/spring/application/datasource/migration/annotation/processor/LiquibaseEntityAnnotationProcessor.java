@@ -28,8 +28,6 @@ import static javax.lang.model.element.ElementKind.CLASS;
 })
 public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
 
-    private static final String DEFAULT_VERSION = "1.0";
-
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         Map<TypeElement, ChangeSet> changeSetEntities = getJpaEntities(roundEnv);
@@ -46,29 +44,31 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
 
     }
 
-    private Map<String, List<ChangeSetOperation>> collectColumnsChanges(TypeElement typeElement) {
+    private Map<String, List<ChangeSetOperation>> collectColumnsChanges(TypeElement typeElement,
+                                                                        ChangeSet changeSet) {
         Map<String, List<ChangeSetOperation>> changeSetAtBeginningOperations = new HashMap<>();
-        Map<String, List<ChangeSetOperation>> changeSetColumnOperations = new HashMap<>();
+        Map<String, List<ChangeSetOperation>> changeSetCreateTableOperations = new HashMap<>();
         Map<String, List<ChangeSetOperation>> changeSetAtEndOperations = new HashMap<>();
         Map<String, List<ChangeSetOperation>> changeSetOperations = new LinkedHashMap<>();
         Set<VariableElement> fields = ElementFilter.fieldsIn(Collections.singleton(typeElement));
         String tableName = resolveTableName(typeElement);
-        fields.forEach(fieldElement -> collectColumnsChanges(
-                fieldElement,
+        collectColumnsChanges(
+                fields,
                 tableName,
+                changeSet,
                 changeSetAtBeginningOperations,
-                changeSetColumnOperations,
+                changeSetCreateTableOperations,
                 changeSetAtEndOperations
-        ));
+        );
         List<String> changeSetVersion = resolveVersions(
                 changeSetAtBeginningOperations,
-                changeSetColumnOperations,
+                changeSetCreateTableOperations,
                 changeSetAtEndOperations
         );
         changeSetVersion.forEach(version -> collectOperations(
                 version,
                 changeSetAtBeginningOperations,
-                changeSetColumnOperations,
+                changeSetCreateTableOperations,
                 changeSetAtEndOperations,
                 changeSetOperations
         ));
@@ -90,10 +90,34 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
                 .ifPresent(operations::addAll);
     }
 
+    private void collectColumnsChanges(Set<VariableElement> fieldsElements,
+                                       String tableName,
+                                       ChangeSet changeSet,
+                                       Map<String, List<ChangeSetOperation>> changeSetAtBeginningOperations,
+                                       Map<String, List<ChangeSetOperation>> changeSetCreateTableOperations,
+                                       Map<String, List<ChangeSetOperation>> changeSetAtEndOperations) {
+        Stream.Builder<AddColumnOp> addColumnOpsBuilder = Stream.builder();
+        fieldsElements.forEach(fieldElement -> collectColumnsChanges(
+                fieldElement,
+                tableName,
+                changeSet,
+                addColumnOpsBuilder,
+                changeSetAtBeginningOperations,
+                changeSetAtEndOperations
+        ));
+        CreateTableOp createTableOp = addColumnOpsBuilder.build()
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toCollection(LinkedList::new),
+                        f -> new CreateTableOp(tableName, f)
+                ));
+        changeSetCreateTableOperations.put(changeSet.firstVersion(), Collections.singletonList(createTableOp));
+    }
+
     private void collectColumnsChanges(VariableElement fieldElement,
                                        String tableName,
+                                       ChangeSet changeSet,
+                                       Stream.Builder<AddColumnOp> addColumnOpsBuilder,
                                        Map<String, List<ChangeSetOperation>> changeSetAtBeginningOperations,
-                                       Map<String, List<ChangeSetOperation>> changeSetOperations,
                                        Map<String, List<ChangeSetOperation>> changeSetAtEndOperations) {
         if (isEmbeddable(fieldElement)) {
 
@@ -101,48 +125,51 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
             collectColumnOperations(
                     fieldElement,
                     tableName,
+                    changeSet,
+                    addColumnOpsBuilder,
                     changeSetAtBeginningOperations,
-                    changeSetOperations,
                     changeSetAtEndOperations
             );
         }
     }
 
-    private Map<String, List<ChangeSetOperation>> collectColumnOperations(
+    private void collectColumnOperations(
             VariableElement fieldElement,
             String tableName,
+            ChangeSet changeSet,
+            Stream.Builder<AddColumnOp> addColumnOpsBuilder,
             Map<String, List<ChangeSetOperation>> changeSetAtBeginningOperations,
-            Map<String, List<ChangeSetOperation>> changeSetOperations,
             Map<String, List<ChangeSetOperation>> changeSetAtEndOperations) {
         String columnName = resolveColumnName(fieldElement);
         collectColumnOperations(
                 fieldElement,
+                changeSet,
                 tableName,
                 columnName,
+                addColumnOpsBuilder,
                 changeSetAtBeginningOperations,
-                changeSetOperations,
                 changeSetAtEndOperations
         );
-        return changeSetOperations;
     }
 
     private void collectColumnOperations(VariableElement fieldElement,
+                                         ChangeSet changeSet,
                                          String tableName,
                                          String columnName,
+                                         Stream.Builder<AddColumnOp> addColumnOpsBuilder,
                                          Map<String, List<ChangeSetOperation>> changeSetAtBeginningOperations,
-                                         Map<String, List<ChangeSetOperation>> changeSetOperations,
                                          Map<String, List<ChangeSetOperation>> changeSetAtEndOperations) {
-        collectAddColumnOperations(
+        AddColumnOp addColumnOp = resolveAddColumnOperations(
                 fieldElement,
                 tableName,
                 columnName,
-                fieldElement.getAnnotation(Column.class),
-                fieldElement.getAnnotation(ColumnChange.class),
-                changeSetOperations
+                fieldElement.getAnnotation(Column.class)
         );
+        addColumnOpsBuilder.add(addColumnOp);
         Optional.ofNullable(fieldElement.getAnnotation(ColumnChanges.class))
                 .ifPresent(changes -> collectColumnChangesOperations(
                         changes,
+                        changeSet,
                         tableName,
                         columnName,
                         changeSetAtBeginningOperations,
@@ -150,20 +177,15 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
                 ));
     }
 
-    private void collectAddColumnOperations(VariableElement fieldElement,
-                                            String tableName,
-                                            String columnName,
-                                            Column column,
-                                            ColumnChange columnChange,
-                                            Map<String, List<ChangeSetOperation>> changeSetOperations) {
-        String firstVersion = columnChange == null ? DEFAULT_VERSION : columnChange.version();
-        List<ChangeSetOperation> operations =
-                changeSetOperations.computeIfAbsent(firstVersion, k -> new LinkedList<>());
+    private AddColumnOp resolveAddColumnOperations(VariableElement fieldElement,
+                                                   String tableName,
+                                                   String columnName,
+                                                   Column column) {
         AddColumnOp.AddColumnOpBuilder addColumnOp = AddColumnOp.builder()
                 .column(columnName);
         if (isIdentifier(fieldElement)) {
             addColumnOp.constraint(ConstraintMetadata.builder()
-                    .name("ph_" + tableName)
+                    .name("pk_" + tableName)
                     .type(PRIMARY_KEY)
                     .build());
         }
@@ -181,22 +203,25 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
                         .build());
             }
         }
-        operations.add(addColumnOp.build());
+        return addColumnOp.build();
     }
 
     private void collectColumnChangesOperations(ColumnChanges columnChanges,
+                                                ChangeSet changeSet,
                                                 String tableName,
                                                 String columnName,
                                                 Map<String, List<ChangeSetOperation>> changeSetAtBeginningOperations,
                                                 Map<String, List<ChangeSetOperation>> changeSetAtEndOperations) {
         Arrays.stream(columnChanges.atBeginning()).forEach(columnChange -> collectAtBeginningOperations(
                 columnChange,
+                changeSet,
                 tableName,
                 columnName,
                 changeSetAtBeginningOperations
         ));
         Arrays.stream(columnChanges.atEnd()).forEach(columnChange -> collectAtEndOperations(
                 columnChange,
+                changeSet,
                 tableName,
                 columnName,
                 changeSetAtEndOperations
@@ -204,20 +229,24 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
     }
 
     private void collectAtBeginningOperations(ColumnChange columnChange,
+                                              ChangeSet changeSet,
                                               String tableName,
                                               String columnName,
                                               Map<String, List<ChangeSetOperation>> changeSetAtBeginningOperations) {
+        String version = columnChange.version().isEmpty() ? changeSet.firstVersion() : columnChange.version();
         List<ChangeSetOperation> atBeginningOperations =
-                changeSetAtBeginningOperations.computeIfAbsent(columnChange.version(), k -> new LinkedList<>());
+                changeSetAtBeginningOperations.computeIfAbsent(version, k -> new LinkedList<>());
         atBeginningOperations.addAll(buildOperations(columnChange.operation(), tableName, columnName, columnChange));
     }
 
     private void collectAtEndOperations(ColumnChange columnChange,
+                                        ChangeSet changeSet,
                                         String tableName,
                                         String columnName,
                                         Map<String, List<ChangeSetOperation>> changeSetAtEndOperations) {
+        String version = columnChange.version().isEmpty() ? changeSet.firstVersion() : columnChange.version();
         List<ChangeSetOperation> atEndOperations =
-                changeSetAtEndOperations.computeIfAbsent(columnChange.version(), k -> new LinkedList<>());
+                changeSetAtEndOperations.computeIfAbsent(version, k -> new LinkedList<>());
         atEndOperations.addAll(buildOperations(columnChange.operation(), tableName, columnName, columnChange));
     }
 

@@ -6,8 +6,6 @@ import lombok.Singular;
 import java.util.List;
 
 @Builder
-record AddColumnOp(String table,
-                   String column,
-                   @Singular("constraint") List<ConstraintMetadata> constraints) implements ChangeSetOperation {
+record AddColumnOp(String column, @Singular("constraint") List<ConstraintMetadata> constraints) {
 
 }
