@@ -7,7 +7,7 @@ record ConstraintMetadata(String name, Type type) {
 
     enum Type {
         PRIMARY_KEY,
-        NULLABLE,
+        NULLABLE_FALSE,
         UNIQUE,
         FOREIGN_KEY
     }

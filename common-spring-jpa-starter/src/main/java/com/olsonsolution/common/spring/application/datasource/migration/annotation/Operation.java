@@ -3,8 +3,7 @@ package com.olsonsolution.common.spring.application.datasource.migration.annotat
 public enum Operation {
 
     ADD,
-    REMOVAL,
-    RENAME,
+    REMOVE,
     TYPE_CHANGE,
     DEFAULT_VALUE_CHANGE,
     NULLABILITY_CHANGE
