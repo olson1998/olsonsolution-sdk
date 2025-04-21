@@ -21,20 +21,20 @@ import lombok.*;
 public class CompanyData {
 
     @Id
-    @Column(name = "code", nullable = false)
+    @Column(name = "code", nullable = false, unique = true)
     private Integer code;
 
-    @Column(name = "organization_code", nullable = false)
+    @Column(name = "organization_code", nullable = false, unique = true)
     @ForeignKey(name = "fk_organization_code", referenceTable = "organization", referenceColumn = "code")
     private Integer organizationCode;
 
-    @Column(name = "long_name", nullable = false)
+    @Column(name = "long_name", nullable = false, unique = true)
     private String longName;
 
-    @Column(name = "name", length = 63, nullable = false)
+    @Column(name = "name", length = 63, nullable = false, unique = true)
     private String name;
 
-    @Column(name = "short_name", length = 15, nullable = false)
+    @Column(name = "short_name", length = 15, nullable = false, unique = true)
     private String shortName;
 
     private String description;

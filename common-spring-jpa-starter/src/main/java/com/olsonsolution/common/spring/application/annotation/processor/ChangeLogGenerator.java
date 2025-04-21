@@ -122,7 +122,7 @@ final class ChangeLogGenerator {
                                                      Document document) {
         Element unique = document.createElement("addUniqueConstraint");
         unique.setAttribute("tableName", addNotNullConstraintOp.table());
-        unique.setAttribute("columnName", addNotNullConstraintOp.column());
+        unique.setAttribute("columnNames", addNotNullConstraintOp.column());
         changeSet.appendChild(unique);
     }
 
@@ -130,8 +130,8 @@ final class ChangeLogGenerator {
                                                      Element changeSet,
                                                      Document document) {
         Element foreignKey = document.createElement("addForeignKeyConstraint");
-        foreignKey.setAttribute("tableName", addForeignKeyConstraint.table());
-        foreignKey.setAttribute("columnNames", addForeignKeyConstraint.column());
+        foreignKey.setAttribute("baseTableName", addForeignKeyConstraint.table());
+        foreignKey.setAttribute("baseColumnNames", addForeignKeyConstraint.column());
         foreignKey.setAttribute("referencedTableName", addForeignKeyConstraint.referencedTable());
         foreignKey.setAttribute("referencedColumnNames", addForeignKeyConstraint.referencedColumn());
         foreignKey.setAttribute("constraintName", addForeignKeyConstraint.constraintName());
