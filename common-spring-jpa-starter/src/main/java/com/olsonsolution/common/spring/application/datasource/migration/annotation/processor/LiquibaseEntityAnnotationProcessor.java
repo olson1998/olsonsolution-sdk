@@ -4,16 +4,30 @@ import com.google.auto.service.AutoService;
 import com.olsonsolution.common.spring.application.datasource.migration.annotation.*;
 import com.olsonsolution.common.spring.application.datasource.migration.annotation.ForeignKey;
 import jakarta.persistence.*;
+import org.w3c.dom.Document;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
+import javax.tools.Diagnostic;
+import javax.tools.FileObject;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
@@ -23,6 +37,9 @@ import java.util.stream.Stream;
 import static com.olsonsolution.common.spring.application.datasource.migration.annotation.processor.ConstraintMetadata.Type.*;
 import static java.util.Map.entry;
 import static javax.lang.model.element.ElementKind.CLASS;
+import static javax.lang.model.element.ElementKind.FIELD;
+import static javax.tools.StandardLocation.CLASS_OUTPUT;
+import static javax.xml.transform.OutputKeys.*;
 
 @AutoService(Processor.class)
 @SupportedSourceVersion(SourceVersion.RELEASE_17)
@@ -43,18 +60,59 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
     }
 
     private void processChangeSet(TypeElement typeElement, ChangeSet changeSet, RoundEnvironment roundEnv) {
-        String changeLogPath = changeSet.path();
-
+        String tableName = resolveTableName(typeElement);
+        Map<String, List<ChangeSetOperation>> changeSetOperations =
+                collectOperations(typeElement, tableName, changeSet);
+        try {
+            Messager messager = processingEnv.getMessager();
+            messager.printMessage(Diagnostic.Kind.NOTE, "changeSet=" + changeSetOperations);
+            Map<String, Document> changeLogXmlList =
+                    ChangeLogGenerator.generateChangeLogs(tableName, changeSetOperations);
+            messager.printMessage(Diagnostic.Kind.NOTE, "changeLogXml=" + changeLogXmlList);
+            for (Map.Entry<String, Document> versionChangeLogXml : changeLogXmlList.entrySet()) {
+                String version = versionChangeLogXml.getKey();
+                Document changeLogXml = versionChangeLogXml.getValue();
+                createChangeLogXml(changeSet, tableName, version, changeLogXml);
+            }
+        } catch (ParserConfigurationException| TransformerException | IOException e) {
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.getMessage());
+        }
     }
 
-    private Map<String, List<ChangeSetOperation>> collectColumnsChanges(TypeElement typeElement,
-                                                                        ChangeSet changeSet) {
+    private void createChangeLogXml(ChangeSet changeSet,
+                                    String tableName,
+                                    String version,
+                                    Document changeLogXml) throws IOException, TransformerException {
+        String fileName = changeSet.file();
+        fileName = fileName.replace("{version}", version);
+        fileName = fileName.replace("{table}", tableName);
+        Filer filer = processingEnv.getFiler();
+        FileObject changeLogFile = filer.createResource(
+                CLASS_OUTPUT,
+                "",
+                changeSet.path() + fileName
+        );
+        TransformerFactory tf = TransformerFactory.newInstance();
+        Transformer transformer = tf.newTransformer();
+        transformer.setOutputProperty(INDENT, "yes");
+        transformer.setOutputProperty(OMIT_XML_DECLARATION, "no");
+        transformer.setOutputProperty(METHOD, "xml");
+        transformer.setOutputProperty(ENCODING, "UTF-8");
+        try (Writer writer = changeLogFile.openWriter()) {
+            StringWriter stringWriter = new StringWriter();
+            transformer.transform(new DOMSource(changeLogXml), new StreamResult(stringWriter));
+            writer.write(stringWriter.toString());
+        }
+    }
+
+    private Map<String, List<ChangeSetOperation>> collectOperations(TypeElement typeElement,
+                                                                    String tableName,
+                                                                    ChangeSet changeSet) {
         Map<String, List<ChangeSetOperation>> changeSetAtBeginningOperations = new HashMap<>();
         Map<String, List<ChangeSetOperation>> changeSetCreateTableOperations = new HashMap<>();
         Map<String, List<ChangeSetOperation>> changeSetAtEndOperations = new HashMap<>();
         Map<String, List<ChangeSetOperation>> changeSetOperations = new LinkedHashMap<>();
-        Set<VariableElement> fields = ElementFilter.fieldsIn(Collections.singleton(typeElement));
-        String tableName = resolveTableName(typeElement);
+        Set<VariableElement> fields = getDeclaredFields(typeElement);
         collectColumnsChanges(
                 fields,
                 tableName,
@@ -321,6 +379,15 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
                 .map(TypeElement.class::cast)
                 .map(element -> entry(element, element.getAnnotation(ChangeSet.class)))
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    private Set<VariableElement> getDeclaredFields(TypeElement typeElement) {
+        return typeElement.getEnclosedElements()
+                .stream()
+                .filter(element -> element.getKind() == FIELD)
+                .filter(VariableElement.class::isInstance)
+                .map(VariableElement.class::cast)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     private List<String> resolveVersions(Map<String, List<ChangeSetOperation>> changeSetAtBeginningOperations,

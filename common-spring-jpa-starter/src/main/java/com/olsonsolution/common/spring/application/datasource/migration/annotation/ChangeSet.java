@@ -4,7 +4,7 @@ public @interface ChangeSet {
 
     String firstVersion() default "1.0.0";
 
-    String path() default  "src/resources/db/changelog";
+    String path() default  "src/resources/db/changelog/";
 
     String file() default  "db.changelog-{table}-{version}.xml";
 

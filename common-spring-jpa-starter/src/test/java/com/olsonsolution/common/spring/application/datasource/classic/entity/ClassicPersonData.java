@@ -1,5 +1,6 @@
 package com.olsonsolution.common.spring.application.datasource.classic.entity;
 
+import com.olsonsolution.common.spring.application.datasource.migration.annotation.ChangeSet;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -11,6 +12,8 @@ import lombok.*;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
+
+@ChangeSet
 
 @Entity
 @Table(name = "PRSDTA")

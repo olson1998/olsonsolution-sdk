@@ -1,6 +1,7 @@
 package com.olsonsolution.common.spring.application.datasource.classic.entity;
 
 import com.olsonsolution.common.spring.application.datasource.classic.entity.embaddable.ClassicPersonTeamBound;
+import com.olsonsolution.common.spring.application.datasource.migration.annotation.ChangeSet;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -11,6 +12,8 @@ import lombok.*;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
+
+@ChangeSet
 
 @Entity
 @Table(name = "PTMBND")

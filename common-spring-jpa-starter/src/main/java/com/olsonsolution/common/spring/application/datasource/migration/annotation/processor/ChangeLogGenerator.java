@@ -8,6 +8,7 @@ import org.w3c.dom.Element;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +17,7 @@ import java.util.stream.Stream;
 
 import static com.olsonsolution.common.spring.application.datasource.migration.annotation.processor.ConstraintMetadata.Type.NON_NULL;
 import static com.olsonsolution.common.spring.application.datasource.migration.annotation.processor.ConstraintMetadata.Type.PRIMARY_KEY;
+import static java.util.Map.entry;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class ChangeLogGenerator {
@@ -25,19 +27,26 @@ final class ChangeLogGenerator {
     private static final String VALUE_SCHEMA_LOCATION = "http://www.liquibase.org/xml/ns/dbchangelog " +
             "http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.4.xsd";
 
-    public static List<Document> generateChangeLogs(
+    public static Map<String, Document> generateChangeLogs(
             String table,
             Map<String, List<ChangeSetOperation>> changeSetOperations) throws ParserConfigurationException {
-        Stream.Builder<Document> changeLogsCollector = Stream.builder();
+        Stream.Builder<Map.Entry<String, Document>> changeLogsCollector = Stream.builder();
         for (Map.Entry<String, List<ChangeSetOperation>> versionOps : changeSetOperations.entrySet()) {
             DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
             Document document = documentBuilder.newDocument();
             generateChangeLog(table, versionOps.getKey(), versionOps.getValue(), document);
-            changeLogsCollector.add(document);
+            changeLogsCollector.add(entry(versionOps.getKey(), document));
         }
         return changeLogsCollector.build()
-                .collect(Collectors.toCollection(LinkedList::new));
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toCollection(LinkedList::new),
+                        f -> {
+                            Map<String, Document> changeLogs = new LinkedHashMap<>(f.size());
+                            f.forEach(entry -> changeLogs.put(entry.getKey(), entry.getValue()));
+                            return changeLogs;
+                        }
+                ));
     }
 
     private static void generateChangeLog(String table,
@@ -66,6 +75,7 @@ final class ChangeLogGenerator {
                 generateForeignKeyConstraint(addForeignKeyConstraint, changeSet, document);
             }
         }
+        root.appendChild(changeSet);
     }
 
     private static void generateCreateTable(CreateTableOp createTableOp,
@@ -113,20 +123,23 @@ final class ChangeLogGenerator {
         column.setAttribute("type", addColumnOp.type());
         Element constraints = null;
         for (ConstraintMetadata constraint : addColumnOp.constraints()) {
-            if (constraint.type() == PRIMARY_KEY) {
+            if (constraint.type() == PRIMARY_KEY || constraint.type() == NON_NULL) {
                 if (constraints == null) {
                     constraints = document.createElement("constraints");
                 }
-                constraints.setAttribute("primaryKey", "true");
-            }
-            if (constraint.type() == NON_NULL) {
-                column.setAttribute("nullabale", "false");
+                if (constraint.type() == PRIMARY_KEY) {
+                    constraints.setAttribute("primaryKey", "true");
+                }
+                if (constraint.type() == NON_NULL) {
+                    constraints.setAttribute("nullable", "false"); //
+                }
             }
         }
         if (constraints != null) {
-            createTable.appendChild(constraints);
+            column.appendChild(constraints);
         }
         createTable.appendChild(column);
     }
+
 
 }

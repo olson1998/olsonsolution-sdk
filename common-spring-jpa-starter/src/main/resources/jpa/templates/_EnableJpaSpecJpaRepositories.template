@@ -1,6 +1,5 @@
 package ${BASE_PACKAGE};
 
-import com.olsonsolution.common.metadata.application.annotation.Generated;
 import com.olsonsolution.common.spring.application.jpa.config.EnableJpaSpecAnnotationProcessor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
@@ -11,9 +10,5 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
         entityManagerFactoryRef = "${JPA_SPEC}_entityManagerFactory"
 )
 @Configuration
-@Generated(
-        timestamp = "${TIMESTAMP}",
-        annotationProcessor = EnableJpaSpecAnnotationProcessor.class
-)
 public class Enable${JPA_SPEC}JpaRepositoriesConfig {
 }
