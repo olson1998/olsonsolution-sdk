@@ -1,6 +1,9 @@
 package com.olsonsolution.common.spring.application.datasource.classic.entity;
 
 import com.olsonsolution.common.spring.application.datasource.migration.annotation.ChangeSet;
+import com.olsonsolution.common.spring.application.datasource.migration.annotation.ColumnChange;
+import com.olsonsolution.common.spring.application.datasource.migration.annotation.ColumnChanges;
+import com.olsonsolution.common.spring.application.datasource.migration.annotation.Operation;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -22,10 +25,11 @@ public class ClassicTeamData {
     @SequenceGenerator(name = "TMMSEQ", sequenceName = "TMMSEQ", allocationSize = 1)
     private Long id;
 
-    @Column(name = "TMMCD", length = 7)
+    @Column(name = "TMMCD", nullable = false, length = 7)
     private String code;
 
-    @Column(name = "TMMNM", length = 63)
+    @ColumnChanges(atEnd = @ColumnChange(version = "1.0.1", operation = Operation.NULLABILITY_CHANGE))
+    @Column(name = "TMMNM", nullable = false, length = 63)
     private String name;
 
 }

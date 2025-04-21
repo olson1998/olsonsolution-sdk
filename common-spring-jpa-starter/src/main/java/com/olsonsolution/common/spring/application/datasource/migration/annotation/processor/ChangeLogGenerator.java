@@ -74,6 +74,9 @@ final class ChangeLogGenerator {
             if (changeSetOperation instanceof AddForeignKeyConstraint addForeignKeyConstraint) {
                 generateForeignKeyConstraint(addForeignKeyConstraint, changeSet, document);
             }
+            if (changeSetOperation instanceof DropNotNullConstraintOp dropNotNullConstraintOp) {
+                generateDropNotNullConstraint(dropNotNullConstraintOp, changeSet, document);
+            }
         }
         root.appendChild(changeSet);
     }
@@ -115,6 +118,15 @@ final class ChangeLogGenerator {
         foreignKey.setAttribute("referencedColumnNames", addForeignKeyConstraint.referencedColumn());
         foreignKey.setAttribute("constraintName", addForeignKeyConstraint.constraintName());
         changeSet.appendChild(foreignKey);
+    }
+
+    private static void generateDropNotNullConstraint(DropNotNullConstraintOp dropNotNullConstraintOp,
+                                                      Element changeSet,
+                                                      Document document) {
+        Element dropNotNullConstraint = document.createElement("dropNotNullConstraint");
+        dropNotNullConstraint.setAttribute("tableName", dropNotNullConstraintOp.table());
+        dropNotNullConstraint.setAttribute("columnName", dropNotNullConstraintOp.column());
+        changeSet.appendChild(dropNotNullConstraint);
     }
 
     private static void generateColumn(AddColumnOp addColumnOp, Element createTable, Document document) {

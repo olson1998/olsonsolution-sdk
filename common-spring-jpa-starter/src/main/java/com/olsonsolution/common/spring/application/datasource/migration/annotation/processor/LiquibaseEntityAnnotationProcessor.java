@@ -64,7 +64,6 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
         Map<String, List<ChangeSetOperation>> changeSetOperations =
                 collectOperations(typeElement, tableName, changeSet);
         try {
-            Messager messager = processingEnv.getMessager();
             Map<String, Document> changeLogXmlList =
                     ChangeLogGenerator.generateChangeLogs(tableName, changeSetOperations);
             for (Map.Entry<String, Document> versionChangeLogXml : changeLogXmlList.entrySet()) {
