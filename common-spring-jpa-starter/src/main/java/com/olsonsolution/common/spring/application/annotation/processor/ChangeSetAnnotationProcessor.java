@@ -9,6 +9,7 @@ import org.w3c.dom.Document;
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
@@ -177,7 +178,19 @@ public class ChangeSetAnnotationProcessor extends AbstractProcessor {
                                        Map<String, List<ChangeSetOperation>> changeSetAtBeginningOperations,
                                        Map<String, List<ChangeSetOperation>> changeSetAtEndOperations) {
         if (isEmbeddable(fieldElement)) {
-
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "embeddable: " + processingEnv.getTypeUtils().asElement(fieldElement.asType()));
+            if (processingEnv.getTypeUtils().asElement(fieldElement.asType()) instanceof TypeElement fieldTypeElement) {
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "embeddable: " + fieldTypeElement);
+                collectEmbeddableColumnOperations(
+                        fieldElement,
+                        fieldTypeElement,
+                        tableName,
+                        changeSet,
+                        addColumnOpsBuilder,
+                        changeSetAtBeginningOperations,
+                        changeSetAtEndOperations
+                );
+            }
         } else {
             collectColumnOperations(
                     fieldElement,
@@ -188,6 +201,36 @@ public class ChangeSetAnnotationProcessor extends AbstractProcessor {
                     changeSetAtEndOperations
             );
         }
+    }
+
+    private void collectEmbeddableColumnOperations(VariableElement embeddableFieldElement,
+                                                   TypeElement fieldTypeElement,
+                                                   String tableName,
+                                                   ChangeSet changeSet,
+                                                   Stream.Builder<AddColumnOp> addColumnOpsBuilder,
+                                                   Map<String, List<ChangeSetOperation>> changeSetAtBeginningOperations,
+                                                   Map<String, List<ChangeSetOperation>> changeSetAtEndOperations) {
+        Set<VariableElement> embeddableFieldElements = getDeclaredFields(fieldTypeElement);
+        if (isEmbeddableIdentifier(embeddableFieldElement)) {
+            String fkName = "fk_" + tableName;
+            AddUniqueConstraintOp addUniqueConstraintOp = embeddableFieldElements.stream()
+                    .map(VariableElement::getSimpleName)
+                    .map(Name::toString)
+                    .collect(Collectors.collectingAndThen(
+                            Collectors.toCollection(LinkedHashSet::new),
+                            f -> new AddUniqueConstraintOp(tableName, f, fkName)
+                    ));
+            changeSetAtEndOperations.computeIfAbsent(changeSet.firstVersion(), k -> new LinkedList<>())
+                    .add(addUniqueConstraintOp);
+        }
+        embeddableFieldElements.forEach(fieldElement -> collectColumnOperations(
+                fieldElement,
+                tableName,
+                changeSet,
+                addColumnOpsBuilder,
+                changeSetAtBeginningOperations,
+                changeSetAtEndOperations
+        ));
     }
 
     private void collectColumnOperations(
@@ -237,7 +280,11 @@ public class ChangeSetAnnotationProcessor extends AbstractProcessor {
                 .computeIfAbsent(changeSet.firstVersion(), k -> new LinkedList<>());
         addColumnOp.constraints().forEach(constraintMetadata -> {
             if (constraintMetadata.type() == UNIQUE) {
-                atTheEndOperations.add(new AddUniqueConstraint(tableName, columnName, constraintMetadata.name()));
+                atTheEndOperations.add(new AddUniqueConstraintOp(
+                        tableName,
+                        Collections.singleton(columnName),
+                        constraintMetadata.name()
+                ));
             }
             if (constraintMetadata.type() == FOREIGN_KEY && constraintMetadata.parameters().size() == 2) {
                 atTheEndOperations.add(new AddForeignKeyConstraint(
@@ -291,7 +338,6 @@ public class ChangeSetAnnotationProcessor extends AbstractProcessor {
             ForeignKey foreignKey = fieldElement.getAnnotation(ForeignKey.class);
             List<String> parameters = Stream.of(foreignKey.referenceTable(), foreignKey.referenceColumn())
                     .collect(Collectors.toCollection(ArrayList::new));
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "foreign key: " + parameters);
             addColumnOp.constraint(ConstraintMetadata.builder()
                     .name(foreignKey.name())
                     .parameters(parameters)
@@ -486,7 +532,10 @@ public class ChangeSetAnnotationProcessor extends AbstractProcessor {
     }
 
     private boolean isEmbeddable(VariableElement variableElement) {
-        return variableElement.getAnnotation(Embeddable.class) != null;
+        if (processingEnv.getTypeUtils().asElement(variableElement.asType()) instanceof TypeElement fieldTypeElement) {
+            return fieldTypeElement.getAnnotation(Embeddable.class) != null;
+        }
+        return false;
     }
 
     private boolean isIdentifier(VariableElement variableElement) {

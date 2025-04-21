@@ -68,8 +68,8 @@ final class ChangeLogGenerator {
             if (changeSetOperation instanceof CreateSequence createSequence) {
                 generateSequence(createSequence, changeSet, document);
             }
-            if (changeSetOperation instanceof AddUniqueConstraint addUniqueConstraint) {
-                generateUniqueConstraint(addUniqueConstraint, changeSet, document);
+            if (changeSetOperation instanceof AddUniqueConstraintOp addUniqueConstraintOp) {
+                generateUniqueConstraint(addUniqueConstraintOp, changeSet, document);
             }
             if (changeSetOperation instanceof AddNotNullConstraintOp addNotNullConstraintOp) {
                 generateAddNotNullConstraint(addNotNullConstraintOp, changeSet, document);
@@ -107,13 +107,13 @@ final class ChangeLogGenerator {
         changeSet.appendChild(sequence);
     }
 
-    private static void generateUniqueConstraint(AddUniqueConstraint addUniqueConstraint,
+    private static void generateUniqueConstraint(AddUniqueConstraintOp addUniqueConstraintOp,
                                                  Element changeSet,
                                                  Document document) {
         Element unique = document.createElement("addUniqueConstraint");
-        unique.setAttribute("tableName", addUniqueConstraint.table());
-        unique.setAttribute("columnNames", addUniqueConstraint.column());
-        unique.setAttribute("constraintName", addUniqueConstraint.name());
+        unique.setAttribute("tableName", addUniqueConstraintOp.table());
+        unique.setAttribute("columnNames", addUniqueConstraintOp.columnNames());
+        unique.setAttribute("constraintName", addUniqueConstraintOp.name());
         changeSet.appendChild(unique);
     }
 
