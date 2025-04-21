@@ -27,7 +27,7 @@ final class ChangeLogGenerator {
     private static final String VALUE_SCHEMA_LOCATION = "http://www.liquibase.org/xml/ns/dbchangelog " +
             "http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.4.xsd";
 
-    public static Map<String, Document> generateChangeLogs(
+    static Map<String, Document> generateChangeLogs(
             String table,
             Map<String, List<ChangeSetOperation>> changeSetOperations) throws ParserConfigurationException {
         Stream.Builder<Map.Entry<String, Document>> changeLogsCollector = Stream.builder();

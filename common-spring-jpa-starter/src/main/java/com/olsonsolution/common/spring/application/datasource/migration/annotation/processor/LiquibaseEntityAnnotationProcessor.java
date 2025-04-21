@@ -65,10 +65,8 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
                 collectOperations(typeElement, tableName, changeSet);
         try {
             Messager messager = processingEnv.getMessager();
-            messager.printMessage(Diagnostic.Kind.NOTE, "changeSet=" + changeSetOperations);
             Map<String, Document> changeLogXmlList =
                     ChangeLogGenerator.generateChangeLogs(tableName, changeSetOperations);
-            messager.printMessage(Diagnostic.Kind.NOTE, "changeLogXml=" + changeLogXmlList);
             for (Map.Entry<String, Document> versionChangeLogXml : changeLogXmlList.entrySet()) {
                 String version = versionChangeLogXml.getKey();
                 Document changeLogXml = versionChangeLogXml.getValue();
@@ -286,7 +284,7 @@ public class LiquibaseEntityAnnotationProcessor extends AbstractProcessor {
                         .type(UNIQUE)
                         .build());
             }
-            if (column.nullable()) {
+            if (!column.nullable()) {
                 addColumnOp.constraint(ConstraintMetadata.builder()
                         .name("nonnull_" + tableName + '_' + columnName)
                         .type(NON_NULL)
