@@ -4,6 +4,8 @@ import com.microsoft.sqlserver.jdbc.SQLServerDataSource;
 import com.microsoft.sqlserver.jdbc.SQLServerException;
 import com.olsonsolution.common.migration.domain.port.repository.MigrationService;
 import com.olsonsolution.common.migration.domain.port.stereotype.MigrationResults;
+import com.olsonsolution.common.spring.application.async.config.AsyncConfig;
+import com.olsonsolution.common.spring.application.async.props.AsyncProperties;
 import com.olsonsolution.common.spring.application.caching.InMemoryCachingConfig;
 import com.olsonsolution.common.spring.application.config.time.TimeUtilsConfig;
 import com.olsonsolution.common.spring.application.jpa.config.DataSourceModelersConfig;
@@ -63,10 +65,12 @@ import static org.assertj.core.api.Assertions.assertThat;
         DataSourceSpecConfig.class,
         DataSourceModelersConfig.class,
         SqlVendorSupportersConfig.class,
+        AsyncConfig.class,
         JpaConfig.class,
         LiquibaseConfig.class,
         InMemoryCachingConfig.class,
         SqlVendorPropertiesResolverConfig.class,
+        AsyncProperties.class,
         JodaDateTimeProperties.class,
         LiquibaseProperties.class,
         SpringApplicationJpaProperties.class,
@@ -148,7 +152,7 @@ public abstract class SpringApplicationJpaTestBase implements InitializingBean {
             DataSource dataSource = destinationDataSourceManager.selectDataSourceBySpec(dataSourceSpec);
             MigrationResults migrationResults = migrationService.migrateAsync(dataSource)
                     .get(30, TimeUnit.SECONDS);
-            dataSourceSpecManager.clearThreadLocal();
+            dataSourceSpecManager.clear();
             assertThat(migrationResults.getFailed()).isZero();
         }
     }
@@ -182,7 +186,7 @@ public abstract class SpringApplicationJpaTestBase implements InitializingBean {
         registry.add(prefix + ".1.data-source.user.rwx.0.password", POSTGRES_CONTAINER::getPassword);
     }
 
-    private static void createSQLServerTestEnv() throws SQLServerException, SQLException {
+    private static void createSQLServerTestEnv() throws SQLException {
         String host = SQL_SERVER_CONTAINER.getHost();
         Integer port = SQL_SERVER_CONTAINER.getMappedPort(1433);
         String username = SQL_SERVER_CONTAINER.getUsername();
@@ -200,7 +204,7 @@ public abstract class SpringApplicationJpaTestBase implements InitializingBean {
         }
     }
 
-    private static void createPostgresEnv() throws SQLServerException, SQLException {
+    private static void createPostgresEnv() throws SQLException {
         String host = POSTGRES_CONTAINER.getHost();
         Integer port = POSTGRES_CONTAINER.getMappedPort(5432);
         String username = POSTGRES_CONTAINER.getUsername();

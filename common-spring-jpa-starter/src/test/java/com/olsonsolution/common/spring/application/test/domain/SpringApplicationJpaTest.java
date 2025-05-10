@@ -38,7 +38,7 @@ class SpringApplicationJpaTest extends SpringApplicationJpaTestBase {
 
     @AfterEach
     void clearDataSourceSpec() {
-        dataSourceSpecManager.clearThreadLocal();
+        dataSourceSpecManager.clear();
     }
 
     @ParameterizedTest
