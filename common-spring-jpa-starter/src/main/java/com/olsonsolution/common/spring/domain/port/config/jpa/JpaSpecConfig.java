@@ -2,8 +2,8 @@ package com.olsonsolution.common.spring.domain.port.config.jpa;
 
 public interface JpaSpecConfig {
 
-    String getSchema();
+    String getJpaSpec();
 
-    String getJpaSpecName();
+    String getSchema();
 
 }

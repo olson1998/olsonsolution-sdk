@@ -26,6 +26,16 @@
 
         <dependency>
             <groupId>com.olsonsolution.common</groupId>
+            <artifactId>common-spring-config</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.olsonsolution.common</groupId>
+            <artifactId>common-liquibase-migration</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.olsonsolution.common</groupId>
             <artifactId>common-spring-caching</artifactId>
         </dependency>
 

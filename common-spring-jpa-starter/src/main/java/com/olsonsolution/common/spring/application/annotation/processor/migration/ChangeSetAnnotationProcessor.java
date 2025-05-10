@@ -163,6 +163,7 @@ public class ChangeSetAnnotationProcessor {
         Set<VariableElement> fields = getDeclaredFields(typeElement);
         collectColumnsChanges(
                 fields,
+                jpaSpec,
                 table,
                 changeSet,
                 changeSetAtBeginningOperations,
@@ -242,6 +243,7 @@ public class ChangeSetAnnotationProcessor {
     }
 
     private void collectColumnsChanges(Set<VariableElement> fieldsElements,
+                                       String jpaSpec,
                                        String tableName,
                                        ChangeSet changeSet,
                                        Map<String, List<ChangeSetOperation>> changeSetAtBeginningOperations,
@@ -256,10 +258,11 @@ public class ChangeSetAnnotationProcessor {
                 changeSetAtBeginningOperations,
                 changeSetAtEndOperations
         ));
+        String schemaVariable = "${" + jpaSpec + "Schema}";
         CreateTableOp createTableOp = addColumnOpsBuilder.build()
                 .collect(Collectors.collectingAndThen(
                         Collectors.toCollection(LinkedList::new),
-                        f -> new CreateTableOp(tableName, f)
+                        f -> new CreateTableOp(schemaVariable, tableName, f)
                 ));
         LinkedList<ChangeSetOperation> tableOperations = new LinkedList<>();
         tableOperations.add(createTableOp);

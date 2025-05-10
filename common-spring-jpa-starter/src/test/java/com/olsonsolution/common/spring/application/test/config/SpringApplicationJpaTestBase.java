@@ -2,18 +2,30 @@ package com.olsonsolution.common.spring.application.test.config;
 
 import com.microsoft.sqlserver.jdbc.SQLServerDataSource;
 import com.microsoft.sqlserver.jdbc.SQLServerException;
+import com.olsonsolution.common.migration.domain.port.stereotype.MigrationResults;
+import com.olsonsolution.common.spring.application.migration.config.LiquibaseConfig;
+import com.olsonsolution.common.spring.application.migration.props.LiquibaseProperties;
+import com.olsonsolution.common.migration.domain.port.repository.MigrationService;
 import com.olsonsolution.common.spring.application.caching.InMemoryCachingConfig;
+import com.olsonsolution.common.spring.application.config.time.TimeUtilsConfig;
 import com.olsonsolution.common.spring.application.jpa.config.DataSourceModelersConfig;
 import com.olsonsolution.common.spring.application.jpa.config.DataSourceSpecConfig;
 import com.olsonsolution.common.spring.application.jpa.config.JpaSpecConfigurer;
 import com.olsonsolution.common.spring.application.jpa.config.SqlVendorPropertiesResolverConfig;
 import com.olsonsolution.common.spring.application.jpa.props.SpringApplicationDestinationDataSourceProperties;
 import com.olsonsolution.common.spring.application.jpa.props.SpringApplicationJpaProperties;
+import com.olsonsolution.common.spring.application.migration.config.ChangeLogProviderConfig;
+import com.olsonsolution.common.spring.application.props.time.JodaDateTimeProperties;
 import com.olsonsolution.common.spring.domain.model.datasource.DataSourceSpecification;
+import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.postgresql.ds.PGSimpleDataSource;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.test.context.ContextConfiguration;
@@ -27,12 +39,11 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static com.olsonsolution.common.data.domain.model.sql.SqlPermissions.RWX;
@@ -42,15 +53,21 @@ import static com.olsonsolution.common.spring.application.jpa.config.DataSourceM
 import static com.olsonsolution.common.spring.application.jpa.props.SpringApplicationDestinationDataSourceProperties.SPRING_APPLICATION_JPA_DESTINATION_DATA_SOURCE_PROPERTIES_PREFIX;
 import static com.olsonsolution.common.spring.application.jpa.props.SpringApplicationJpaProperties.SPRING_APPLICATION_JPA_PROPERTIES_PREFIX;
 import static com.olsonsolution.common.spring.application.test.config.SpringApplicationJpaTestBase.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @EnableTransactionManagement
 @EnableConfigurationProperties
 @ContextConfiguration(classes = {
+        TimeUtilsConfig.class,
+        ChangeLogProviderConfig.class,
         DataSourceSpecConfig.class,
         DataSourceModelersConfig.class,
+        LiquibaseConfig.class,
         InMemoryCachingConfig.class,
         SqlVendorPropertiesResolverConfig.class,
         JpaSpecConfigurer.class,
+        JodaDateTimeProperties.class,
+        LiquibaseProperties.class,
         SpringApplicationJpaProperties.class,
         SpringApplicationDestinationDataSourceProperties.class
 })
@@ -74,7 +91,7 @@ import static com.olsonsolution.common.spring.application.test.config.SpringAppl
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.repository.packages-to-scan.0=" + REPO_PACKAGE,
         "spring.jpa.show-sql=true"
 })
-public abstract class SpringApplicationJpaTestBase {
+public abstract class SpringApplicationJpaTestBase implements InitializingBean {
 
     protected static final String DATABASE = "unit_test";
 
@@ -96,127 +113,6 @@ public abstract class SpringApplicationJpaTestBase {
     protected static final String CLASSIC_REPO_PACKAGE =
             "com.olsonsolution.common.spring.application.datasource.classic.repository";
 
-    private static final String CREATE_PERSON_TABLE_SQL_SERVER_QUERY = """
-            CREATE TABLE company_structure.person (
-                id BIGINT PRIMARY KEY,
-                name NVARCHAR(255),
-                surname NVARCHAR(255),
-                gender NVARCHAR(255)
-            );
-            """;
-    private static final String CREATE_TEAM_SQL_SERVER_QUERY = """
-            CREATE TABLE company_structure.team (
-                id BIGINT PRIMARY KEY,
-                code NVARCHAR(255),
-                name NVARCHAR(255)
-            );
-            """;
-    private static final String CREATE_PERSON_TEAM_BOUND_SQL_SERVER_QUERY = """
-            CREATE TABLE company_structure.person_team_bound (
-                team_id BIGINT NOT NULL,
-                person_id BIGINT NOT NULL,
-                PRIMARY KEY (team_id, person_id)
-            );
-            """;
-    private static final String CREATE_CLASSIC_PERSON_SQL_SERVER_QUERY = """
-            CREATE TABLE COMPANY.PRSDTA (
-                PRSID BIGINT PRIMARY KEY,
-                PRSNM NVARCHAR(255),
-                PRSSN NVARCHAR(255),
-                PRSGN NVARCHAR(255)
-            );
-            """;
-    private static final String CREATE_CLASSIC_TEAM_SQL_SERVER_QUERY = """
-            CREATE TABLE COMPANY.TMMDTA (
-                TMMID BIGINT PRIMARY KEY,
-                TMMCD NVARCHAR(255),
-                TMMNM NVARCHAR(255)
-            );
-            """;
-    private static final String CREATE_CLASSIC_PERSON_TEAM_BOUND_SQL_SERVER_QUERY = """
-            CREATE TABLE COMPANY.PTMBND (
-                PRSID BIGINT,
-                TMMID BIGINT
-                PRIMARY KEY (PRSID, TMMID)
-            );
-            """;
-
-    private static final String CREATE_PERSON_TABLE_POSTGRES_QUERY = """
-            CREATE TABLE company_structure.person (
-                id BIGSERIAL PRIMARY KEY,
-                name VARCHAR(255),
-                surname VARCHAR(255),
-                gender VARCHAR(255)
-            );
-            """;
-
-    private static final String CREATE_TEAM_TABLE_POSTGRES_QUERY = """
-            CREATE TABLE company_structure.team (
-                id BIGSERIAL PRIMARY KEY,
-                code VARCHAR(255),
-                name VARCHAR(255)
-            );
-            """;
-
-    private static final String CREATE_PERSON_TEAM_BOUND_POSTGRES_QUERY = """
-            CREATE TABLE company_structure.person_team_bound (
-                team_id BIGINT NOT NULL,
-                person_id BIGINT NOT NULL,
-                PRIMARY KEY (team_id, person_id),
-                FOREIGN KEY (team_id) REFERENCES company_structure.team (id),
-                FOREIGN KEY (person_id) REFERENCES company_structure.person (id)
-            );
-            """;
-
-    private static final String CREATE_CLASSIC_PERSON_POSTGRES_QUERY = """
-            CREATE TABLE company.prsdta (
-                prsid BIGSERIAL PRIMARY KEY,
-                prsnm VARCHAR(255),
-                prssn VARCHAR(255),
-                prsgn VARCHAR(255)
-            );
-            """;
-
-    private static final String CREATE_CLASSIC_TEAM_POSTGRES_QUERY = """
-            CREATE TABLE company.tmmdta (
-                tmmid BIGSERIAL PRIMARY KEY,
-                tmmcd VARCHAR(255),
-                tmmnm VARCHAR(255)
-            );
-            """;
-
-    private static final String CREATE_CLASSIC_PERSON_TEAM_BOUND_POSTGRES_QUERY = """
-            CREATE TABLE company.ptmbnd (
-                prsid BIGINT NOT NULL,
-                tmmid BIGINT NOT NULL,
-                PRIMARY KEY (prsid, tmmid),
-                FOREIGN KEY (prsid) REFERENCES company.prsdta (prsid),
-                FOREIGN KEY (tmmid) REFERENCES company.tmmdta (tmmid)
-            );
-            """;
-
-    private static final List<String> SQL_SERVER_QUERIES = Stream.of(
-            "CREATE SCHEMA person",
-            "CREATE SCHEMA membership",
-            CREATE_CLASSIC_PERSON_SQL_SERVER_QUERY,
-            CREATE_CLASSIC_TEAM_SQL_SERVER_QUERY,
-            CREATE_CLASSIC_PERSON_TEAM_BOUND_SQL_SERVER_QUERY,
-            CREATE_PERSON_TABLE_SQL_SERVER_QUERY,
-            CREATE_TEAM_SQL_SERVER_QUERY,
-            CREATE_PERSON_TEAM_BOUND_SQL_SERVER_QUERY
-    ).collect(Collectors.toCollection(LinkedList::new));
-
-    private static final List<String> POSTGRES_QUERIES = Stream.of(
-            "CREATE SCHEMA person",
-            "CREATE SCHEMA membership",
-            CREATE_CLASSIC_PERSON_POSTGRES_QUERY,
-            CREATE_CLASSIC_TEAM_POSTGRES_QUERY,
-            CREATE_CLASSIC_PERSON_TEAM_BOUND_POSTGRES_QUERY,
-            CREATE_PERSON_TABLE_POSTGRES_QUERY,
-            CREATE_TEAM_TABLE_POSTGRES_QUERY,
-            CREATE_PERSON_TEAM_BOUND_POSTGRES_QUERY
-    ).collect(Collectors.toCollection(LinkedList::new));
-
     @Container
     private static final MSSQLServerContainer<?> SQL_SERVER_CONTAINER = new MSSQLServerContainer<>()
             .withPassword(PASSWORD)
@@ -228,6 +124,15 @@ public abstract class SpringApplicationJpaTestBase {
                     .withUsername("sa")
                     .withPassword(PASSWORD);
 
+    @Autowired
+    private MigrationService migrationService;
+
+    @Autowired
+    private DataSourceSpecManager dataSourceSpecManager;
+
+    @Autowired
+    private DestinationDataSourceManager destinationDataSourceManager;
+
     public static Stream<DataSourceSpec> dataSourceSpecStream() {
         return Stream.of(
                 new DataSourceSpecification(SQL_SERVER_DATASOURCE, RWX),
@@ -235,8 +140,20 @@ public abstract class SpringApplicationJpaTestBase {
         );
     }
 
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        for (DataSourceSpec dataSourceSpec : dataSourceSpecStream().toList()) {
+            dataSourceSpecManager.setThreadLocal(dataSourceSpec);
+            DataSource dataSource = destinationDataSourceManager.selectDataSourceBySpec(dataSourceSpec);
+            MigrationResults migrationResults = migrationService.migrateAsync(dataSource)
+                    .get(30, TimeUnit.SECONDS);
+            dataSourceSpecManager.clearThreadLocal();
+            assertThat(migrationResults.getFailed()).isZero();
+        }
+    }
+
     @BeforeAll
-    static void setupDataSources() throws SQLException {
+    static void setupDataBase() throws SQLException {
         createSQLServerTestEnv();
         createPostgresEnv();
     }
@@ -280,24 +197,9 @@ public abstract class SpringApplicationJpaTestBase {
              PreparedStatement query = connection.prepareStatement("CREATE DATABASE " + DATABASE)) {
             query.execute();
         }
-        sqlServerDataSource = new SQLServerDataSource();
-        sqlServerDataSource.setServerName(host);
-        sqlServerDataSource.setPortNumber(port);
-        sqlServerDataSource.setUser(username);
-        sqlServerDataSource.setPassword(password);
-        sqlServerDataSource.setDatabaseName(DATABASE);
-        sqlServerDataSource.setEncrypt("false");
-        sqlServerDataSource.setTrustServerCertificate(true);
-        try (Connection connection = sqlServerDataSource.getConnection()) {
-            for (String sql : SQL_SERVER_QUERIES) {
-                try (PreparedStatement query = connection.prepareStatement(sql)) {
-                    query.execute();
-                }
-            }
-        }
     }
 
-    private static void createPostgresEnv() throws SQLException {
+    private static void createPostgresEnv() throws SQLServerException, SQLException {
         String host = POSTGRES_CONTAINER.getHost();
         Integer port = POSTGRES_CONTAINER.getMappedPort(5432);
         String username = POSTGRES_CONTAINER.getUsername();
@@ -312,19 +214,7 @@ public abstract class SpringApplicationJpaTestBase {
              PreparedStatement query = connection.prepareStatement("CREATE DATABASE " + DATABASE)) {
             query.execute();
         }
-        postgresDataSource = new PGSimpleDataSource();
-        postgresDataSource.setServerNames(new String[]{host});
-        postgresDataSource.setPortNumbers(new int[]{port});
-        postgresDataSource.setDatabaseName(DATABASE);
-        postgresDataSource.setUser(username);
-        postgresDataSource.setPassword(password);
-        try (Connection connection = postgresDataSource.getConnection()) {
-            for (String sql : POSTGRES_QUERIES) {
-                try (PreparedStatement query = connection.prepareStatement(sql)) {
-                    query.execute();
-                }
-            }
-        }
     }
+
 
 }

@@ -25,6 +25,10 @@
         </dependency>
         <dependency>
             <groupId>com.olsonsolution.common</groupId>
+            <artifactId>common-data</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.olsonsolution.common</groupId>
             <artifactId>common-spring-config</artifactId>
         </dependency>
         <dependency>

@@ -55,7 +55,7 @@ public class ${JPA_SPEC}JpaSpecConfigurer implements JpaSpecConfig, Initializing
     }
 
     @Override
-    public String getJpaSpecName() {
+    public String getJpaSpec() {
         return JPA_SPEC;
     }
 

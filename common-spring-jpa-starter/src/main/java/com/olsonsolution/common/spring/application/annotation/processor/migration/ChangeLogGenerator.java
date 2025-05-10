@@ -120,6 +120,7 @@ final class ChangeLogGenerator {
                                             Element changeSet,
                                             Document document) {
         Element createTable = document.createElement("createTable");
+        createTable.setAttribute("schemaName", createTableOp.schemaVariable());
         createTable.setAttribute("tableName", createTableOp.table());
         createTableOp.addColumns().forEach(column -> generateColumn(column, createTable, document));
         changeSet.appendChild(createTable);

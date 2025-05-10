@@ -115,6 +115,11 @@
             </dependency>
             <dependency>
                 <groupId>com.olsonsolution.common</groupId>
+                <artifactId>common-liquibase-migration</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.olsonsolution.common</groupId>
                 <artifactId>common-tenant-core</artifactId>
                 <version>${revision}</version>
             </dependency>
