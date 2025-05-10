@@ -2,27 +2,26 @@ package com.olsonsolution.common.spring.application.test.config;
 
 import com.microsoft.sqlserver.jdbc.SQLServerDataSource;
 import com.microsoft.sqlserver.jdbc.SQLServerException;
-import com.olsonsolution.common.migration.domain.port.stereotype.MigrationResults;
-import com.olsonsolution.common.spring.application.migration.config.LiquibaseConfig;
-import com.olsonsolution.common.spring.application.migration.config.SqlVendorSupportersConfig;
-import com.olsonsolution.common.spring.application.migration.props.LiquibaseProperties;
 import com.olsonsolution.common.migration.domain.port.repository.MigrationService;
+import com.olsonsolution.common.migration.domain.port.stereotype.MigrationResults;
 import com.olsonsolution.common.spring.application.caching.InMemoryCachingConfig;
 import com.olsonsolution.common.spring.application.config.time.TimeUtilsConfig;
 import com.olsonsolution.common.spring.application.jpa.config.DataSourceModelersConfig;
 import com.olsonsolution.common.spring.application.jpa.config.DataSourceSpecConfig;
-import com.olsonsolution.common.spring.application.jpa.config.JpaSpecConfigurer;
+import com.olsonsolution.common.spring.application.jpa.config.JpaConfig;
 import com.olsonsolution.common.spring.application.jpa.config.SqlVendorPropertiesResolverConfig;
 import com.olsonsolution.common.spring.application.jpa.props.SpringApplicationDestinationDataSourceProperties;
 import com.olsonsolution.common.spring.application.jpa.props.SpringApplicationJpaProperties;
 import com.olsonsolution.common.spring.application.migration.config.ChangeLogProviderConfig;
+import com.olsonsolution.common.spring.application.migration.config.LiquibaseConfig;
+import com.olsonsolution.common.spring.application.migration.config.SqlVendorSupportersConfig;
+import com.olsonsolution.common.spring.application.migration.props.LiquibaseProperties;
 import com.olsonsolution.common.spring.application.props.time.JodaDateTimeProperties;
 import com.olsonsolution.common.spring.domain.model.datasource.DataSourceSpecification;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.springframework.beans.factory.InitializingBean;
@@ -64,10 +63,10 @@ import static org.assertj.core.api.Assertions.assertThat;
         DataSourceSpecConfig.class,
         DataSourceModelersConfig.class,
         SqlVendorSupportersConfig.class,
+        JpaConfig.class,
         LiquibaseConfig.class,
         InMemoryCachingConfig.class,
         SqlVendorPropertiesResolverConfig.class,
-        JpaSpecConfigurer.class,
         JodaDateTimeProperties.class,
         LiquibaseProperties.class,
         SpringApplicationJpaProperties.class,
