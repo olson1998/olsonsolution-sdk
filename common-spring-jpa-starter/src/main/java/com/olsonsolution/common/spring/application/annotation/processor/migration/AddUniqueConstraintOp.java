@@ -1,4 +1,4 @@
-package com.olsonsolution.common.spring.application.annotation.processor;
+package com.olsonsolution.common.spring.application.annotation.processor.migration;
 
 import java.util.Set;
 

@@ -1,19 +1,18 @@
-package com.olsonsolution.common.spring.application.annotation.processor;
+package com.olsonsolution.common.spring.application.annotation.processor.migration;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.auto.service.AutoService;
 import com.olsonsolution.common.spring.application.annotation.migration.*;
 import jakarta.persistence.Column;
 import jakarta.persistence.SequenceGenerator;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.w3c.dom.Document;
 
-import javax.annotation.processing.*;
-import javax.lang.model.SourceVersion;
+import javax.annotation.processing.Filer;
+import javax.annotation.processing.ProcessingEnvironment;
+import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
 import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.xml.transform.Transformer;
@@ -28,29 +27,24 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.olsonsolution.common.spring.application.annotation.processor.ConstraintMetadata.Type.*;
+import static com.olsonsolution.common.spring.application.annotation.processor.migration.ConstraintMetadata.Type.*;
 import static java.util.Map.entry;
 import static javax.lang.model.element.ElementKind.FIELD;
 import static javax.tools.StandardLocation.CLASS_OUTPUT;
 import static javax.xml.transform.OutputKeys.*;
 
-@AutoService(Processor.class)
-@SupportedSourceVersion(SourceVersion.RELEASE_17)
-@SupportedAnnotationTypes({
-        "com.olsonsolution.common.spring.application.annotation.migration.ChangeSet"
-})
-public class ChangeSetAnnotationProcessor extends AbstractProcessor {
+public class ChangeSetAnnotationProcessor {
 
-    private TableMetadataUtil tableMetadataUtil;
+    private final ProcessingEnvironment processingEnv;
+    private final TableMetadataUtil tableMetadataUtil;
 
-    @Override
-    public synchronized void init(ProcessingEnvironment processingEnv) {
-        super.init(processingEnv);
+    public ChangeSetAnnotationProcessor(ProcessingEnvironment processingEnv) {
+        this.processingEnv = processingEnv;
         this.tableMetadataUtil = new TableMetadataUtil(processingEnv);
     }
 
-    @Override
-    public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+    public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv,
+                           Map<String, Map<TypeElement, DeclaredType>> jpaSpecRepoConfig) {
         try {
             List<ChangeSetMetadata> changeSetMetadata = collectChangeSetMetadata(roundEnv);
             Map<ChangeSetMetadata, Document> changeSetChangeLogs =

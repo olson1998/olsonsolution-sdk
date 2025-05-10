@@ -1,4 +1,4 @@
-package com.olsonsolution.common.spring.application.annotation.processor;
+package com.olsonsolution.common.spring.application.annotation.processor.migration;
 
 /**
  * <changeSet id="5" author="you">

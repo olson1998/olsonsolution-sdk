@@ -1,8 +1,6 @@
-package com.olsonsolution.common.spring.application.annotation.processor;
+package com.olsonsolution.common.spring.application.annotation.processor.migration;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 
 import javax.annotation.processing.ProcessingEnvironment;

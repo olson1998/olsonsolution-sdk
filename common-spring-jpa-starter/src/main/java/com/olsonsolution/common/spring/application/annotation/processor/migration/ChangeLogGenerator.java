@@ -1,4 +1,4 @@
-package com.olsonsolution.common.spring.application.annotation.processor;
+package com.olsonsolution.common.spring.application.annotation.processor.migration;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -15,8 +15,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.olsonsolution.common.spring.application.annotation.processor.ConstraintMetadata.Type.NON_NULL;
-import static com.olsonsolution.common.spring.application.annotation.processor.ConstraintMetadata.Type.PRIMARY_KEY;
+import static com.olsonsolution.common.spring.application.annotation.processor.migration.ConstraintMetadata.Type.NON_NULL;
+import static com.olsonsolution.common.spring.application.annotation.processor.migration.ConstraintMetadata.Type.PRIMARY_KEY;
 import static java.util.Map.entry;
 import static javax.xml.XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI;
 import static javax.xml.XMLConstants.XMLNS_ATTRIBUTE_NS_URI;

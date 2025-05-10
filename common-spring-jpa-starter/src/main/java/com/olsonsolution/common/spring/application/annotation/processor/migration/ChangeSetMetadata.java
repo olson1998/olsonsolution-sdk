@@ -1,4 +1,4 @@
-package com.olsonsolution.common.spring.application.annotation.processor;
+package com.olsonsolution.common.spring.application.annotation.processor.migration;
 
 import javax.lang.model.element.TypeElement;
 import java.util.List;
