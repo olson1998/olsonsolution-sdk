@@ -56,17 +56,18 @@ public class ChangeSetAnnotationProcessor {
 
     private void processForJpaSpec(String jpaSpec, List<ChangeSetMetadata> changeSetMetadata) {
         try {
+            String classpathDirectory = "/db/changelog/" + jpaSpec;
             Map<ChangeSetMetadata, Document> changeSetChangeLogs =
                     ChangeLogGenerator.generateChangeLogs(changeSetMetadata);
             for (Map.Entry<ChangeSetMetadata, Document> changeSetChangeLog : changeSetChangeLogs.entrySet()) {
                 ChangeSetMetadata metadata = changeSetChangeLog.getKey();
-                String changeLogLocation = "/db/changelog/" + jpaSpec + '/' + metadata.changelogName();
+                String changeLogLocation = classpathDirectory + '/' + metadata.changelogName();
                 createChangeLogXml(changeLogLocation, changeSetChangeLog.getValue());
             }
             if (!changeSetChangeLogs.isEmpty()) {
                 Document masterChangeLog = ChangeLogGenerator.generateMasterChangeLog(changeSetChangeLogs);
                 createChangeLogXml(
-                        "/db/changelog/" + jpaSpec + "/db.changelog.master-changelog.xml",
+                        classpathDirectory + "/db.changelog.master-changelog.xml",
                         masterChangeLog
                 );
             }

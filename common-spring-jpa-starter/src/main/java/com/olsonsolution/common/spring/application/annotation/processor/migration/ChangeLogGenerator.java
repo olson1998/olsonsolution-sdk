@@ -68,6 +68,7 @@ final class ChangeLogGenerator {
         for (ChangeSetMetadata changeSet : changeSetChangeLogs.keySet()) {
             Element element = document.createElementNS(VALUE_XMLNS, "include");
             element.setAttribute("file", changeSet.changelogName());
+            element.setAttribute("relativeToChangelogFile", "true");
             root.appendChild(element);
         }
         document.appendChild(root);
