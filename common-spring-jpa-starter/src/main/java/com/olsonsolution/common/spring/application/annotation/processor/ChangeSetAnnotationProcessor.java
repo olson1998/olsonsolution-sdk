@@ -46,7 +46,6 @@ public class ChangeSetAnnotationProcessor extends AbstractProcessor {
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
         super.init(processingEnv);
-        this.objectMapper = new ObjectMapper();
         this.tableMetadataUtil = new TableMetadataUtil(processingEnv);
     }
 
