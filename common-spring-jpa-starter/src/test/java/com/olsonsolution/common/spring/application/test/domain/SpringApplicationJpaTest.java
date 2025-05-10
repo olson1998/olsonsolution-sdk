@@ -82,7 +82,7 @@ class SpringApplicationJpaTest extends SpringApplicationJpaTestBase {
 
     @Transactional(transactionManager = "Person_platformTransactionManager")
     void savePersonData(Integer teamCode) {
-        PersonData person = new PersonData(null, "John", null, "Doe", 'M');
+        PersonData person = new PersonData(null, "John", "", "Doe", 'M');
         person = personDataRepository.save(person);
         EmployeeData employee = new EmployeeData(null, person.getId(), teamCode, UUID.randomUUID());
         employee = employeeDataRepository.save(employee);

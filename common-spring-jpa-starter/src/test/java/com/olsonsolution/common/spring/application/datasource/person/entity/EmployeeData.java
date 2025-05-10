@@ -13,6 +13,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 
+@ChangeSet
+
 @Entity
 @Table(name = "employee")
 public class EmployeeData {
