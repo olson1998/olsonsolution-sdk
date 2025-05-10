@@ -47,6 +47,7 @@ public class ChangeSetAnnotationProcessor {
     public void process(Map<String, List<TypeElement>> jpaSpecEntities) {
         try {
             Map<String, List<ChangeSetMetadata>> jpaSpecChangeSetMetadata = collectChangeSetMetadata(jpaSpecEntities);
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Found " + jpaSpecChangeSetMetadata + " change sets");
             jpaSpecChangeSetMetadata.forEach((this::processForJpaSpec));
         } catch (Exception e) {
             String msg = e.getClass().getCanonicalName() + "\n" + ExceptionUtils.getStackTrace(e);
@@ -258,11 +259,10 @@ public class ChangeSetAnnotationProcessor {
                 changeSetAtBeginningOperations,
                 changeSetAtEndOperations
         ));
-        String schemaVariable = "${" + jpaSpec + "Schema}";
         CreateTableOp createTableOp = addColumnOpsBuilder.build()
                 .collect(Collectors.collectingAndThen(
                         Collectors.toCollection(LinkedList::new),
-                        f -> new CreateTableOp(schemaVariable, tableName, f)
+                        f -> new CreateTableOp(tableName, f)
                 ));
         LinkedList<ChangeSetOperation> tableOperations = new LinkedList<>();
         tableOperations.add(createTableOp);

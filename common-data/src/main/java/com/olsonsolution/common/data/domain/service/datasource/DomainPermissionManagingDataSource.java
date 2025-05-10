@@ -2,9 +2,11 @@ package com.olsonsolution.common.data.domain.service.datasource;
 
 import com.olsonsolution.common.data.domain.port.datasource.PermissionManagingDataSource;
 import com.olsonsolution.common.data.domain.port.datasource.SqlPermissionProvider;
+import com.olsonsolution.common.data.domain.port.datasource.SqlVendorAwareDataSource;
 import com.olsonsolution.common.data.domain.port.repository.sql.SqlDataSourceFactory;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSource;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlPermission;
+import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlVendor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +24,7 @@ import java.util.logging.Logger;
 
 @Slf4j
 @RequiredArgsConstructor
-public class DomainPermissionManagingDataSource implements PermissionManagingDataSource {
+public class DomainPermissionManagingDataSource implements PermissionManagingDataSource, SqlVendorAwareDataSource {
 
     @Getter
     private boolean closed;
@@ -113,5 +115,10 @@ public class DomainPermissionManagingDataSource implements PermissionManagingDat
                 }
             }
         }
+    }
+
+    @Override
+    public SqlVendor getVendor() {
+        return sqlDataSource.getVendor();
     }
 }

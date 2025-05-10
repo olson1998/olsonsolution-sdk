@@ -8,6 +8,8 @@ public interface SqlVendor {
 
     String name();
 
+    boolean isSupportSchemas();
+
     boolean isSameAs(SqlVendor vendor);
 
 }

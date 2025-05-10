@@ -4,6 +4,7 @@ import com.microsoft.sqlserver.jdbc.SQLServerDataSource;
 import com.microsoft.sqlserver.jdbc.SQLServerException;
 import com.olsonsolution.common.migration.domain.port.stereotype.MigrationResults;
 import com.olsonsolution.common.spring.application.migration.config.LiquibaseConfig;
+import com.olsonsolution.common.spring.application.migration.config.SqlVendorSupportersConfig;
 import com.olsonsolution.common.spring.application.migration.props.LiquibaseProperties;
 import com.olsonsolution.common.migration.domain.port.repository.MigrationService;
 import com.olsonsolution.common.spring.application.caching.InMemoryCachingConfig;
@@ -62,6 +63,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         ChangeLogProviderConfig.class,
         DataSourceSpecConfig.class,
         DataSourceModelersConfig.class,
+        SqlVendorSupportersConfig.class,
         LiquibaseConfig.class,
         InMemoryCachingConfig.class,
         SqlVendorPropertiesResolverConfig.class,

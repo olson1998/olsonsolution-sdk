@@ -2,5 +2,5 @@ package com.olsonsolution.common.spring.application.annotation.processor.migrati
 
 import java.util.List;
 
-record CreateTableOp(String schemaVariable, String table, List<AddColumnOp> addColumns) implements ChangeSetOperation {
+record CreateTableOp(String table, List<AddColumnOp> addColumns) implements ChangeSetOperation {
 }

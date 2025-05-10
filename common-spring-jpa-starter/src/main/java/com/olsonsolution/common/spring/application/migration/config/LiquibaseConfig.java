@@ -1,8 +1,9 @@
 package com.olsonsolution.common.spring.application.migration.config;
 
-import com.olsonsolution.common.liquibase.domain.service.LiquibaseMigrationService;
+import com.olsonsolution.common.liquibase.domain.service.migration.LiquibaseMigrationService;
 import com.olsonsolution.common.migration.domain.port.repository.ChangelogProvider;
 import com.olsonsolution.common.migration.domain.port.repository.MigrationService;
+import com.olsonsolution.common.migration.domain.port.repository.SqlVendorSupporter;
 import com.olsonsolution.common.migration.domain.port.repository.VariablesProvider;
 import com.olsonsolution.common.migration.domain.port.stereotype.ChangeLog;
 import com.olsonsolution.common.spring.application.migration.props.LiquibaseProperties;
@@ -40,7 +41,8 @@ public class LiquibaseConfig {
                                              TimeUtils timeUtils,
                                              ResourceLoader resourceLoader,
                                              List<ChangelogProvider> changelogProviders,
-                                             List<VariablesProvider> variablesProviders) {
+                                             List<VariablesProvider> variablesProviders,
+                                             List<SqlVendorSupporter> sqlVendorSupporters) {
         ResourceAccessor resourceAccessor = new SpringResourceAccessor(resourceLoader);
         List<? extends ChangeLog> changeLogs = changelogProviders.stream()
                 .flatMap(changelogProvider -> changelogProvider.getChangelogs().stream())
@@ -50,7 +52,8 @@ public class LiquibaseConfig {
                 timeUtils,
                 resourceAccessor,
                 changeLogs,
-                variablesProviders
+                variablesProviders,
+                sqlVendorSupporters
         );
     }
 

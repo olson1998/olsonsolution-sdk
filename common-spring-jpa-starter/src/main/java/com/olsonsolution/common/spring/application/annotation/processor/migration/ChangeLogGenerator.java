@@ -120,7 +120,7 @@ final class ChangeLogGenerator {
                                             Element changeSet,
                                             Document document) {
         Element createTable = document.createElement("createTable");
-        createTable.setAttribute("schemaName", createTableOp.schemaVariable());
+        createTable.setAttribute("schemaName", "${schema}");
         createTable.setAttribute("tableName", createTableOp.table());
         createTableOp.addColumns().forEach(column -> generateColumn(column, createTable, document));
         changeSet.appendChild(createTable);
@@ -128,6 +128,7 @@ final class ChangeLogGenerator {
 
     private static void generateSequence(CreateSequence createSequence, Element changeSet, Document document) {
         Element sequence = document.createElement("createSequence");
+        sequence.setAttribute("schemaName", "${schema}");
         sequence.setAttribute("sequenceName", createSequence.table());
         sequence.setAttribute("startValue", String.valueOf(createSequence.startValue()));
         sequence.setAttribute("incrementBy", String.valueOf(createSequence.incrementBy()));
@@ -138,6 +139,7 @@ final class ChangeLogGenerator {
                                                  Element changeSet,
                                                  Document document) {
         Element unique = document.createElement("addUniqueConstraint");
+        unique.setAttribute("schemaName", "${schema}");
         unique.setAttribute("tableName", addUniqueConstraintOp.table());
         unique.setAttribute("columnNames", addUniqueConstraintOp.columnNames());
         unique.setAttribute("constraintName", addUniqueConstraintOp.name());
@@ -148,6 +150,7 @@ final class ChangeLogGenerator {
                                                      Element changeSet,
                                                      Document document) {
         Element unique = document.createElement("addUniqueConstraint");
+        unique.setAttribute("schemaName", "${schema}");
         unique.setAttribute("tableName", addNotNullConstraintOp.table());
         unique.setAttribute("columnNames", addNotNullConstraintOp.column());
         changeSet.appendChild(unique);
@@ -157,8 +160,10 @@ final class ChangeLogGenerator {
                                                      Element changeSet,
                                                      Document document) {
         Element foreignKey = document.createElement("addForeignKeyConstraint");
+        foreignKey.setAttribute("baseTableSchemaName", "${schema}");
         foreignKey.setAttribute("baseTableName", addForeignKeyConstraint.table());
         foreignKey.setAttribute("baseColumnNames", addForeignKeyConstraint.column());
+        foreignKey.setAttribute("referencedTableSchemaName", "${schema}");
         foreignKey.setAttribute("referencedTableName", addForeignKeyConstraint.referencedTable());
         foreignKey.setAttribute("referencedColumnNames", addForeignKeyConstraint.referencedColumn());
         foreignKey.setAttribute("constraintName", addForeignKeyConstraint.constraintName());
@@ -169,6 +174,7 @@ final class ChangeLogGenerator {
                                                       Element changeSet,
                                                       Document document) {
         Element dropNotNullConstraint = document.createElement("dropNotNullConstraint");
+        dropNotNullConstraint.setAttribute("schemaName", "${schema}");
         dropNotNullConstraint.setAttribute("tableName", dropNotNullConstraintOp.table());
         dropNotNullConstraint.setAttribute("columnName", dropNotNullConstraintOp.column());
         changeSet.appendChild(dropNotNullConstraint);
@@ -178,6 +184,7 @@ final class ChangeLogGenerator {
                                                Element changeSet,
                                                Document document) {
         Element modifyDataType = document.createElement("modifyDataType");
+        modifyDataType.setAttribute("schemaName", "${schema}");
         modifyDataType.setAttribute("tableName", modifyDataTypeOp.table());
         modifyDataType.setAttribute("columnName", modifyDataTypeOp.column());
         modifyDataType.setAttribute("newDataType", modifyDataTypeOp.columnDataType());

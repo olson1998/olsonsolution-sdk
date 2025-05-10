@@ -11,17 +11,19 @@ import org.hibernate.dialect.*;
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public enum SqlVendors implements SqlVendor {
 
-    H2(new H2Dialect()),
-    SQL_SERVER(new SQLServerDialect()),
-    POSTGRESQL(new PostgreSQLDialect()),
-    DB2(new DB2Dialect()),
-    MARIADB(new MariaDBDialect()),;
+    H2(new H2Dialect(), false),
+    SQL_SERVER(new SQLServerDialect(), true),
+    POSTGRESQL(new PostgreSQLDialect(), true),
+    DB2(new DB2Dialect(), false),
+    MARIADB(new MariaDBDialect(), false),
+    ;
 
     private final Dialect dialect;
+    private final boolean supportSchemas;
 
     @Override
     public boolean isSameAs(SqlVendor vendor) {
-        if(vendor instanceof SqlVendors vendors) {
+        if (vendor instanceof SqlVendors vendors) {
             return this == vendors;
         } else {
             return StringUtils.equalsIgnoreCase(this.name(), vendor.name());
