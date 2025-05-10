@@ -55,7 +55,7 @@ final class ChangeLogGenerator {
                 ));
     }
 
-    static Map.Entry<String, Document> generateMasterChangeLog(
+    static Document generateMasterChangeLog(
             Map<ChangeSetMetadata, Document> changeSetChangeLogs) throws ParserConfigurationException {
         DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
         documentBuilderFactory.setNamespaceAware(true);
@@ -71,7 +71,7 @@ final class ChangeLogGenerator {
             root.appendChild(element);
         }
         document.appendChild(root);
-        return entry("/db/changelog/db.changelog.master-changelog.xml", document);
+        return document;
     }
 
     private static void generateChangeLog(String table,

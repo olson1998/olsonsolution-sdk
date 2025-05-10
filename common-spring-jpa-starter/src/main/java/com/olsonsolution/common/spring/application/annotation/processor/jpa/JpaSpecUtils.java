@@ -89,11 +89,12 @@ class JpaSpecUtils {
                     );
                 } else if (jpaRepoArgs.get(0) instanceof DeclaredType entityDeclaredType &&
                         entityDeclaredType.asElement() instanceof TypeElement entityTypeElement) {
-                    if (jpaSpecAllPackagesScan.contains(jpaSpec.value()) ||
-                            isInEnabledPackage(jpaSpec.value(), entityTypeElement, jpaSpecBasePackagesScan)) {
-                        jpaSpecEntities.computeIfAbsent(jpaSpec.value(), s -> new ArrayList<>())
+                    String jpaSpecName = jpaSpec.value();
+                    if (jpaSpecAllPackagesScan.contains(jpaSpecName) ||
+                            isInEnabledPackage(jpaSpecName, entityTypeElement, jpaSpecBasePackagesScan)) {
+                        jpaSpecEntities.computeIfAbsent(jpaSpecName, s -> new ArrayList<>())
                                 .add(entityTypeElement);
-                        jpaSpecRepoConfig.computeIfAbsent(jpaSpec.value(), s -> new HashMap<>())
+                        jpaSpecRepoConfig.computeIfAbsent(jpaSpecName, s -> new HashMap<>())
                                 .put(jpaSpecElement, jpaRepoType);
                     }
                 }

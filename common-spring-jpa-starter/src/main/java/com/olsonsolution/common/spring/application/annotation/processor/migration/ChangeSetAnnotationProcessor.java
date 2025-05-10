@@ -47,7 +47,6 @@ public class ChangeSetAnnotationProcessor {
     public void process(Map<String, List<TypeElement>> jpaSpecEntities) {
         try {
             Map<String, List<ChangeSetMetadata>> jpaSpecChangeSetMetadata = collectChangeSetMetadata(jpaSpecEntities);
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Jpa Spec Change Sets: " + jpaSpecChangeSetMetadata);
             jpaSpecChangeSetMetadata.forEach((this::processForJpaSpec));
         } catch (Exception e) {
             String msg = e.getClass().getCanonicalName() + "\n" + ExceptionUtils.getStackTrace(e);
@@ -59,15 +58,17 @@ public class ChangeSetAnnotationProcessor {
         try {
             Map<ChangeSetMetadata, Document> changeSetChangeLogs =
                     ChangeLogGenerator.generateChangeLogs(changeSetMetadata);
-            Map.Entry<String, Document> masterChangeLog =
-                    ChangeLogGenerator.generateMasterChangeLog(changeSetChangeLogs);
             for (Map.Entry<ChangeSetMetadata, Document> changeSetChangeLog : changeSetChangeLogs.entrySet()) {
                 ChangeSetMetadata metadata = changeSetChangeLog.getKey();
                 String changeLogLocation = "/db/changelog/" + jpaSpec + '/' + metadata.changelogName();
                 createChangeLogXml(changeLogLocation, changeSetChangeLog.getValue());
             }
             if (!changeSetChangeLogs.isEmpty()) {
-                createChangeLogXml(masterChangeLog.getKey(), masterChangeLog.getValue());
+                Document masterChangeLog = ChangeLogGenerator.generateMasterChangeLog(changeSetChangeLogs);
+                createChangeLogXml(
+                        "/db/changelog/" + jpaSpec + "/db.changelog.master-changelog.xml",
+                        masterChangeLog
+                );
             }
         } catch (ParserConfigurationException | IOException | TransformerException e) {
             String ThrowableMsg = ExceptionUtils.getStackTrace(e);
@@ -120,11 +121,15 @@ public class ChangeSetAnnotationProcessor {
         jpaSpecChangeSetMetadata.computeIfAbsent(jpaSpec, s -> new ArrayList<>());
         jpaSpecTableChangeSet.computeIfAbsent(jpaSpec, s -> new HashMap<>())
                 .put(jpaSpec, changeSet);
-        collectChangeSetMetadata(typeElement, table, changeSet, jpaSpecChangeSetMetadata);
+        collectChangeSetMetadata(typeElement, table, jpaSpec, changeSet, jpaSpecChangeSetMetadata);
     }
 
     private void createChangeLogXml(String changeLogLocation,
                                     Document changeLogXml) throws IOException, TransformerException {
+        processingEnv.getMessager().printMessage(
+                Diagnostic.Kind.NOTE,
+                "Generating change log file location: " + changeLogLocation
+        );
         Filer filer = processingEnv.getFiler();
         FileObject changeLogFile = filer.createResource(
                 CLASS_OUTPUT,
@@ -147,6 +152,7 @@ public class ChangeSetAnnotationProcessor {
 
     private void collectChangeSetMetadata(TypeElement typeElement,
                                           String table,
+                                          String jpaSpec,
                                           ChangeSet changeSet,
                                           Map<String, List<ChangeSetMetadata>> jpaSpecChangeSetMetadata) {
         Map<String, List<ChangeSetOperation>> changeSetAtBeginningOperations = new HashMap<>();
@@ -179,6 +185,7 @@ public class ChangeSetAnnotationProcessor {
                 ops,
                 changeSet,
                 table,
+                jpaSpec,
                 typeElement,
                 fields,
                 jpaSpecChangeSetMetadata
@@ -189,6 +196,7 @@ public class ChangeSetAnnotationProcessor {
                                           List<ChangeSetOperation> changeSetOperations,
                                           ChangeSet changeSet,
                                           String table,
+                                          String jpaSpec,
                                           TypeElement typeElement,
                                           Set<VariableElement> fields,
                                           Map<String, List<ChangeSetMetadata>> jpaSpecChangeSetMetadata) {
@@ -203,7 +211,7 @@ public class ChangeSetAnnotationProcessor {
                 dependsOn,
                 changeSetOperations
         );
-        jpaSpecChangeSetMetadata.computeIfAbsent("", s -> new ArrayList<>())
+        jpaSpecChangeSetMetadata.computeIfAbsent(jpaSpec, s -> new ArrayList<>())
                 .add(changeSetMetadata);
     }
 
