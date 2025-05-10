@@ -1,4 +1,4 @@
-package com.olsonsolution.common.spring.application.jpa.config;
+package com.olsonsolution.common.spring.domain.service.jpa;
 
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaSpecProperties;
@@ -6,27 +6,26 @@ import com.olsonsolution.common.spring.domain.port.repository.datasource.Destina
 import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.EntityManagerFactoryDelegate;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.JpaSpecConfigurer;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.PlatformTransactionManagerDelegate;
-import com.olsonsolution.common.spring.domain.service.jpa.MultiVendorEntityManagerFactory;
-import com.olsonsolution.common.spring.domain.service.jpa.MultiVendorPlatformTransactionManager;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.stereotype.Service;
 
 @Slf4j
-@Service
 @RequiredArgsConstructor
-public class JpaSpecConfigurer {
+public class JpaSpecConfiguringService implements JpaSpecConfigurer {
 
     private final JpaProperties jpaProperties;
 
-    public String resolveSchema(String jpaSpecName) {
+    @Override
+    public String resolveSchema(@NonNull String jpaSpecName) {
         JpaSpecProperties properties = getJpaSpecProperties(jpaSpecName);
         return properties.getSchema();
     }
 
+    @Override
     public EntityManagerFactoryDelegate createEntityManagerFactoryDelegate(
             @NonNull String jpaSpecName,
             @NonNull String[] entityBasePackages,
@@ -48,6 +47,7 @@ public class JpaSpecConfigurer {
         );
     }
 
+    @Override
     public PlatformTransactionManagerDelegate createPlatformTransactionManagerDelegate(
             DataSourceSpecManager dataSourceSpecManager,
             SqlDataSourceProvider sqlDataSourceProvider,
@@ -66,5 +66,6 @@ public class JpaSpecConfigurer {
                 .findFirst()
                 .orElseThrow();
     }
+
 
 }
