@@ -4,6 +4,7 @@ import com.google.auto.service.AutoService;
 import com.olsonsolution.common.spring.application.annotation.migration.*;
 import com.olsonsolution.common.spring.application.annotation.migration.ForeignKey;
 import jakarta.persistence.*;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.w3c.dom.Document;
 
 import javax.annotation.processing.*;
@@ -17,7 +18,6 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import javax.tools.FileObject;
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
@@ -48,44 +48,61 @@ public class ChangeSetAnnotationProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        Map<TypeElement, ChangeSet> changeSetEntities = getJpaEntities(roundEnv);
-        changeSetEntities.forEach((typeElement, changeSet) -> processChangeSet(
-                typeElement,
-                changeSet,
-                roundEnv
-        ));
+        try {
+            List<ChangeSetMetadata> changeSetMetadata = collectChangeSetMetadata(roundEnv);
+            Map<ChangeSetMetadata, Document> changeSetChangeLogs =
+                    ChangeLogGenerator.generateChangeLogs(changeSetMetadata);
+            Map.Entry<String, Document> masterChangeLog =
+                    ChangeLogGenerator.generateMasterChangeLog(changeSetChangeLogs);
+            for (Map.Entry<ChangeSetMetadata, Document> changeSetChangeLog : changeSetChangeLogs.entrySet()) {
+                ChangeSetMetadata metadata = changeSetChangeLog.getKey();
+                String changeLogLocation = "/db/changelog/" + metadata.changelogName();
+                createChangeLogXml(changeLogLocation, changeSetChangeLog.getValue());
+            }
+            if (!changeSetChangeLogs.isEmpty()) {
+                createChangeLogXml(masterChangeLog.getKey(), masterChangeLog.getValue());
+            }
+        } catch (Exception e) {
+            String ThrowableMsg = ExceptionUtils.getStackTrace(e);
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.getMessage() + "\n" + ThrowableMsg);
+        }
         return true;
     }
 
-    private void processChangeSet(TypeElement typeElement, ChangeSet changeSet, RoundEnvironment roundEnv) {
-        String tableName = resolveTableName(typeElement);
-        Map<String, List<ChangeSetOperation>> changeSetOperations =
-                collectOperations(typeElement, tableName, changeSet);
-        try {
-            Map<String, Document> changeLogXmlList =
-                    ChangeLogGenerator.generateChangeLogs(tableName, changeSetOperations);
-            for (Map.Entry<String, Document> versionChangeLogXml : changeLogXmlList.entrySet()) {
-                String version = versionChangeLogXml.getKey();
-                Document changeLogXml = versionChangeLogXml.getValue();
-                createChangeLogXml(changeSet, tableName, version, changeLogXml);
-            }
-        } catch (ParserConfigurationException | TransformerException | IOException e) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.getMessage());
-        }
+    private List<ChangeSetMetadata> collectChangeSetMetadata(RoundEnvironment roundEnv) {
+        Map<TypeElement, ChangeSet> changeSetEntities = collectJpaEntities(roundEnv);
+        Stream.Builder<ChangeSetMetadata> changeSetMetadata = Stream.builder();
+        Stream.Builder<Map.Entry<String, ChangeSet>> tableChangeSets = Stream.builder();
+        changeSetEntities.forEach((typeElement, changeSet) -> collectChangesetMetadata(
+                typeElement,
+                changeSet,
+                changeSetMetadata,
+                tableChangeSets
+        ));
+        List<ChangeSetMetadata> unorderedChangeSetMetadata = changeSetMetadata.build()
+                .toList();
+        ChangeSetOrderer orderer = buildOrderer(tableChangeSets, unorderedChangeSetMetadata);
+        return unorderedChangeSetMetadata.stream()
+                .sorted(orderer)
+                .collect(Collectors.toCollection(LinkedList::new));
     }
 
-    private void createChangeLogXml(ChangeSet changeSet,
-                                    String tableName,
-                                    String version,
+    private void collectChangesetMetadata(TypeElement typeElement,
+                                          ChangeSet changeSet,
+                                          Stream.Builder<ChangeSetMetadata> changeSetMetadata,
+                                          Stream.Builder<Map.Entry<String, ChangeSet>> tableChangeSets) {
+        String tableName = resolveTableName(typeElement);
+        tableChangeSets.add(entry(tableName, changeSet));
+        collectChangeSetMetadata(typeElement, tableName, changeSet, changeSetMetadata);
+    }
+
+    private void createChangeLogXml(String changeLogLocation,
                                     Document changeLogXml) throws IOException, TransformerException {
-        String fileName = changeSet.file();
-        fileName = fileName.replace("{version}", version);
-        fileName = fileName.replace("{table}", tableName);
         Filer filer = processingEnv.getFiler();
         FileObject changeLogFile = filer.createResource(
                 CLASS_OUTPUT,
                 "",
-                changeSet.path() + fileName
+                changeLogLocation
         );
         TransformerFactory tf = TransformerFactory.newInstance();
         Transformer transformer = tf.newTransformer();
@@ -93,6 +110,7 @@ public class ChangeSetAnnotationProcessor extends AbstractProcessor {
         transformer.setOutputProperty(OMIT_XML_DECLARATION, "no");
         transformer.setOutputProperty(METHOD, "xml");
         transformer.setOutputProperty(ENCODING, "UTF-8");
+        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
         try (Writer writer = changeLogFile.openWriter()) {
             StringWriter stringWriter = new StringWriter();
             transformer.transform(new DOMSource(changeLogXml), new StreamResult(stringWriter));
@@ -100,9 +118,10 @@ public class ChangeSetAnnotationProcessor extends AbstractProcessor {
         }
     }
 
-    private Map<String, List<ChangeSetOperation>> collectOperations(TypeElement typeElement,
-                                                                    String tableName,
-                                                                    ChangeSet changeSet) {
+    private void collectChangeSetMetadata(TypeElement typeElement,
+                                          String tableName,
+                                          ChangeSet changeSet,
+                                          Stream.Builder<ChangeSetMetadata> changeSetMetadata) {
         Map<String, List<ChangeSetOperation>> changeSetAtBeginningOperations = new HashMap<>();
         Map<String, List<ChangeSetOperation>> changeSetCreateTableOperations = new HashMap<>();
         Map<String, List<ChangeSetOperation>> changeSetAtEndOperations = new HashMap<>();
@@ -128,7 +147,28 @@ public class ChangeSetAnnotationProcessor extends AbstractProcessor {
                 changeSetAtEndOperations,
                 changeSetOperations
         ));
-        return changeSetOperations;
+        changeSetOperations.forEach((version, ops) ->
+                collectChangeSetMetadata(version, ops, changeSet, tableName, typeElement, fields, changeSetMetadata));
+    }
+
+    private void collectChangeSetMetadata(String version,
+                                          List<ChangeSetOperation> changeSetOperations,
+                                          ChangeSet changeSet,
+                                          String table,
+                                          TypeElement typeElement,
+                                          Set<VariableElement> fields,
+                                          Stream.Builder<ChangeSetMetadata> changeSetMetadata) {
+        String changeLogName = generateChangeLogName(changeSet, version, table);
+        Set<String> dependsOn = collectDependsOn(changeSet, fields);
+        changeSetMetadata.add(new ChangeSetMetadata(
+                typeElement,
+                table,
+                version,
+                changeSet.path(),
+                changeLogName,
+                dependsOn,
+                changeSetOperations
+        ));
     }
 
     private void collectOperations(String version,
@@ -144,6 +184,16 @@ public class ChangeSetAnnotationProcessor extends AbstractProcessor {
                 .ifPresent(operations::addAll);
         Optional.ofNullable(changeSetAtEndOperations.get(version))
                 .ifPresent(operations::addAll);
+    }
+
+    private Set<String> collectDependsOn(ChangeSet changeSet, Set<VariableElement> fields) {
+        Stream<String> annotationDependsOn = Arrays.stream(changeSet.dependsOn());
+        Stream<String> foreignKeyDependsOn = fields.stream()
+                .filter(fieldElement -> fieldElement.getAnnotation(ForeignKey.class) != null)
+                .map(fieldElement -> fieldElement.getAnnotation(ForeignKey.class))
+                .map(ForeignKey::referenceTable);
+        return Stream.concat(annotationDependsOn, foreignKeyDependsOn)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     private void collectColumnsChanges(Set<VariableElement> fieldsElements,
@@ -413,7 +463,18 @@ public class ChangeSetAnnotationProcessor extends AbstractProcessor {
         }
     }
 
-    private Map<TypeElement, ChangeSet> getJpaEntities(RoundEnvironment roundEnv) {
+    private ChangeSetOrderer buildOrderer(Stream.Builder<Map.Entry<String, ChangeSet>> tableChangeSets,
+                                          List<ChangeSetMetadata> changeSetMetadata) {
+        return tableChangeSets.build()
+                .map(tableChangeSet ->
+                        entry(tableChangeSet.getKey(), Arrays.asList(tableChangeSet.getValue().versionChronology())))
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue),
+                        versions -> new ChangeSetOrderer(changeSetMetadata, versions)
+                ));
+    }
+
+    private Map<TypeElement, ChangeSet> collectJpaEntities(RoundEnvironment roundEnv) {
         return roundEnv.getElementsAnnotatedWith(ChangeSet.class)
                 .stream()
                 .filter(this::isJpaEntity)
@@ -520,6 +581,13 @@ public class ChangeSetAnnotationProcessor extends AbstractProcessor {
             }
         }
         return "";
+    }
+
+    private String generateChangeLogName(ChangeSet changeSet, String version, String tableName) {
+        String fileName = changeSet.file();
+        fileName = fileName.replace("{version}", version);
+        fileName = fileName.replace("{table}", tableName);
+        return fileName;
     }
 
     private TypeMirror getDeclaredType(Class<?> javaClass, Types typeUtils, Elements elementUtils) {

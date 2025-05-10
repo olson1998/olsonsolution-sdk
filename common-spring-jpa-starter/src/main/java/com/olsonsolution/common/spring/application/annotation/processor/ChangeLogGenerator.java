@@ -18,6 +18,8 @@ import java.util.stream.Stream;
 import static com.olsonsolution.common.spring.application.annotation.processor.ConstraintMetadata.Type.NON_NULL;
 import static com.olsonsolution.common.spring.application.annotation.processor.ConstraintMetadata.Type.PRIMARY_KEY;
 import static java.util.Map.entry;
+import static javax.xml.XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI;
+import static javax.xml.XMLConstants.XMLNS_ATTRIBUTE_NS_URI;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class ChangeLogGenerator {
@@ -27,38 +29,61 @@ final class ChangeLogGenerator {
     private static final String VALUE_SCHEMA_LOCATION = "http://www.liquibase.org/xml/ns/dbchangelog " +
             "http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.4.xsd";
 
-    static Map<String, Document> generateChangeLogs(
-            String table,
-            Map<String, List<ChangeSetOperation>> changeSetOperations) throws ParserConfigurationException {
-        Stream.Builder<Map.Entry<String, Document>> changeLogsCollector = Stream.builder();
-        for (Map.Entry<String, List<ChangeSetOperation>> versionOps : changeSetOperations.entrySet()) {
+    static Map<ChangeSetMetadata, Document> generateChangeLogs(
+            List<ChangeSetMetadata> changeSetMetadata) throws ParserConfigurationException {
+        Stream.Builder<Map.Entry<ChangeSetMetadata, Document>> changeLogsCollector = Stream.builder();
+        for (ChangeSetMetadata changeSet : changeSetMetadata) {
             DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+            documentBuilderFactory.setNamespaceAware(true);
             DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
             Document document = documentBuilder.newDocument();
-            generateChangeLog(table, versionOps.getKey(), versionOps.getValue(), document);
-            changeLogsCollector.add(entry(versionOps.getKey(), document));
+            String version = changeSet.version();
+            generateChangeLog(changeSet.table(), version, changeSet.operations(), document);
+            changeLogsCollector.add(entry(changeSet, document));
         }
         return changeLogsCollector.build()
                 .collect(Collectors.collectingAndThen(
                         Collectors.toCollection(LinkedList::new),
-                        f -> {
-                            Map<String, Document> changeLogs = new LinkedHashMap<>(f.size());
-                            f.forEach(entry -> changeLogs.put(entry.getKey(), entry.getValue()));
+                        changeSetChangeLogs -> {
+                            Map<ChangeSetMetadata, Document> changeLogs =
+                                    new LinkedHashMap<>(changeSetChangeLogs.size());
+                            for (Map.Entry<ChangeSetMetadata, Document> changeSetChangeLog : changeSetChangeLogs) {
+                                changeLogs.put(changeSetChangeLog.getKey(), changeSetChangeLog.getValue());
+                            }
                             return changeLogs;
                         }
                 ));
+    }
+
+    static Map.Entry<String, Document> generateMasterChangeLog(
+            Map<ChangeSetMetadata, Document> changeSetChangeLogs) throws ParserConfigurationException {
+        DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+        documentBuilderFactory.setNamespaceAware(true);
+        DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+        Document document = documentBuilder.newDocument();
+        Element root = document.createElementNS(VALUE_XMLNS, "databaseChangeLog");
+        root.setAttributeNS(XMLNS_ATTRIBUTE_NS_URI, "xmlns", VALUE_XMLNS);
+        root.setAttributeNS(XMLNS_ATTRIBUTE_NS_URI, "xmlns:xsi", VALUE_XMLNS_XSI);
+        root.setAttributeNS(W3C_XML_SCHEMA_INSTANCE_NS_URI, "xsi:schemaLocation", VALUE_SCHEMA_LOCATION);
+        for (ChangeSetMetadata changeSet : changeSetChangeLogs.keySet()) {
+            Element element = document.createElementNS(VALUE_XMLNS, "include");
+            element.setAttribute("file", changeSet.changelogName());
+            root.appendChild(element);
+        }
+        document.appendChild(root);
+        return entry("/db/changelog/db.changelog.master-changelog.xml", document);
     }
 
     private static void generateChangeLog(String table,
                                           String version,
                                           List<ChangeSetOperation> operations,
                                           Document document) {
-        Element root = document.createElement("databaseChangeLog");
-        root.setAttribute("xmlns", VALUE_XMLNS);
-        root.setAttribute("xmlns:xsi", VALUE_XMLNS_XSI);
-        root.setAttribute("xsi:schemaLocation", VALUE_SCHEMA_LOCATION);
+        Element root = document.createElementNS(VALUE_XMLNS, "databaseChangeLog");
+        root.setAttributeNS(XMLNS_ATTRIBUTE_NS_URI, "xmlns", VALUE_XMLNS);
+        root.setAttributeNS(XMLNS_ATTRIBUTE_NS_URI, "xmlns:xsi", VALUE_XMLNS_XSI);
+        root.setAttributeNS(W3C_XML_SCHEMA_INSTANCE_NS_URI, "xsi:schemaLocation", VALUE_SCHEMA_LOCATION);
         document.appendChild(root);
-        Element changeSet = document.createElement("changeSet");
+        Element changeSet = document.createElementNS(VALUE_XMLNS, "changeSet");
         changeSet.setAttribute("id", "changelog-" + table + '-' + version + "-changeset");
         changeSet.setAttribute("author", "${author}");
         for (ChangeSetOperation changeSetOperation : operations) {
@@ -189,6 +214,5 @@ final class ChangeLogGenerator {
         }
         createTable.appendChild(column);
     }
-
 
 }

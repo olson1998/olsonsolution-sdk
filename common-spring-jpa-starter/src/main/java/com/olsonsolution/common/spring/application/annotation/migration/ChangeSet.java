@@ -14,4 +14,6 @@ public @interface ChangeSet {
 
     String[] versionChronology() default {};
 
+    String[] dependsOn() default {};
+
 }
