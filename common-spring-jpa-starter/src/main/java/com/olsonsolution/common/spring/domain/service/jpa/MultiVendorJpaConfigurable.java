@@ -2,7 +2,7 @@ package com.olsonsolution.common.spring.domain.service.jpa;
 
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSource;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlVendor;
-import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
+import com.olsonsolution.common.spring.domain.model.exception.datasource.DataSourceException;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecConfigurable;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
@@ -30,10 +30,11 @@ abstract class MultiVendorJpaConfigurable<D> implements DataSourceSpecConfigurab
     public D getDelegate() {
         DataSourceSpec dataSourceSpec = dataSourceSpecManager.getThreadLocal();
         if (dataSourceSpec == null) {
-            throw new IllegalStateException("No DataSourceSpec configured for current thread");
+            throw new DataSourceException("No DataSourceSpec configured for current thread");
         }
         SqlDataSource sqlDataSource = sqlDataSourceProvider.findDestination(dataSourceSpec.getName())
-                .orElseThrow();
+                .orElseThrow(() -> new DataSourceException("Destination data source not found for name: '%s'"
+                        .formatted(dataSourceSpec.getName())));
         SqlVendor vendor = sqlDataSource.getVendor();
         return obtainDelegate(vendor);
     }
@@ -54,8 +55,8 @@ abstract class MultiVendorJpaConfigurable<D> implements DataSourceSpecConfigurab
 
     @Override
     public void close() throws Exception {
-        for(Map.Entry<SqlVendor, D> registeredDelegate : delegatesRegistry.entrySet()) {
-            if(registeredDelegate.getValue() instanceof AutoCloseable closeableDelegate) {
+        for (Map.Entry<SqlVendor, D> registeredDelegate : delegatesRegistry.entrySet()) {
+            if (registeredDelegate.getValue() instanceof AutoCloseable closeableDelegate) {
                 closeableDelegate.close();
             }
         }

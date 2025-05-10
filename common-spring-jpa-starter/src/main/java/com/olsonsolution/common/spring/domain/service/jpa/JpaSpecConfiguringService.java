@@ -1,5 +1,6 @@
 package com.olsonsolution.common.spring.domain.service.jpa;
 
+import com.olsonsolution.common.spring.domain.model.exception.jpa.JpaSpecNotRegisteredException;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaSpecProperties;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
@@ -64,7 +65,7 @@ public class JpaSpecConfiguringService implements JpaSpecConfigurer {
                 .stream()
                 .filter(p -> StringUtils.equals(p.getName(), jpaSpecName))
                 .findFirst()
-                .orElseThrow();
+                .orElseThrow(() -> JpaSpecNotRegisteredException.forName(jpaSpecName));
     }
 
 
