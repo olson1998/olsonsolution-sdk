@@ -39,38 +39,32 @@ class JpaSpecUtils {
                 .toList();
     }
 
-    Map<String, Map<TypeElement, DeclaredType>> collectJpaSpecRepositories(RoundEnvironment roundEnv,
-                                                                           List<TypeElement> enableJpaSpecElements) {
+    void collectJpaSpecRepositories(RoundEnvironment roundEnv,
+                                    List<TypeElement> enableJpaSpecElements,
+                                    Map<String, List<TypeElement>> jpaSpecEntities,
+                                    Map<String, Map<TypeElement, DeclaredType>> jpaSpecRepoConfig) {
         List<String> jpaSpecEnabledPackages = collectJpaSpecEnabledPackages(enableJpaSpecElements);
         Map<String, List<String>> jpaSpecBasePackages =
                 collectJpaSpecPackages(enableJpaSpecElements, jpaSpecEnabledPackages);
-        List<TypeElement> jpaSpecElements = collectEnableJpaSpec(roundEnv);
+        List<TypeElement> jpaSpecElements = collectJpaSpec(roundEnv);
         TypeElement jpaRepositoryElement = processingEnv.getElementUtils()
                 .getTypeElement("org.springframework.data.jpa.repository.JpaRepository");
-        Map<TypeElement, DeclaredType> jpaSpecElementJpaRepository = new HashMap<>();
         jpaSpecElements.forEach(jpaSpecElement -> processConfig(
                 jpaSpecElement,
                 jpaRepositoryElement,
                 jpaSpecEnabledPackages,
                 jpaSpecBasePackages,
-                jpaSpecElementJpaRepository
+                jpaSpecEntities,
+                jpaSpecRepoConfig
         ));
-        return jpaSpecElementJpaRepository
-                .entrySet()
-                .stream()
-                .collect(Collectors.groupingBy(
-                        jpaSpecElement -> jpaSpecElement.getKey()
-                                .getAnnotation(JpaSpec.class)
-                                .value(),
-                        Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue)
-                ));
     }
 
     private void processConfig(TypeElement jpaSpecElement,
                                TypeElement jpaRepositoryElement,
                                List<String> jpaSpecAllPackagesScan,
                                Map<String, List<String>> jpaSpecBasePackagesScan,
-                               Map<TypeElement, DeclaredType> jpaSpecElementJpaRepository) {
+                               Map<String, List<TypeElement>> jpaSpecEntities,
+                               Map<String, Map<TypeElement, DeclaredType>> jpaSpecRepoConfig) {
         JpaSpec jpaSpec = jpaSpecElement.getAnnotation(JpaSpec.class);
         if (isInstanceOfJpaRepo(jpaSpecElement, processingEnv.getTypeUtils().erasure(jpaRepositoryElement.asType()))) {
             DeclaredType jpaRepoType = jpaSpecElement.getInterfaces()
@@ -93,11 +87,15 @@ class JpaSpecUtils {
                             "Jpa Repository %s annotated with @JpaSpec miss configuration"
                                     .formatted(jpaSpecElement.getQualifiedName())
                     );
-                } else if (jpaSpecAllPackagesScan.contains(jpaSpec.value()) || isInEnabledPackage(
-                        jpaSpec.value(),
-                        jpaRepoArgs.get(0),
-                        jpaSpecBasePackagesScan)) {
-                    jpaSpecElementJpaRepository.put(jpaSpecElement, jpaRepoType);
+                } else if (jpaRepoArgs.get(0) instanceof DeclaredType entityDeclaredType &&
+                        entityDeclaredType.asElement() instanceof TypeElement entityTypeElement) {
+                    if (jpaSpecAllPackagesScan.contains(jpaSpec.value()) ||
+                            isInEnabledPackage(jpaSpec.value(), entityTypeElement, jpaSpecBasePackagesScan)) {
+                        jpaSpecEntities.computeIfAbsent(jpaSpec.value(), s -> new ArrayList<>())
+                                .add(entityTypeElement);
+                        jpaSpecRepoConfig.computeIfAbsent(jpaSpec.value(), s -> new HashMap<>())
+                                .put(jpaSpecElement, jpaRepoType);
+                    }
                 }
             }
         }
@@ -150,19 +148,14 @@ class JpaSpecUtils {
     }
 
     private boolean isInEnabledPackage(String jpaSpec,
-                                       TypeMirror entityTypeMirror,
+                                       TypeElement entityTypeElement,
                                        Map<String, List<String>> enabledBasePackages) {
-        if (entityTypeMirror instanceof DeclaredType entityDeclaredType &&
-                entityDeclaredType.asElement() instanceof TypeElement entityTypeElement) {
-            String targetPackage = processingEnv.getElementUtils().getPackageOf(entityTypeElement).toString();
-            return enabledBasePackages.entrySet()
-                    .stream()
-                    .filter(jpaSpecBasePackages -> jpaSpecBasePackages.getKey().equals(jpaSpec))
-                    .flatMap(jpaSpecBasePackages -> jpaSpecBasePackages.getValue().stream())
-                    .anyMatch(enabledBasePackage -> isInsidePackage(targetPackage, enabledBasePackage));
-        } else {
-            return false;
-        }
+        String targetPackage = processingEnv.getElementUtils().getPackageOf(entityTypeElement).toString();
+        return enabledBasePackages.entrySet()
+                .stream()
+                .filter(jpaSpecBasePackages -> jpaSpecBasePackages.getKey().equals(jpaSpec))
+                .flatMap(jpaSpecBasePackages -> jpaSpecBasePackages.getValue().stream())
+                .anyMatch(enabledBasePackage -> isInsidePackage(targetPackage, enabledBasePackage));
     }
 
     private boolean isInsidePackage(String basePackage, String targetPackage) {

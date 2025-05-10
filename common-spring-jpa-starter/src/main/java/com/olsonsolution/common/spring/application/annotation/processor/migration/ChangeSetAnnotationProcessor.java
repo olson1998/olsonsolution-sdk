@@ -3,18 +3,19 @@ package com.olsonsolution.common.spring.application.annotation.processor.migrati
 import com.olsonsolution.common.spring.application.annotation.migration.*;
 import jakarta.persistence.Column;
 import jakarta.persistence.SequenceGenerator;
+import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.w3c.dom.Document;
 
 import javax.annotation.processing.Filer;
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.DeclaredType;
 import javax.tools.Diagnostic;
 import javax.tools.FileObject;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
@@ -43,54 +44,83 @@ public class ChangeSetAnnotationProcessor {
         this.tableMetadataUtil = new TableMetadataUtil(processingEnv);
     }
 
-    public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv,
-                           Map<String, Map<TypeElement, DeclaredType>> jpaSpecRepoConfig) {
+    public void process(Map<String, List<TypeElement>> jpaSpecEntities) {
         try {
-            List<ChangeSetMetadata> changeSetMetadata = collectChangeSetMetadata(roundEnv);
+            Map<String, List<ChangeSetMetadata>> jpaSpecChangeSetMetadata = collectChangeSetMetadata(jpaSpecEntities);
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Jpa Spec Change Sets: " + jpaSpecChangeSetMetadata);
+            jpaSpecChangeSetMetadata.forEach((this::processForJpaSpec));
+        } catch (Exception e) {
+            String msg = e.getClass().getCanonicalName() + "\n" + ExceptionUtils.getStackTrace(e);
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, msg);
+        }
+    }
+
+    private void processForJpaSpec(String jpaSpec, List<ChangeSetMetadata> changeSetMetadata) {
+        try {
             Map<ChangeSetMetadata, Document> changeSetChangeLogs =
                     ChangeLogGenerator.generateChangeLogs(changeSetMetadata);
             Map.Entry<String, Document> masterChangeLog =
                     ChangeLogGenerator.generateMasterChangeLog(changeSetChangeLogs);
             for (Map.Entry<ChangeSetMetadata, Document> changeSetChangeLog : changeSetChangeLogs.entrySet()) {
                 ChangeSetMetadata metadata = changeSetChangeLog.getKey();
-                String changeLogLocation = "/db/changelog/" + metadata.changelogName();
+                String changeLogLocation = "/db/changelog/" + jpaSpec + '/' + metadata.changelogName();
                 createChangeLogXml(changeLogLocation, changeSetChangeLog.getValue());
             }
             if (!changeSetChangeLogs.isEmpty()) {
                 createChangeLogXml(masterChangeLog.getKey(), masterChangeLog.getValue());
             }
-        } catch (Exception e) {
+        } catch (ParserConfigurationException | IOException | TransformerException e) {
             String ThrowableMsg = ExceptionUtils.getStackTrace(e);
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.getMessage() + "\n" + ThrowableMsg);
         }
-        return true;
     }
 
-    private List<ChangeSetMetadata> collectChangeSetMetadata(RoundEnvironment roundEnv) {
-        Map<TypeElement, ChangeSet> changeSetEntities = collectJpaEntities(roundEnv);
-        Stream.Builder<ChangeSetMetadata> changeSetMetadata = Stream.builder();
-        Stream.Builder<Map.Entry<String, ChangeSet>> tableChangeSets = Stream.builder();
+    private Map<String, List<ChangeSetMetadata>> collectChangeSetMetadata(
+            Map<String, List<TypeElement>> jpaSpecEntities) {
+        Map<TypeElement, ChangeSet> changeSetEntities = collectJpaEntities(jpaSpecEntities);
+        Map<String, List<ChangeSetMetadata>> jpaSpecChangeSetMetadata = new HashMap<>();
+        Map<String, Map<String, ChangeSet>> jpaSpecTableChangeSet = new HashMap<>();
         changeSetEntities.forEach((typeElement, changeSet) -> collectChangesetMetadata(
                 typeElement,
                 changeSet,
-                changeSetMetadata,
-                tableChangeSets
+                jpaSpecEntities,
+                jpaSpecChangeSetMetadata,
+                jpaSpecTableChangeSet
         ));
-        List<ChangeSetMetadata> unorderedChangeSetMetadata = changeSetMetadata.build()
-                .toList();
-        ChangeSetOrderer orderer = buildOrderer(tableChangeSets, unorderedChangeSetMetadata);
-        return unorderedChangeSetMetadata.stream()
-                .sorted(orderer)
+        Map<String, List<ChangeSetMetadata>> orderedJpaSpecChangeSetMetadata =
+                new LinkedHashMap<>(jpaSpecChangeSetMetadata.size());
+        List<String> orderedJpaSpec = jpaSpecChangeSetMetadata.keySet()
+                .stream()
+                .sorted(Comparator.naturalOrder())
                 .collect(Collectors.toCollection(LinkedList::new));
+        orderedJpaSpec.forEach(jpaSpec -> {
+            List<ChangeSetMetadata> changeSetMetadata = ListUtils.emptyIfNull(jpaSpecChangeSetMetadata.get(jpaSpec));
+            Map<String, ChangeSet> tableChangeSets = MapUtils.emptyIfNull(jpaSpecTableChangeSet.get(jpaSpec));
+            ChangeSetOrderer orderer = buildOrderer(tableChangeSets, changeSetMetadata);
+            List<ChangeSetMetadata> orderedChangeSetMetadata = changeSetMetadata.stream()
+                    .sorted(orderer)
+                    .collect(Collectors.toCollection(LinkedList::new));
+            orderedJpaSpecChangeSetMetadata.put(jpaSpec, orderedChangeSetMetadata);
+        });
+        return orderedJpaSpecChangeSetMetadata;
     }
 
     private void collectChangesetMetadata(TypeElement typeElement,
                                           ChangeSet changeSet,
-                                          Stream.Builder<ChangeSetMetadata> changeSetMetadata,
-                                          Stream.Builder<Map.Entry<String, ChangeSet>> tableChangeSets) {
-        String tableName = tableMetadataUtil.resolveTableName(typeElement);
-        tableChangeSets.add(entry(tableName, changeSet));
-        collectChangeSetMetadata(typeElement, tableName, changeSet, changeSetMetadata);
+                                          Map<String, List<TypeElement>> jpaSpecsEntities,
+                                          Map<String, List<ChangeSetMetadata>> jpaSpecChangeSetMetadata,
+                                          Map<String, Map<String, ChangeSet>> jpaSpecTableChangeSet) {
+        String jpaSpec = jpaSpecsEntities.entrySet()
+                .stream()
+                .filter(jpaSpecEntities -> jpaSpecEntities.getValue().contains(typeElement))
+                .findFirst()
+                .map(Map.Entry::getKey)
+                .orElseThrow();
+        String table = tableMetadataUtil.resolveTableName(typeElement);
+        jpaSpecChangeSetMetadata.computeIfAbsent(jpaSpec, s -> new ArrayList<>());
+        jpaSpecTableChangeSet.computeIfAbsent(jpaSpec, s -> new HashMap<>())
+                .put(jpaSpec, changeSet);
+        collectChangeSetMetadata(typeElement, table, changeSet, jpaSpecChangeSetMetadata);
     }
 
     private void createChangeLogXml(String changeLogLocation,
@@ -116,9 +146,9 @@ public class ChangeSetAnnotationProcessor {
     }
 
     private void collectChangeSetMetadata(TypeElement typeElement,
-                                          String tableName,
+                                          String table,
                                           ChangeSet changeSet,
-                                          Stream.Builder<ChangeSetMetadata> changeSetMetadata) {
+                                          Map<String, List<ChangeSetMetadata>> jpaSpecChangeSetMetadata) {
         Map<String, List<ChangeSetOperation>> changeSetAtBeginningOperations = new HashMap<>();
         Map<String, List<ChangeSetOperation>> changeSetCreateTableOperations = new HashMap<>();
         Map<String, List<ChangeSetOperation>> changeSetAtEndOperations = new HashMap<>();
@@ -126,7 +156,7 @@ public class ChangeSetAnnotationProcessor {
         Set<VariableElement> fields = getDeclaredFields(typeElement);
         collectColumnsChanges(
                 fields,
-                tableName,
+                table,
                 changeSet,
                 changeSetAtBeginningOperations,
                 changeSetCreateTableOperations,
@@ -144,8 +174,15 @@ public class ChangeSetAnnotationProcessor {
                 changeSetAtEndOperations,
                 changeSetOperations
         ));
-        changeSetOperations.forEach((version, ops) ->
-                collectChangeSetMetadata(version, ops, changeSet, tableName, typeElement, fields, changeSetMetadata));
+        changeSetOperations.forEach((version, ops) -> collectChangeSetMetadata(
+                version,
+                ops,
+                changeSet,
+                table,
+                typeElement,
+                fields,
+                jpaSpecChangeSetMetadata
+        ));
     }
 
     private void collectChangeSetMetadata(String version,
@@ -154,10 +191,10 @@ public class ChangeSetAnnotationProcessor {
                                           String table,
                                           TypeElement typeElement,
                                           Set<VariableElement> fields,
-                                          Stream.Builder<ChangeSetMetadata> changeSetMetadata) {
+                                          Map<String, List<ChangeSetMetadata>> jpaSpecChangeSetMetadata) {
         String changeLogName = generateChangeLogName(changeSet, version, table);
         Set<String> dependsOn = collectDependsOn(changeSet, fields);
-        changeSetMetadata.add(new ChangeSetMetadata(
+        ChangeSetMetadata changeSetMetadata = new ChangeSetMetadata(
                 typeElement,
                 table,
                 version,
@@ -165,7 +202,9 @@ public class ChangeSetAnnotationProcessor {
                 changeLogName,
                 dependsOn,
                 changeSetOperations
-        ));
+        );
+        jpaSpecChangeSetMetadata.computeIfAbsent("", s -> new ArrayList<>())
+                .add(changeSetMetadata);
     }
 
     private void collectOperations(String version,
@@ -459,9 +498,10 @@ public class ChangeSetAnnotationProcessor {
         }
     }
 
-    private ChangeSetOrderer buildOrderer(Stream.Builder<Map.Entry<String, ChangeSet>> tableChangeSets,
+    private ChangeSetOrderer buildOrderer(Map<String, ChangeSet> tableChangeSets,
                                           List<ChangeSetMetadata> changeSetMetadata) {
-        return tableChangeSets.build()
+        return tableChangeSets.entrySet()
+                .stream()
                 .map(tableChangeSet ->
                         entry(tableChangeSet.getKey(), Arrays.asList(tableChangeSet.getValue().versionChronology())))
                 .collect(Collectors.collectingAndThen(
@@ -470,12 +510,12 @@ public class ChangeSetAnnotationProcessor {
                 ));
     }
 
-    private Map<TypeElement, ChangeSet> collectJpaEntities(RoundEnvironment roundEnv) {
-        return roundEnv.getElementsAnnotatedWith(ChangeSet.class)
+    private Map<TypeElement, ChangeSet> collectJpaEntities(Map<String, List<TypeElement>> jpaSpecEntities) {
+        return jpaSpecEntities.values()
                 .stream()
+                .flatMap(List::stream)
                 .filter(tableMetadataUtil::isJpaEntity)
-                .filter(TypeElement.class::isInstance)
-                .map(TypeElement.class::cast)
+                .filter(entity -> entity.getAnnotation(ChangeSet.class) != null)
                 .map(element -> entry(element, element.getAnnotation(ChangeSet.class)))
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
     }

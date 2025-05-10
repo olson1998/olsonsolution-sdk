@@ -46,10 +46,13 @@ public class EnableJpaSpecAnnotationProcessor extends AbstractProcessor {
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         List<TypeElement> enableJpaSpecElements = jpaSpecUtils.collectEnableJpaSpec(roundEnv);
         if (!enableJpaSpecElements.isEmpty()) {
-            Map<String, Map<TypeElement, DeclaredType>> jpaSpecRepoConfig =
-                    jpaSpecUtils.collectJpaSpecRepositories(roundEnv, enableJpaSpecElements);
+            Map<String, List<TypeElement>> jpaSpecEntities = new HashMap<>();
+            Map<String, Map<TypeElement, DeclaredType>> jpaSpecRepoConfig = new HashMap<>();
+            jpaSpecUtils.collectJpaSpecRepositories(roundEnv, enableJpaSpecElements, jpaSpecEntities, jpaSpecRepoConfig);
             processConfig(jpaSpecRepoConfig, enableJpaSpecElements);
-            changeSetAnnotationProcessor.process(annotations, roundEnv, jpaSpecRepoConfig);
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Jpa Spec config: " + jpaSpecRepoConfig);
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Jpa Spec Entities: " + jpaSpecEntities);
+            changeSetAnnotationProcessor.process(jpaSpecEntities);
         }
         return true;
     }
