@@ -1,21 +1,19 @@
 package com.olsonsolution.common.spring.application.annotation.processor;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.auto.service.AutoService;
 import com.olsonsolution.common.spring.application.annotation.migration.*;
-import com.olsonsolution.common.spring.application.annotation.migration.ForeignKey;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.SequenceGenerator;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.w3c.dom.Document;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
-import javax.lang.model.element.Element;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.Elements;
-import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.xml.transform.Transformer;
@@ -26,15 +24,12 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.olsonsolution.common.spring.application.annotation.processor.ConstraintMetadata.Type.*;
 import static java.util.Map.entry;
-import static javax.lang.model.element.ElementKind.CLASS;
 import static javax.lang.model.element.ElementKind.FIELD;
 import static javax.tools.StandardLocation.CLASS_OUTPUT;
 import static javax.xml.transform.OutputKeys.*;
@@ -45,6 +40,15 @@ import static javax.xml.transform.OutputKeys.*;
         "com.olsonsolution.common.spring.application.annotation.migration.ChangeSet"
 })
 public class ChangeSetAnnotationProcessor extends AbstractProcessor {
+
+    private TableMetadataUtil tableMetadataUtil;
+
+    @Override
+    public synchronized void init(ProcessingEnvironment processingEnv) {
+        super.init(processingEnv);
+        this.objectMapper = new ObjectMapper();
+        this.tableMetadataUtil = new TableMetadataUtil(processingEnv);
+    }
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
@@ -91,7 +95,7 @@ public class ChangeSetAnnotationProcessor extends AbstractProcessor {
                                           ChangeSet changeSet,
                                           Stream.Builder<ChangeSetMetadata> changeSetMetadata,
                                           Stream.Builder<Map.Entry<String, ChangeSet>> tableChangeSets) {
-        String tableName = resolveTableName(typeElement);
+        String tableName = tableMetadataUtil.resolveTableName(typeElement);
         tableChangeSets.add(entry(tableName, changeSet));
         collectChangeSetMetadata(typeElement, tableName, changeSet, changeSetMetadata);
     }
@@ -227,10 +231,8 @@ public class ChangeSetAnnotationProcessor extends AbstractProcessor {
                                        Stream.Builder<AddColumnOp> addColumnOpsBuilder,
                                        Map<String, List<ChangeSetOperation>> changeSetAtBeginningOperations,
                                        Map<String, List<ChangeSetOperation>> changeSetAtEndOperations) {
-        if (isEmbeddable(fieldElement)) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "embeddable: " + processingEnv.getTypeUtils().asElement(fieldElement.asType()));
+        if (tableMetadataUtil.isEmbeddable(fieldElement)) {
             if (processingEnv.getTypeUtils().asElement(fieldElement.asType()) instanceof TypeElement fieldTypeElement) {
-                processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "embeddable: " + fieldTypeElement);
                 collectEmbeddableColumnOperations(
                         fieldElement,
                         fieldTypeElement,
@@ -261,7 +263,7 @@ public class ChangeSetAnnotationProcessor extends AbstractProcessor {
                                                    Map<String, List<ChangeSetOperation>> changeSetAtBeginningOperations,
                                                    Map<String, List<ChangeSetOperation>> changeSetAtEndOperations) {
         Set<VariableElement> embeddableFieldElements = getDeclaredFields(fieldTypeElement);
-        if (isEmbeddableIdentifier(embeddableFieldElement)) {
+        if (tableMetadataUtil.isEmbeddableIdentifier(embeddableFieldElement)) {
             String fkName = "fk_" + tableName;
             AddUniqueConstraintOp addUniqueConstraintOp = embeddableFieldElements.stream()
                     .map(VariableElement::getSimpleName)
@@ -290,7 +292,7 @@ public class ChangeSetAnnotationProcessor extends AbstractProcessor {
             Stream.Builder<AddColumnOp> addColumnOpsBuilder,
             Map<String, List<ChangeSetOperation>> changeSetAtBeginningOperations,
             Map<String, List<ChangeSetOperation>> changeSetAtEndOperations) {
-        String columnName = resolveColumnName(fieldElement);
+        String columnName = tableMetadataUtil.resolveColumnName(fieldElement);
         collectColumnOperations(
                 fieldElement,
                 changeSet,
@@ -316,7 +318,8 @@ public class ChangeSetAnnotationProcessor extends AbstractProcessor {
                 fieldElement.getAnnotation(Column.class)
         );
         addColumnOpsBuilder.add(addColumnOp);
-        if (isIdentifier(fieldElement) && fieldElement.getAnnotation(SequenceGenerator.class) != null) {
+        if (tableMetadataUtil.isIdentifier(fieldElement) &&
+                fieldElement.getAnnotation(SequenceGenerator.class) != null) {
             SequenceGenerator sequenceGenerator = fieldElement.getAnnotation(SequenceGenerator.class);
             CreateSequence createSequence = new CreateSequence(
                     sequenceGenerator.name(),
@@ -363,8 +366,8 @@ public class ChangeSetAnnotationProcessor extends AbstractProcessor {
                                                    Column column) {
         AddColumnOp.AddColumnOpBuilder addColumnOp = AddColumnOp.builder()
                 .column(columnName)
-                .type(resolveType(fieldElement, column));
-        if (isIdentifier(fieldElement)) {
+                .type(tableMetadataUtil.resolveType(fieldElement, column));
+        if (tableMetadataUtil.isIdentifier(fieldElement)) {
             addColumnOp.constraint(ConstraintMetadata.builder()
                     .name("pk_" + tableName)
                     .type(PRIMARY_KEY)
@@ -477,7 +480,7 @@ public class ChangeSetAnnotationProcessor extends AbstractProcessor {
     private Map<TypeElement, ChangeSet> collectJpaEntities(RoundEnvironment roundEnv) {
         return roundEnv.getElementsAnnotatedWith(ChangeSet.class)
                 .stream()
-                .filter(this::isJpaEntity)
+                .filter(tableMetadataUtil::isJpaEntity)
                 .filter(TypeElement.class::isInstance)
                 .map(TypeElement.class::cast)
                 .map(element -> entry(element, element.getAnnotation(ChangeSet.class)))
@@ -506,119 +509,11 @@ public class ChangeSetAnnotationProcessor extends AbstractProcessor {
                 .collect(Collectors.toCollection(LinkedList::new));
     }
 
-    private String resolveTableName(Element element) {
-        return element.getAnnotation(Table.class) == null ?
-                element.getSimpleName().toString() :
-                element.getAnnotation(Table.class).name();
-    }
-
-    private String resolveColumnName(VariableElement variableElement) {
-        return variableElement.getAnnotation(Column.class) == null ?
-                variableElement.getSimpleName().toString() :
-                variableElement.getAnnotation(Column.class).name();
-    }
-
-    private String resolveType(VariableElement variableElement, Column column) {
-        if (column != null && !column.columnDefinition().isEmpty()) {
-            return column.columnDefinition();
-        }
-        return assumeType(variableElement, column);
-    }
-
-    private String assumeType(VariableElement variableElement, Column column) {
-        TypeMirror variableTypeMirror = variableElement.asType();
-        if (variableTypeMirror.getKind().isPrimitive()) {
-            return assumePrimitiveType(variableTypeMirror);
-        } else if (isAssignableFieldType(variableElement, Integer.class)) {
-            return "INT";
-        } else if (isAssignableFieldType(variableElement, Long.class) ||
-                isAssignableFieldType(variableElement, BigInteger.class)) {
-            return "BIGINT";
-        } else if (isAssignableFieldType(variableElement, Short.class)) {
-            return "SMALLINT";
-        } else if (isAssignableFieldType(variableElement, Double.class) ||
-                isAssignableFieldType(variableElement, BigDecimal.class)) {
-            return "double";
-        } else if (isAssignableFieldType(variableElement, Float.class)) {
-            return "float";
-        } else if (isAssignableFieldType(variableElement, Boolean.class)) {
-            return "boolean";
-        } else if (isAssignableFieldType(variableElement, Character.class)) {
-            return "varchar(1)";
-        } else if (isAssignableFieldType(variableElement, String.class) && column != null) {
-            return "varchar(" + column.length() + ")";
-        } else if (isAssignableFieldType(variableElement, String.class)) {
-            return "varchar(255)";
-        } else if (isAssignableFieldType(variableElement, UUID.class)) {
-            return "varchar(36)";
-        } else {
-            return "";
-        }
-    }
-
-    private String assumePrimitiveType(TypeMirror typeMirror) {
-        switch (typeMirror.getKind()) {
-            case INT -> {
-                return "INT";
-            }
-            case LONG -> {
-                return "BIGINT";
-            }
-            case SHORT -> {
-                return "SMALLINT";
-            }
-            case DOUBLE -> {
-                return "double";
-            }
-            case FLOAT -> {
-                return "float";
-            }
-            case BOOLEAN -> {
-                return "boolean";
-            }
-            case CHAR -> {
-                return "varchar(1)";
-            }
-        }
-        return "";
-    }
-
     private String generateChangeLogName(ChangeSet changeSet, String version, String tableName) {
         String fileName = changeSet.file();
         fileName = fileName.replace("{version}", version);
         fileName = fileName.replace("{table}", tableName);
         return fileName;
-    }
-
-    private TypeMirror getDeclaredType(Class<?> javaClass, Types typeUtils, Elements elementUtils) {
-        TypeElement typeElement = elementUtils.getTypeElement(javaClass.getCanonicalName());
-        return typeUtils.getDeclaredType(typeElement);
-    }
-
-    private boolean isJpaEntity(Element element) {
-        return element.getAnnotation(Entity.class) != null && element.getKind() == CLASS;
-    }
-
-    private boolean isEmbeddable(VariableElement variableElement) {
-        if (processingEnv.getTypeUtils().asElement(variableElement.asType()) instanceof TypeElement fieldTypeElement) {
-            return fieldTypeElement.getAnnotation(Embeddable.class) != null;
-        }
-        return false;
-    }
-
-    private boolean isIdentifier(VariableElement variableElement) {
-        return variableElement.getAnnotation(Id.class) != null;
-    }
-
-    private boolean isEmbeddableIdentifier(VariableElement variableElement) {
-        return variableElement.getAnnotation(EmbeddedId.class) != null;
-    }
-
-    private boolean isAssignableFieldType(VariableElement element, Class<?> javaClass) {
-        Types typeUtils = processingEnv.getTypeUtils();
-        Elements elementUtils = processingEnv.getElementUtils();
-        TypeMirror typeMirror = getDeclaredType(javaClass, typeUtils, elementUtils);
-        return typeUtils.isAssignable(element.asType(), typeMirror);
     }
 
 }
