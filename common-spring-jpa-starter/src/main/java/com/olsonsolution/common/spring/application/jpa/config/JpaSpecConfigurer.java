@@ -22,6 +22,11 @@ public class JpaSpecConfigurer {
 
     private final JpaProperties jpaProperties;
 
+    public String resolveSchema(String jpaSpecName) {
+        JpaSpecProperties properties = getJpaSpecProperties(jpaSpecName);
+        return properties.getSchema();
+    }
+
     public EntityManagerFactoryDelegate createEntityManagerFactoryDelegate(
             @NonNull String jpaSpecName,
             @NonNull String[] entityBasePackages,

@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static java.time.format.DateTimeFormatter.ISO_INSTANT;
 import static javax.tools.StandardLocation.CLASS_PATH;
 
 @AutoService(Processor.class)
@@ -110,8 +111,7 @@ public class EnableJpaSpecAnnotationProcessor extends AbstractProcessor {
                 .distinct()
                 .collect(Collectors.collectingAndThen(Collectors.toList(), this::writeEntityBasePackagesArray));
         try {
-            generateJpaConfigurerClass(jpaSpec, configPackage, entitiesPackages);
-            generateEnableJpaRepositoriesClass(jpaSpec, configPackage, jpaRepoPackages);
+            generateJpaConfigurerClass(jpaSpec, configPackage, entitiesPackages, jpaRepoPackages);
         } catch (IOException e) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.getMessage());
         }
@@ -119,8 +119,9 @@ public class EnableJpaSpecAnnotationProcessor extends AbstractProcessor {
 
     private void generateJpaConfigurerClass(String jpaSpec,
                                             String basePackage,
-                                            String entityBasePackages) throws IOException {
-        String className = basePackage + '.' + jpaSpec + "JpaConfigurer";
+                                            String entityBasePackages,
+                                            String jpaReposBasePackages) throws IOException {
+        String className = basePackage + '.' + jpaSpec + "JpaSpecConfigurer";
         processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Generating: " + className);
         processingEnv.getMessager().printMessage(
                 Diagnostic.Kind.NOTE,
@@ -129,29 +130,16 @@ public class EnableJpaSpecAnnotationProcessor extends AbstractProcessor {
         Instant timestamp = Instant.now();
         String generatedClass = readClasspathFile(JPA_SPEC_JPA_CONFIGURER_TEMPLATE_FILE);
         generatedClass = generatedClass.replace("${BASE_PACKAGE}", basePackage);
-        generatedClass = generatedClass.replace("${JPA_SPEC}", jpaSpec);
-        generatedClass = generatedClass.replace("${TIMESTAMP}", timestamp.toString());
-        generatedClass = generatedClass.replace("${EPOCH_MILLI}", String.valueOf(timestamp.toEpochMilli()));
-        generatedClass = generatedClass.replace("${ENTITY_BASE_PACKAGES}", entityBasePackages);
-        generateClass(className, generatedClass);
-    }
-
-    private void generateEnableJpaRepositoriesClass(String jpaSpec,
-                                                    String basePackage,
-                                                    String repositoriesBasePackages) throws IOException {
-        String className = basePackage + ".Enable" + jpaSpec + "JpaRepositoriesConfig";
-        processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Generating: " + className);
-        processingEnv.getMessager().printMessage(
-                Diagnostic.Kind.NOTE,
-                "Jpa Spec: %s Base package: %s".formatted(jpaSpec, basePackage)
+        generatedClass = generatedClass.replace(
+                "${ANNOTATION_PROCESSOR}",
+                EnableJpaSpecAnnotationProcessor.class.getCanonicalName()
         );
-        Instant timestamp = Instant.now();
-        String generatedClass = readClasspathFile(ENABLE_JPA_SPEC_JPA_REPOSITORIES_TEMPLATE_FILE);
-        generatedClass = generatedClass.replace("${BASE_PACKAGE}", basePackage);
-        generatedClass = generatedClass.replace("${REPO_BASE_PACKAGES}", repositoriesBasePackages);
+        String compiler = processingEnv.getSourceVersion() != null ? processingEnv.getSourceVersion().name() : "java";
+        generatedClass = generatedClass.replace("${COMPILER}", compiler);
         generatedClass = generatedClass.replace("${JPA_SPEC}", jpaSpec);
-        generatedClass = generatedClass.replace("${TIMESTAMP}", timestamp.toString());
-        generatedClass = generatedClass.replace("${EPOCH_MILLI}", String.valueOf(timestamp.toEpochMilli()));
+        generatedClass = generatedClass.replace("${TIMESTAMP}", ISO_INSTANT.format(timestamp));
+        generatedClass = generatedClass.replace("${ENTITY_BASE_PACKAGES}", entityBasePackages);
+        generatedClass = generatedClass.replace("${JPA_REPOS_BASE_PACKAGES}", jpaReposBasePackages);
         generateClass(className, generatedClass);
     }
 
@@ -185,7 +173,7 @@ public class EnableJpaSpecAnnotationProcessor extends AbstractProcessor {
                 basePackageBuilder.append(", ");
             }
         }
-        return basePackageBuilder.append("}").toString();
+        return basePackageBuilder.append('}').toString();
     }
 
     private String readClasspathFile(String path) throws IOException {

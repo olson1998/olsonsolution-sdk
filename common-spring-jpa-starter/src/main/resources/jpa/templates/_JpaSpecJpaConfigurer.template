@@ -1,48 +1,108 @@
 package ${BASE_PACKAGE};
 
-import com.olsonsolution.common.spring.application.annotation.processor.jpa.EnableJpaSpecAnnotationProcessor;
 import com.olsonsolution.common.spring.application.jpa.config.JpaSpecConfigurer;
+import com.olsonsolution.common.spring.domain.port.config.jpa.JpaSpecConfig;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.EntityManagerFactoryDelegate;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.PlatformTransactionManagerDelegate;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+
+import javax.annotation.processing.Generated;
 
 @Configuration
-public class ${JPA_SPEC}JpaConfigurer {
+@Generated(
+        value = "${ANNOTATION_PROCESSOR}",
+        date = "${TIMESTAMP}",
+        comments = "${COMPILER}"
+)
+public class ${JPA_SPEC}JpaSpecConfigurer implements JpaSpecConfig, InitializingBean {
 
-    private static final String JPA_SPEC_NAME = "${JPA_SPEC}";
-    private static final String[] ENTITY_BASE_PACKAGES = ${ENTITY_BASE_PACKAGES};
+    private static final String JPA_SPEC = "${JPA_SPEC}";
 
-    @Bean(JPA_SPEC_NAME + "_entityManagerFactory")
-    public EntityManagerFactoryDelegate entityManagerFactoryDelegate(
-            JpaSpecConfigurer jpaSpecConfigurer,
-            DataSourceSpecManager dataSourceSpecManager,
-            SqlDataSourceProvider sqlDataSourceProvider,
-            DestinationDataSourceManager destinationDataSourceManager) {
+    private static final String[] BASE_PACKAGES = ${ENTITY_BASE_PACKAGES};
+
+    private String schema;
+
+    private final JpaSpecConfigurer jpaSpecConfigurer;
+
+    private final DataSourceSpecManager dataSourceSpecManager;
+
+    private final SqlDataSourceProvider sqlDataSourceProvider;
+
+    private final DestinationDataSourceManager destinationDataSourceManager;
+
+    @Autowired
+    public ${JPA_SPEC}JpaSpecConfigurer(JpaSpecConfigurer jpaSpecConfigurer,
+                                        DataSourceSpecManager dataSourceSpecManager,
+                                        SqlDataSourceProvider sqlDataSourceProvider,
+                                        DestinationDataSourceManager destinationDataSourceManager) {
+        this.jpaSpecConfigurer = jpaSpecConfigurer;
+        this.dataSourceSpecManager = dataSourceSpecManager;
+        this.sqlDataSourceProvider = sqlDataSourceProvider;
+        this.destinationDataSourceManager = destinationDataSourceManager;
+    }
+
+    @Override
+    public String getSchema() {
+        return schema;
+    }
+
+    @Override
+    public String getJpaSpecName() {
+        return JPA_SPEC;
+    }
+
+    @Bean(JPA_SPEC + "_entityManagerFactoryDelegate")
+    public EntityManagerFactoryDelegate entityManagerFactoryDelegate() {
         return jpaSpecConfigurer.createEntityManagerFactoryDelegate(
-                JPA_SPEC_NAME,
-                ENTITY_BASE_PACKAGES,
+                JPA_SPEC,
+                BASE_PACKAGES,
                 dataSourceSpecManager,
                 sqlDataSourceProvider,
                 destinationDataSourceManager
         );
     }
 
-    @Bean(JPA_SPEC_NAME + "_platformTransactionManager")
+    @Bean(JPA_SPEC + "_platformTransactionManagerDelegate")
     public PlatformTransactionManagerDelegate platformTransactionManagerDelegate(
-            JpaSpecConfigurer jpaSpecConfigurer,
-            DataSourceSpecManager dataSourceSpecManager,
-            SqlDataSourceProvider sqlDataSourceProvider,
-            @Qualifier(JPA_SPEC_NAME + "_entityManagerFactory") EntityManagerFactoryDelegate entityManagerFactory) {
+            @Qualifier(JPA_SPEC + "_entityManagerFactoryDelegate") EntityManagerFactoryDelegate entityManagerFactory) {
         return jpaSpecConfigurer.createPlatformTransactionManagerDelegate(
                 dataSourceSpecManager,
                 sqlDataSourceProvider,
                 entityManagerFactory
         );
+    }
+
+    @Bean("enable " + JPA_SPEC + "JpaSpec")
+    public Enable${JPA_SPEC}JpaRepositories enableTemplateJpaRepositories() {
+        return new Enable${JPA_SPEC}JpaRepositories();
+    }
+
+    @Override
+    public void afterPropertiesSet() {
+        this.schema = jpaSpecConfigurer.resolveSchema(JPA_SPEC);
+    }
+
+
+    @EnableJpaRepositories(
+            basePackages = ${JPA_REPOS_BASE_PACKAGES},
+            transactionManagerRef = JPA_SPEC + "_platformTransactionManagerDelegate",
+            entityManagerFactoryRef = JPA_SPEC + "_entityManagerFactoryDelegate"
+    )
+    @Generated(
+            value = "${ANNOTATION_PROCESSOR}",
+            date = "${TIMESTAMP}",
+            comments = "${COMPILER}"
+    )
+    public static class Enable${JPA_SPEC}JpaRepositories {
+
     }
 
 }
