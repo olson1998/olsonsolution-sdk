@@ -9,7 +9,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class JpaConfig {
 
-    @Bean
+    public static final String JPA_SPEC_CONFIGURER_BEAN = "jpaSpecConfigurer";
+
+    @Bean(JPA_SPEC_CONFIGURER_BEAN)
     public JpaSpecConfigurer jpaSpecConfigurer(JpaProperties jpaProperties) {
         return new JpaSpecConfiguringService(jpaProperties);
     }
