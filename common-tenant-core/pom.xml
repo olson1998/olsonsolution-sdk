@@ -15,4 +15,15 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.olsonsolution.common</groupId>
+            <artifactId>common-data</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.olsonsolution.common</groupId>
+            <artifactId>common-jackson-utils</artifactId>
+        </dependency>
+    </dependencies>
+
 </project>
