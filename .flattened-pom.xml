@@ -25,8 +25,8 @@
   </modules>
   <properties>
     <auto-service.version>1.1.1</auto-service.version>
-    <junit-platform-launcher.version>1.10.2</junit-platform-launcher.version>
-    <maven-source-plugin.version>3.3.0</maven-source-plugin.version>
+    <junit-platform-launcher.version>1.12.2</junit-platform-launcher.version>
+    <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
     <slf4j-api.version>2.0.13</slf4j-api.version>
     <flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
     <reactor-core.version>3.5.4</reactor-core.version>
@@ -37,28 +37,28 @@
     <commons-lang-3.version>3.17.0</commons-lang-3.version>
     <spring-context.version>6.2.6</spring-context.version>
     <commons-collections4.version>4.5.0</commons-collections4.version>
-    <mockito-juniut-jupiter.version>5.12.0</mockito-juniut-jupiter.version>
-    <jacoco-maven-plugin.version>0.8.10</jacoco-maven-plugin.version>
+    <mockito-juniut-jupiter.version>5.17.0</mockito-juniut-jupiter.version>
+    <jacoco-maven-plugin.version>0.8.13</jacoco-maven-plugin.version>
     <caffeine.version>3.1.8</caffeine.version>
     <testcontainers.mssqlserver.version>1.20.4</testcontainers.mssqlserver.version>
     <testcontainers.db2.version>1.20.4</testcontainers.db2.version>
-    <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
+    <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
     <testcontainers.postgresql.version>1.20.4</testcontainers.postgresql.version>
     <maven.compiler.source>17</maven.compiler.source>
     <spring-boot-configuration-processor.version>3.4.5</spring-boot-configuration-processor.version>
-    <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
-    <junit-jupiter-params.version>5.10.2</junit-jupiter-params.version>
+    <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
+    <junit-jupiter-params.version>5.12.2</junit-jupiter-params.version>
     <revision>0.1.0-SNAPSHOT</revision>
     <lombok.version>1.18.32</lombok.version>
     <jackson-databind.version>2.18.4</jackson-databind.version>
-    <junit-jupiter-api.version>5.10.2</junit-jupiter-api.version>
+    <junit-jupiter-api.version>5.12.2</junit-jupiter-api.version>
     <assertj-core.version>3.26.0</assertj-core.version>
     <maven.compiler.target>17</maven.compiler.target>
     <testcontainers.junit-jupiter.version>1.20.4</testcontainers.junit-jupiter.version>
-    <maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
+    <maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version>
     <joda-time.version>2.14.0</joda-time.version>
     <commons-exec.version>1.4.0</commons-exec.version>
-    <mockito-core.version>5.12.0</mockito-core.version>
+    <mockito-core.version>5.17.0</mockito-core.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -240,6 +240,12 @@
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
       <version>${assertj-core.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${junit-jupiter-api.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
