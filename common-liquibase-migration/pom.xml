@@ -13,7 +13,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <liquibase-core.version>4.30.0</liquibase-core.version>
+        <liquibase-core.version>4.31.1</liquibase-core.version>
     </properties>
 
     <dependencies>

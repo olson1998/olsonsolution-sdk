@@ -27,10 +27,10 @@
     <auto-service.version>1.1.1</auto-service.version>
     <junit-platform-launcher.version>1.12.2</junit-platform-launcher.version>
     <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
-    <slf4j-api.version>2.0.13</slf4j-api.version>
+    <slf4j-api.version>2.0.17</slf4j-api.version>
+    <spring-boot.version>3.4.5</spring-boot.version>
     <flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
     <reactor-core.version>3.5.4</reactor-core.version>
-    <spring-boot-starter-test.version>3.4.5</spring-boot-starter-test.version>
     <maven-javadoc-plugin.version>3.6.0</maven-javadoc-plugin.version>
     <spring-core.version>6.2.6</spring-core.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -45,7 +45,6 @@
     <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
     <testcontainers.postgresql.version>1.20.4</testcontainers.postgresql.version>
     <maven.compiler.source>17</maven.compiler.source>
-    <spring-boot-configuration-processor.version>3.4.5</spring-boot-configuration-processor.version>
     <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
     <junit-jupiter-params.version>5.12.2</junit-jupiter-params.version>
     <revision>0.1.0-SNAPSHOT</revision>
@@ -165,12 +164,12 @@
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-configuration-processor</artifactId>
-        <version>${spring-boot-configuration-processor.version}</version>
+        <version>${spring-boot.version}</version>
       </dependency>
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-test</artifactId>
-        <version>${spring-boot-starter-test.version}</version>
+        <version>${spring-boot.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>

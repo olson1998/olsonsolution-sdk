@@ -33,7 +33,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <lombok.version>1.18.32</lombok.version>
         <joda-time.version>2.14.0</joda-time.version>
-        <slf4j-api.version>2.0.13</slf4j-api.version>
+        <slf4j-api.version>2.0.17</slf4j-api.version>
         <reactor-core.version>3.5.4</reactor-core.version>
         <commons-lang-3.version>3.17.0</commons-lang-3.version>
         <commons-exec.version>1.4.0</commons-exec.version>
@@ -42,8 +42,7 @@
         <jackson-databind.version>2.18.4</jackson-databind.version>
         <spring-core.version>6.2.6</spring-core.version>
         <spring-context.version>6.2.6</spring-context.version>
-        <spring-boot-configuration-processor.version>3.4.5</spring-boot-configuration-processor.version>
-        <spring-boot-starter-test.version>3.4.5</spring-boot-starter-test.version>
+        <spring-boot.version>3.4.5</spring-boot.version>
         <auto-service.version>1.1.1</auto-service.version>
         <assertj-core.version>3.26.0</assertj-core.version>
         <junit-jupiter-api.version>5.12.2</junit-jupiter-api.version>
@@ -183,12 +182,12 @@
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-configuration-processor</artifactId>
-                <version>${spring-boot-configuration-processor.version}</version>
+                <version>${spring-boot.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-test</artifactId>
-                <version>${spring-boot-starter-test.version}</version>
+                <version>${spring-boot.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
