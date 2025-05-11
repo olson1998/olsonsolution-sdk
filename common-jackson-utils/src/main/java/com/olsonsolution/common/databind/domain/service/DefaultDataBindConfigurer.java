@@ -28,7 +28,9 @@ public class DefaultDataBindConfigurer implements DatabindConfigurer {
     }
 
     @Override
-    public <T> void registerSerializationConfig(Class<T> javaClass, JsonSerializer<T> jsonSerializer, JsonDeserializer<T> jsonDeserializer) {
+    public <T> void registerSerializationConfig(Class<T> javaClass,
+                                                JsonSerializer<T> jsonSerializer,
+                                                JsonDeserializer<T> jsonDeserializer) {
         JsonSerializationConfig<T> jsonSerializationConfig = new SimpleJsonSerializationConfig<>(
                 javaClass,
                 jsonSerializer,
