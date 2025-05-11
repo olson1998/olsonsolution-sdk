@@ -20,15 +20,10 @@ public class ThreadLocalAwareTaskRunningService implements ThreadLocalAwareTaskR
     public Runnable runWithContext(String taskName, Runnable runnable) {
         Map<ThreadLocalAware<Object>, Optional<?>> inheritableThreadLocals = mapInheritableThreadLocals();
         return () -> {
-            Thread thread = Thread.currentThread();
-            String originalName = thread.getName();
-            String decoratedName = taskName + "-" + thread.getId();
             try {
-                thread.setName(decoratedName);
                 restoreInheritableThreadLocals(inheritableThreadLocals);
                 runnable.run();
             } finally {
-                thread.setName(originalName);
                 clearInheritableThreadLocals(inheritableThreadLocals);
             }
         };
@@ -41,8 +36,10 @@ public class ThreadLocalAwareTaskRunningService implements ThreadLocalAwareTaskR
     }
 
     private void restoreInheritableThreadLocals(Map<ThreadLocalAware<Object>, Optional<?>> threadLocals) {
-        threadLocals.forEach((aware, value) ->
-                value.ifPresent(aware::setThreadLocal));
+        threadLocals.forEach((aware, value) -> value.ifPresent(v -> {
+            aware.setThreadLocal(v);
+            aware.decorate(Thread.currentThread());
+        }));
     }
 
     private void clearInheritableThreadLocals(Map<ThreadLocalAware<Object>, Optional<?>> threadLocals) {

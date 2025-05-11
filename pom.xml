@@ -15,7 +15,7 @@
         <module>common-spring-boot-web-starter</module>
         <module>common-reflection-utils</module>
         <module>common-spring-jpa-starter</module>
-        <module>common-tenant-core</module>
+        <module>common-spring-tenant-core</module>
         <module>common-caching</module>
         <module>common-spring-config</module>
         <module>common-data</module>
@@ -132,7 +132,12 @@
             </dependency>
             <dependency>
                 <groupId>com.olsonsolution.common</groupId>
-                <artifactId>common-tenant-core</artifactId>
+                <artifactId>common-spring-context</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.olsonsolution.common</groupId>
+                <artifactId>common-spring-tenant-core</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>

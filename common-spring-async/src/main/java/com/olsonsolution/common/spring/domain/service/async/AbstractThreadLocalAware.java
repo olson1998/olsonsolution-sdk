@@ -27,4 +27,5 @@ public abstract class AbstractThreadLocalAware<T> implements ThreadLocalAware<T>
     public void clear() {
         threadLocal.remove();
     }
+
 }

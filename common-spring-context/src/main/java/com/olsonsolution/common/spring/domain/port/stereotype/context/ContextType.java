@@ -4,4 +4,6 @@ public interface ContextType {
 
     String name();
 
+    String getSimpleName();
+
 }
