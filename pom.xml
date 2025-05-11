@@ -348,6 +348,11 @@
                             <version>${lombok.version}</version>
                         </path>
                         <path>
+                            <groupId>com.google.auto.service</groupId>
+                            <artifactId>auto-service</artifactId>
+                            <version>${auto-service.version}</version>
+                        </path>
+                        <path>
                             <groupId>com.olsonsolution.common</groupId>
                             <artifactId>common-spring-jpa-starter</artifactId>
                             <version>${revision}</version>

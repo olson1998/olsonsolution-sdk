@@ -28,8 +28,6 @@ import static javax.tools.StandardLocation.CLASS_PATH;
 })
 public class EnableJpaSpecAnnotationProcessor extends AbstractProcessor {
 
-    private static final String ENABLE_JPA_SPEC_JPA_REPOSITORIES_TEMPLATE_FILE =
-            "jpa/templates/_EnableJpaSpecJpaRepositories.template";
     private static final String JPA_SPEC_JPA_CONFIGURER_TEMPLATE_FILE =
             "jpa/templates/_JpaSpecJpaConfigurer.template";
 

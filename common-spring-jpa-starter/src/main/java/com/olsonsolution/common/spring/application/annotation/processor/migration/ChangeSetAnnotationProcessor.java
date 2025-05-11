@@ -57,7 +57,7 @@ public class ChangeSetAnnotationProcessor {
 
     private void processForJpaSpec(String jpaSpec, List<ChangeSetMetadata> changeSetMetadata) {
         try {
-            String classpathDirectory = "/db/changelog/" + jpaSpec;
+            String classpathDirectory = "db/changelog/" + jpaSpec;
             Map<ChangeSetMetadata, Document> changeSetChangeLogs =
                     ChangeLogGenerator.generateChangeLogs(changeSetMetadata);
             for (Map.Entry<ChangeSetMetadata, Document> changeSetChangeLog : changeSetChangeLogs.entrySet()) {
