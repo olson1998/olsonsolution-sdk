@@ -24,6 +24,7 @@
         <module>common-datasource-migration</module>
         <module>common-liquibase-migration</module>
         <module>common-spring-async</module>
+        <module>common-spring-context</module>
     </modules>
 
     <properties>
