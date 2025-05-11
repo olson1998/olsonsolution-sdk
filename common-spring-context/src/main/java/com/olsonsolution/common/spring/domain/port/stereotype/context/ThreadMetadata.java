@@ -1,4 +1,4 @@
-package com.olsonsolution.common.spring.domain.port.stereotype;
+package com.olsonsolution.common.spring.domain.port.stereotype.context;
 
 import lombok.NonNull;
 

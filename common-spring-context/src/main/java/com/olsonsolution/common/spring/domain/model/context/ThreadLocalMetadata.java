@@ -1,6 +1,6 @@
 package com.olsonsolution.common.spring.domain.model.context;
 
-import com.olsonsolution.common.spring.domain.port.stereotype.ThreadMetadata;
+import com.olsonsolution.common.spring.domain.port.stereotype.context.ThreadMetadata;
 import lombok.Builder;
 import lombok.Data;
 
