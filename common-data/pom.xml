@@ -12,8 +12,6 @@
     <artifactId>common-data</artifactId>
 
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <hibernate-core.version>6.6.4.Final</hibernate-core.version>
         <postgresql.version>42.7.4</postgresql.version>

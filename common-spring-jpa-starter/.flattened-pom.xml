@@ -11,14 +11,20 @@
   <artifactId>common-spring-jpa-starter</artifactId>
   <version>0.1.0-SNAPSHOT</version>
   <properties>
-    <maven.compiler.target>17</maven.compiler.target>
     <spring-boot-starter-data-jpa.version>3.3.2</spring-boot-starter-data-jpa.version>
-    <maven.compiler.source>17</maven.compiler.source>
   </properties>
   <dependencies>
     <dependency>
       <groupId>com.olsonsolution.common</groupId>
       <artifactId>common-data</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.olsonsolution.common</groupId>
+      <artifactId>common-spring-async</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.olsonsolution.common</groupId>
+      <artifactId>common-liquibase-migration</artifactId>
     </dependency>
     <dependency>
       <groupId>com.olsonsolution.common</groupId>
@@ -34,6 +40,11 @@
           <artifactId>hibernate-core</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.google.auto.service</groupId>
+      <artifactId>auto-service</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>

@@ -19,12 +19,12 @@
     <module>common-data</module>
     <module>common-spring-caching</module>
     <module>common-properties</module>
-    <module>common-ssl</module>
-    <module>common-spring-ssl</module>
     <module>common-datasource-migration</module>
     <module>common-liquibase-migration</module>
+    <module>common-spring-async</module>
   </modules>
   <properties>
+    <auto-service.version>1.1.1</auto-service.version>
     <junit-platform-launcher.version>1.10.2</junit-platform-launcher.version>
     <maven-source-plugin.version>3.3.0</maven-source-plugin.version>
     <slf4j-api.version>2.0.13</slf4j-api.version>
@@ -69,11 +69,6 @@
       </dependency>
       <dependency>
         <groupId>com.olsonsolution.common</groupId>
-        <artifactId>common-ssl</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>com.olsonsolution.common</groupId>
         <artifactId>common-time-utils</artifactId>
         <version>0.1.0-SNAPSHOT</version>
       </dependency>
@@ -105,6 +100,16 @@
       <dependency>
         <groupId>com.olsonsolution.common</groupId>
         <artifactId>common-properties</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>com.olsonsolution.common</groupId>
+        <artifactId>common-liquibase-migration</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>com.olsonsolution.common</groupId>
+        <artifactId>common-spring-async</artifactId>
         <version>0.1.0-SNAPSHOT</version>
       </dependency>
       <dependency>
@@ -167,6 +172,11 @@
         <artifactId>spring-boot-starter-test</artifactId>
         <version>${spring-boot-starter-test.version}</version>
         <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.google.auto.service</groupId>
+        <artifactId>auto-service</artifactId>
+        <version>${auto-service.version}</version>
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>
@@ -263,6 +273,19 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+  <repositories>
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>central</id>
+      <name>Maven Central Repository</name>
+      <url>https://repo.maven.apache.org/maven2</url>
+    </repository>
+  </repositories>
   <build>
     <pluginManagement>
       <plugins>
@@ -302,7 +325,8 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <proc>none</proc>
+          <source>${maven.compiler.source}</source>
+          <source>${maven.compiler.target}</source>
           <annotationProcessorPaths>
             <path>
               <groupId>org.projectlombok</groupId>
