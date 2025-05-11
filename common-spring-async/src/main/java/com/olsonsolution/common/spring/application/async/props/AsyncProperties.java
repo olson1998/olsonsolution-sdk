@@ -21,13 +21,11 @@ public class AsyncProperties {
 
     private final ExecutorProperties system = new ExecutorProperties(
             "system",
-            "system",
             new ExecutorProperties.PoolProperties(10, 50, 100, Duration.ofSeconds(30))
     );
 
     private final ExecutorProperties runtime = new ExecutorProperties(
             "async",
-            "runtime",
             new ExecutorProperties.PoolProperties(30, 50, 100, Duration.ofSeconds(30))
     );
 
@@ -37,8 +35,6 @@ public class AsyncProperties {
     public static class ExecutorProperties {
 
         private String prefix;
-
-        private String group;
 
         private PoolProperties threadPool;
 
