@@ -1,6 +1,7 @@
 package com.olsonsolution.common.spring.domain.service.async;
 
 import com.olsonsolution.common.spring.domain.port.async.repository.ThreadLocalAware;
+import lombok.NonNull;
 
 import java.util.Optional;
 
@@ -19,7 +20,7 @@ public abstract class AbstractThreadLocalAware<T> implements ThreadLocalAware<T>
     }
 
     @Override
-    public void setThreadLocal(T value) {
+    public void setThreadLocal(@NonNull T value) {
         threadLocal.set(value);
     }
 

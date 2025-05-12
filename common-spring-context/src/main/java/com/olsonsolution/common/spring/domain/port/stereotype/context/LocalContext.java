@@ -13,7 +13,4 @@ public interface LocalContext {
     @NonNull
     ContextMetadata getMetadata();
 
-    @NonNull
-    ThreadMetadata getThreadMetadata();
-
 }

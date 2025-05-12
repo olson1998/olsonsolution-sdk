@@ -12,6 +12,15 @@ import java.util.Optional;
 public class LocalContextManagingService extends AbstractThreadLocalAware<LocalContext> implements LocalContextManager {
 
     @Override
+    public void setThreadLocal(@NonNull LocalContext value) {
+        Thread thread = Thread.currentThread();
+        long threadId = thread.getId();
+        String threadName = value.getType().getSimpleName() + "-" + threadId;
+        thread.setName(threadName);
+        super.setThreadLocal(value);
+    }
+
+    @Override
     public LocalContext getThreadLocal() {
         LocalContext localContext = super.getThreadLocal();
         if (localContext == null) {
