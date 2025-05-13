@@ -6,4 +6,8 @@ public interface User {
 
     String getUsername();
 
+    UserInfo getInfo();
+
+    AuthInfo<?> getAuthInfo();
+
 }

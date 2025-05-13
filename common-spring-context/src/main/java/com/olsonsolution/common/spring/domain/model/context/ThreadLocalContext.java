@@ -5,12 +5,8 @@ import com.olsonsolution.common.spring.domain.port.stereotype.context.ContextTyp
 import com.olsonsolution.common.spring.domain.port.stereotype.context.LocalContext;
 import lombok.*;
 
-@Getter
-@ToString
-@EqualsAndHashCode
-
+@Data
 @Builder
-@AllArgsConstructor
 public class ThreadLocalContext implements LocalContext {
 
     private final String id;

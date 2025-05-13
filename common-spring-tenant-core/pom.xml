@@ -13,6 +13,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <nimbus-jose-jwt.version>10.3</nimbus-jose-jwt.version>
     </properties>
 
     <dependencies>
@@ -27,6 +28,11 @@
         <dependency>
             <groupId>com.olsonsolution.common</groupId>
             <artifactId>common-jackson-utils</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.nimbusds</groupId>
+            <artifactId>nimbus-jose-jwt</artifactId>
+            <version>${nimbus-jose-jwt.version}</version>
         </dependency>
     </dependencies>
 
