@@ -25,6 +25,8 @@
         <module>common-liquibase-migration</module>
         <module>common-spring-async</module>
         <module>common-spring-context</module>
+        <module>common-spring-tenant-jpa-starter</module>
+        <module>common-spring-tenant-core</module>
     </modules>
 
     <properties>

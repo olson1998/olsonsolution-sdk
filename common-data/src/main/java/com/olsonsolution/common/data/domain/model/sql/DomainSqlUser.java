@@ -16,4 +16,6 @@ public class DomainSqlUser implements SqlUser {
 
     private String password;
 
+    private String schema;
+
 }

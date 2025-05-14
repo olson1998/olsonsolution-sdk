@@ -14,4 +14,6 @@ public class ApplicationSqlUserProperties implements SqlUser {
 
     private String password;
 
+    private String schema;
+
 }
