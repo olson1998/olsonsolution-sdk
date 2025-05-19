@@ -1,6 +1,7 @@
-package com.olsonsolution.common.spring.application.annotation.processor.migration;
+package com.olsonsolution.common.spring.application.annotation.processor.jpa;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -16,31 +17,51 @@ import java.util.UUID;
 
 import static javax.lang.model.element.ElementKind.CLASS;
 
-@RequiredArgsConstructor
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 class TableMetadataUtil {
 
     private final ProcessingEnvironment processingEnv;
 
-    String resolveTableName(Element element) {
-        return element.getAnnotation(Table.class) == null ?
-                element.getSimpleName().toString() :
-                element.getAnnotation(Table.class).name();
+    String getTableName(Element entityElement) {
+        return entityElement.getAnnotation(Table.class) == null ?
+                entityElement.getSimpleName().toString() :
+                entityElement.getAnnotation(Table.class).name();
     }
 
-    String resolveColumnName(VariableElement variableElement) {
-        return variableElement.getAnnotation(Column.class) == null ?
-                variableElement.getSimpleName().toString() :
-                variableElement.getAnnotation(Column.class).name();
+    String getColumnName(VariableElement entityFieldElement) {
+        return entityFieldElement.getAnnotation(Column.class) == null ?
+                entityFieldElement.getSimpleName().toString() :
+                entityFieldElement.getAnnotation(Column.class).name();
     }
 
-    String resolveType(VariableElement variableElement, Column column) {
+    String assumeSqlType(VariableElement entityFieldElement, Column column) {
         if (column != null && !column.columnDefinition().isEmpty()) {
             return column.columnDefinition();
         }
-        return assumeType(variableElement, column);
+        return assumeType(entityFieldElement, column);
     }
 
-    String assumeType(VariableElement variableElement, Column column) {
+
+    boolean isJpaEntity(Element entityElement) {
+        return entityElement.getAnnotation(Entity.class) != null && entityElement.getKind() == CLASS;
+    }
+
+    boolean isEmbeddable(VariableElement variableElement) {
+        if (processingEnv.getTypeUtils().asElement(variableElement.asType()) instanceof TypeElement fieldTypeElement) {
+            return fieldTypeElement.getAnnotation(Embeddable.class) != null;
+        }
+        return false;
+    }
+
+    boolean isIdentifier(VariableElement entityFieldElement) {
+        return entityFieldElement.getAnnotation(Id.class) != null;
+    }
+
+    boolean isEmbeddableIdentifier(VariableElement entityFieldElement) {
+        return entityFieldElement.getAnnotation(EmbeddedId.class) != null;
+    }
+
+    private String assumeType(VariableElement variableElement, Column column) {
         TypeMirror variableTypeMirror = variableElement.asType();
         if (variableTypeMirror.getKind().isPrimitive()) {
             return assumePrimitiveType(variableTypeMirror);
@@ -71,7 +92,7 @@ class TableMetadataUtil {
         }
     }
 
-    String assumePrimitiveType(TypeMirror typeMirror) {
+    private String assumePrimitiveType(TypeMirror typeMirror) {
         switch (typeMirror.getKind()) {
             case INT -> {
                 return "INT";
@@ -96,25 +117,6 @@ class TableMetadataUtil {
             }
         }
         return "";
-    }
-
-    boolean isJpaEntity(Element element) {
-        return element.getAnnotation(Entity.class) != null && element.getKind() == CLASS;
-    }
-
-    boolean isEmbeddable(VariableElement variableElement) {
-        if (processingEnv.getTypeUtils().asElement(variableElement.asType()) instanceof TypeElement fieldTypeElement) {
-            return fieldTypeElement.getAnnotation(Embeddable.class) != null;
-        }
-        return false;
-    }
-
-    boolean isIdentifier(VariableElement variableElement) {
-        return variableElement.getAnnotation(Id.class) != null;
-    }
-
-    boolean isEmbeddableIdentifier(VariableElement variableElement) {
-        return variableElement.getAnnotation(EmbeddedId.class) != null;
     }
 
     private boolean isAssignableFieldType(VariableElement element, Class<?> javaClass) {

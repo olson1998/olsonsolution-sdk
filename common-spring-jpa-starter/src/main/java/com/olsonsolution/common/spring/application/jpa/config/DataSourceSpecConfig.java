@@ -88,7 +88,8 @@ public class DataSourceSpecConfig {
         );
         ApplicationSqlUserProperties user = new ApplicationSqlUserProperties(
                 "user",
-                "pass"
+                "pass",
+                ""
         );
         dataSource.getUser().getRwx().add(user);
         return dataSource;

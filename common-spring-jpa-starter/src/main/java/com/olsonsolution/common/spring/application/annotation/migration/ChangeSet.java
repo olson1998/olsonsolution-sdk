@@ -4,9 +4,9 @@ public @interface ChangeSet {
 
     String firstVersion() default "1.0.0";
 
-    String path() default  "src/resources/db/changelog/";
+    String path() default "src/resources/db/changelog/";
 
-    String file() default  "db.changelog-{table}-{version}.xml";
+    String id() default "db.changelog-{table}-{version}";
 
     ColumnChange[] changes() default {};
 
@@ -14,6 +14,16 @@ public @interface ChangeSet {
 
     String[] versionChronology() default {};
 
-    String[] dependsOn() default {};
+    DependsOn[] dependsOn() default {};
+
+    @interface DependsOn {
+
+        String jpaSpec() default "";
+
+        String table();
+
+        String version() default "";
+
+    }
 
 }
