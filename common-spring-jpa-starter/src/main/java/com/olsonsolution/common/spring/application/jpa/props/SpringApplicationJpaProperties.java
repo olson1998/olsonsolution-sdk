@@ -59,6 +59,8 @@ public class SpringApplicationJpaProperties implements JpaProperties {
 
         private String schema;
 
+        private boolean createSchema = true;
+
         private boolean logSql;
 
         private boolean formatSqlLog;

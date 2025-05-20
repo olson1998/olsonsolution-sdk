@@ -84,6 +84,7 @@ class JpaSpecProcedureFactory {
         collectColumnsChanges(
                 fields,
                 entityConfig,
+                jpaSpecMetadata.jpaSpec(),
                 changeSet,
                 changeSetAtBeginningOperations,
                 changeSetCreateTableOperations,
@@ -185,6 +186,7 @@ class JpaSpecProcedureFactory {
 
     private void collectColumnsChanges(Set<VariableElement> fieldsElements,
                                        EntityConfig entityConfig,
+                                       String jpaSpec,
                                        ChangeSet changeSet,
                                        Map<String, List<ChangeOp>> changeSetAtBeginningOperations,
                                        Map<String, List<ChangeOp>> changeSetCreateTableOperations,
@@ -193,6 +195,7 @@ class JpaSpecProcedureFactory {
         fieldsElements.forEach(fieldElement -> collectColumnsChanges(
                 fieldElement,
                 entityConfig.table(),
+                jpaSpec,
                 changeSet,
                 addColumnOpsBuilder,
                 changeSetAtBeginningOperations,
@@ -202,7 +205,7 @@ class JpaSpecProcedureFactory {
                 .collect(Collectors.toCollection(LinkedList::new));
         ChangeOp createTableOp = ChangeOp.builder()
                 .operation("createTable")
-                .attribute("schemaName", "${schema}")
+                .attribute("schemaName", "${" + jpaSpec + "Schema}")
                 .attribute("tableName", entityConfig.table())
                 .childOperations(columnOps)
                 .build();
@@ -213,6 +216,7 @@ class JpaSpecProcedureFactory {
 
     private void collectColumnsChanges(VariableElement fieldElement,
                                        String tableName,
+                                       String jpaSpec,
                                        ChangeSet changeSet,
                                        Stream.Builder<ChangeOp> addColumnOpsBuilder,
                                        Map<String, List<ChangeOp>> changeSetAtBeginningOperations,
@@ -223,6 +227,7 @@ class JpaSpecProcedureFactory {
                         fieldElement,
                         fieldTypeElement,
                         tableName,
+                        jpaSpec,
                         changeSet,
                         addColumnOpsBuilder,
                         changeSetAtBeginningOperations,
@@ -233,6 +238,7 @@ class JpaSpecProcedureFactory {
             collectColumnOperations(
                     fieldElement,
                     tableName,
+                    jpaSpec,
                     changeSet,
                     addColumnOpsBuilder,
                     changeSetAtBeginningOperations,
@@ -244,6 +250,7 @@ class JpaSpecProcedureFactory {
     private void collectEmbeddableColumnOperations(VariableElement embeddableFieldElement,
                                                    TypeElement fieldTypeElement,
                                                    String tableName,
+                                                   String jpaSpec,
                                                    ChangeSet changeSet,
                                                    Stream.Builder<ChangeOp> addColumnOpsBuilder,
                                                    Map<String, List<ChangeOp>> changeSetAtBeginningOperations,
@@ -269,6 +276,7 @@ class JpaSpecProcedureFactory {
         embeddableFieldElements.forEach(fieldElement -> collectColumnOperations(
                 fieldElement,
                 tableName,
+                jpaSpec,
                 changeSet,
                 addColumnOpsBuilder,
                 changeSetAtBeginningOperations,
@@ -279,6 +287,7 @@ class JpaSpecProcedureFactory {
     private void collectColumnOperations(
             VariableElement fieldElement,
             String tableName,
+            String jpaSpec,
             ChangeSet changeSet,
             Stream.Builder<ChangeOp> addColumnOpsBuilder,
             Map<String, List<ChangeOp>> changeSetAtBeginningOperations,
@@ -289,6 +298,7 @@ class JpaSpecProcedureFactory {
                 changeSet,
                 tableName,
                 columnName,
+                jpaSpec,
                 addColumnOpsBuilder,
                 changeSetAtBeginningOperations,
                 changeSetAtEndOperations
@@ -299,6 +309,7 @@ class JpaSpecProcedureFactory {
                                          ChangeSet changeSet,
                                          String tableName,
                                          String columnName,
+                                         String jpaSpec,
                                          Stream.Builder<ChangeOp> addColumnOpsBuilder,
                                          Map<String, List<ChangeOp>> changeSetAtBeginningOperations,
                                          Map<String, List<ChangeOp>> changeSetAtEndOperations) {
@@ -314,7 +325,7 @@ class JpaSpecProcedureFactory {
             SequenceGenerator sequenceGenerator = fieldElement.getAnnotation(SequenceGenerator.class);
             String schema = sequenceGenerator.schema();
             if (StringUtils.isEmpty(schema)) {
-                schema = "${schema}";
+                schema = "${" + jpaSpec + "Schema}";
             }
             ChangeOp createSequence = ChangeOp.builder()
                     .operation("createSequence")

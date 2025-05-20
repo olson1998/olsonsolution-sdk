@@ -5,17 +5,18 @@ import com.olsonsolution.common.migration.domain.port.stereotype.exception.Chang
 import org.joda.time.MutableDateTime;
 
 import java.io.Serializable;
+import java.util.Map;
 import java.util.Optional;
 
 public interface MigrationResult extends Serializable {
-
-    boolean isCreatedSchema();
 
     boolean isSuccessful();
 
     boolean isFailed();
 
     boolean isSkipped();
+
+    Map<String, SchemaParseResult> getCreatedSchemas();
 
     MutableDateTime getStartTimestamp();
 

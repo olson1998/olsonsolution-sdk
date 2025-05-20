@@ -1,22 +1,17 @@
 package com.olsonsolution.common.migration.domain.model;
 
-import com.olsonsolution.common.migration.domain.port.stereotype.ChangeLog;
 import com.olsonsolution.common.migration.domain.port.stereotype.SchemaConfig;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Map;
-
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DomainChangeLog implements ChangeLog {
+public class DomainSchemaConfig implements SchemaConfig {
 
-    private String path;
-
-    private Map<String, SchemaConfig> schemas;
+    private boolean createSchema;
 
 }

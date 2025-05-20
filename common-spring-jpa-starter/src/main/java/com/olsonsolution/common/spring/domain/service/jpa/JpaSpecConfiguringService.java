@@ -21,6 +21,12 @@ public class JpaSpecConfiguringService implements JpaSpecConfigurer {
     private final JpaProperties jpaProperties;
 
     @Override
+    public boolean resolveCreateSchema(@NonNull String jpaSpec) {
+        JpaSpecProperties properties = getJpaSpecProperties(jpaSpec);
+        return properties.isCreateSchema();
+    }
+
+    @Override
     public String resolveSchema(@NonNull String jpaSpecName) {
         JpaSpecProperties properties = getJpaSpecProperties(jpaSpecName);
         return properties.getSchema();

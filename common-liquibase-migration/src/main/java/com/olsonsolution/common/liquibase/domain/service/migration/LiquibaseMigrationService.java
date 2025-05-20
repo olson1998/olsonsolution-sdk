@@ -6,12 +6,11 @@ import com.olsonsolution.common.liquibase.domain.model.exception.LiquibaseExecut
 import com.olsonsolution.common.liquibase.domain.model.exception.SqlVendorNotSupportedException;
 import com.olsonsolution.common.migration.domain.model.DomainMigrationResult;
 import com.olsonsolution.common.migration.domain.model.DomainMigrationResults;
+import com.olsonsolution.common.migration.domain.model.DomainSchemaParseResult;
 import com.olsonsolution.common.migration.domain.port.repository.MigrationService;
 import com.olsonsolution.common.migration.domain.port.repository.SqlVendorSupporter;
 import com.olsonsolution.common.migration.domain.port.repository.VariablesProvider;
-import com.olsonsolution.common.migration.domain.port.stereotype.ChangeLog;
-import com.olsonsolution.common.migration.domain.port.stereotype.MigrationResult;
-import com.olsonsolution.common.migration.domain.port.stereotype.MigrationResults;
+import com.olsonsolution.common.migration.domain.port.stereotype.*;
 import com.olsonsolution.common.time.domain.port.TimeUtils;
 import liquibase.Liquibase;
 import liquibase.database.DatabaseConnection;
@@ -25,8 +24,7 @@ import org.joda.time.MutableDateTime;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -75,28 +73,27 @@ public class LiquibaseMigrationService implements MigrationService {
 
     private MigrationResult migrate(ChangeLog changeLog, DataSource dataSource, SqlVendorSupporter sqlVendorSupporter) {
         MutableDateTime startTimestamp = timeUtils.getTimestamp();
-        boolean schemaCreated = false;
+        Map<String, SchemaParseResult> createdSchemas = new HashMap<>();
         try (Connection connection = dataSource.getConnection();
              DatabaseConnection liquibaseConnection = new JdbcConnection(connection);
              Liquibase liquibase = new Liquibase(changeLog.getPath(), resourceAccessor, liquibaseConnection)) {
             variablesProviders.forEach(variablesProvider -> variablesProvider.getVariables()
                     .forEach(liquibase::setChangeLogParameter));
             sqlVendorSupporter.getTypeVariables().forEach(liquibase::setChangeLogParameter);
-            liquibase.setChangeLogParameter("schema", changeLog.getSchema());
-            schemaCreated = createSchemaIfEnabled(changeLog, dataSource, sqlVendorSupporter);
+            createSchemasIfEnabled(changeLog, dataSource, sqlVendorSupporter, createdSchemas);
             liquibase.update();
             return DomainMigrationResult.successfulResult()
                     .startTimestamp(startTimestamp)
                     .finishTimestamp(timeUtils.getTimestamp())
-                    .createdSchema(changeLog.isCreateSchema())
+                    .createdSchemas(createdSchemas)
                     .build();
         } catch (LiquibaseException | SQLException e) {
             log.error(
-                    "Failed to migrate change log: {} schema: '{}', data source={}",
-                    changeLog.getPath(), changeLog.getSchema(), dataSource, e
+                    "Failed to migrate change log: {}, data source={}",
+                    changeLog.getPath(), dataSource, e
             );
             return DomainMigrationResult.failedResult()
-                    .createdSchema(schemaCreated)
+                    .createdSchemas(createdSchemas)
                     .startTimestamp(startTimestamp)
                     .finishTimestamp(timeUtils.getTimestamp())
                     .failureCause(new LiquibaseExecutionException(e, changeLog))
@@ -104,21 +101,48 @@ public class LiquibaseMigrationService implements MigrationService {
         }
     }
 
-    private boolean createSchemaIfEnabled(ChangeLog changeLog,
-                                       DataSource dataSource,
-                                       SqlVendorSupporter sqlVendorSupporter) throws SQLException {
-        boolean schemaCreated = false;
-        String schema = changeLog.getSchema();
-        if (changeLog.isCreateSchema()) {
-            if (sqlVendorSupporter.existsSchema(dataSource, schema)) {
-                log.info("Schema '{}' already exists", schema);
+    private void createSchemasIfEnabled(ChangeLog changeLog,
+                                        DataSource dataSource,
+                                        SqlVendorSupporter sqlVendorSupporter,
+                                        Map<String, SchemaParseResult> createdSchemas) throws SQLException {
+        for (Map.Entry<String, SchemaConfig> schemaConfig : changeLog.getSchemas().entrySet()) {
+            String schema = schemaConfig.getKey();
+            SchemaConfig config = schemaConfig.getValue();
+            SchemaParseResult result;
+            if (config.isCreateSchema()) {
+                result = createSchema(schema, dataSource, sqlVendorSupporter);
             } else {
-                log.info("Schema '{}' does not exist, creating...", schema);
-                sqlVendorSupporter.createSchema(dataSource, schema);
-                schemaCreated = true;
+                result = verifySchema(schema, dataSource, sqlVendorSupporter);
             }
+            createdSchemas.put(schema, result);
         }
-        return schemaCreated;
+    }
+
+    private SchemaParseResult createSchema(String schema,
+                                           DataSource dataSource,
+                                           SqlVendorSupporter sqlVendorSupporter) throws SQLException {
+        boolean schemaCreated = false;
+        DomainSchemaParseResult.DomainSchemaParseResultBuilder result = DomainSchemaParseResult.builder()
+                .createSchemaEnabled(true);
+        boolean schemaExists = sqlVendorSupporter.existsSchema(dataSource, schema);
+        result.schemaExists(schemaExists);
+        if (schemaExists) {
+            log.info("Schema '{}' already exists", schema);
+        } else {
+            log.info("Schema '{}' does not exist, creating...", schema);
+            sqlVendorSupporter.createSchema(dataSource, schema);
+            schemaCreated = true;
+        }
+        result.schemaCreated(schemaCreated);
+        return result.build();
+    }
+
+    private SchemaParseResult verifySchema(String schema,
+                                           DataSource dataSource,
+                                           SqlVendorSupporter sqlVendorSupporter) throws SQLException {
+        boolean schemaExists = sqlVendorSupporter.existsSchema(dataSource, schema);
+        log.info("Schema '{}' exists?: {}", schema, schemaExists);
+        return DomainSchemaParseResult.disabled(schemaExists);
     }
 
     private SqlVendorSupporter findSqlVendorSupporter(DataSource dataSource) throws SqlVendorNotSupportedException {
@@ -150,7 +174,7 @@ public class LiquibaseMigrationService implements MigrationService {
     private MigrationResults ofSqlVendorNotSupported(SqlVendorNotSupportedException e) {
         return changeLogs.stream()
                 .map(changeLog -> DomainMigrationResult.failedResult()
-                        .createdSchema(false)
+                        .createdSchemas(Collections.emptyMap())
                         .startTimestamp(e.getStartTimestamp())
                         .finishTimestamp(timeUtils.getTimestamp())
                         .failureCause(new LiquibaseExecutionException(e, changeLog))

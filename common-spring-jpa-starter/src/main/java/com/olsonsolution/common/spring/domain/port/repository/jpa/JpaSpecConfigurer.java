@@ -6,6 +6,8 @@ import lombok.NonNull;
 
 public interface JpaSpecConfigurer {
 
+    boolean resolveCreateSchema(@NonNull String jpaSpec);
+
     String resolveSchema(@NonNull String jpaSpec);
 
     EntityManagerFactoryDelegate createEntityManagerFactoryDelegate(

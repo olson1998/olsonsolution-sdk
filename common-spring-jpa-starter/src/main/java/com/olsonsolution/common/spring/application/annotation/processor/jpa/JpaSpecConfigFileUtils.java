@@ -7,6 +7,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.olsonsolution.common.reflection.domain.port.repository.annotion.processor.MessagePrinter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -24,10 +25,12 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.util.List;
-import java.util.Map;
+import java.time.Instant;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.olsonsolution.common.spring.application.annotation.processor.jpa.ChangeLogFactory.VALUE_XMLNS;
+import static java.time.format.DateTimeFormatter.ISO_INSTANT;
 import static javax.tools.StandardLocation.CLASS_OUTPUT;
 import static javax.tools.StandardLocation.CLASS_PATH;
 import static javax.xml.transform.OutputKeys.*;
@@ -50,6 +53,8 @@ class JpaSpecConfigFileUtils {
 
     private final ObjectMapper yamlMapper = yamlMapper();
 
+    private final Set<String> generatedFiles = new HashSet<>();
+
     void createJpaSpecProceduresYaml(JpaSpecExecPlan jpaSpecExecPlan) {
         String proceduresYaml;
         try {
@@ -64,6 +69,7 @@ class JpaSpecConfigFileUtils {
         messagePrinter.print(Diagnostic.Kind.NOTE, JpaSpecConfigFileUtils.class, "\n" + proceduresYaml);
         try {
             createResource(JPA_SPEC_PROCEDURES_YAML, proceduresYaml);
+            generatedFiles.add(JPA_SPEC_PROCEDURES_YAML);
         } catch (IOException e) {
             messagePrinter.print(
                     Diagnostic.Kind.ERROR, JpaSpecConfigFileUtils.class,
@@ -80,6 +86,13 @@ class JpaSpecConfigFileUtils {
 
     void createMasterChangeLog(Document masterChangeLog) {
         createChangeLog(MASTER_CHANGE_LOG_PATH, masterChangeLog);
+        generatedFiles.add(MASTER_CHANGE_LOG_PATH);
+    }
+
+    void createJpaConfigurationClasses(JpaSpecExecPlan execPlan) {
+        for (JpaSpecProcedure procedure : execPlan.procedures()) {
+            generateSpringConfigClass(procedure);
+        }
     }
 
     private static ObjectMapper yamlMapper() {
@@ -90,37 +103,46 @@ class JpaSpecConfigFileUtils {
         return objectMapper;
     }
 
-//    private void generateSpringConfigClass(CreateJpaSpecProcedure procedure) {
-//        String jpaSpec = procedure.getName();
-//        String basePackage = "";
-//        String className = basePackage + '.' + jpaSpec + "JpaSpecConfigurer";
-//        messagePrinter.print(Diagnostic.Kind.NOTE, "Generating" + className);
-//        processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Generating: " + className);
-//        processingEnv.getMessager().printMessage(
-//                Diagnostic.Kind.NOTE,
-//                "Jpa Spec: %s Base package: %s".formatted(jpaSpec, basePackage)
-//        );
-//        Instant timestamp = Instant.now();
-//        String generatedClass = readClasspathFile(JPA_SPEC_JPA_CONFIGURER_TEMPLATE_FILE);
-//        generatedClass = generatedClass.replace("${BASE_PACKAGE}", basePackage);
-//        generatedClass = generatedClass.replace(
-//                "${ANNOTATION_PROCESSOR}",
-//                JpaSpecAnnotationProcessor.class.getCanonicalName()
-//        );
-//        String compiler = processingEnv.getSourceVersion() != null ? processingEnv.getSourceVersion().name() : "java";
-//        generatedClass = generatedClass.replace("${COMPILER}", compiler);
-//        generatedClass = generatedClass.replace("${JPA_SPEC}", jpaSpec);
-//        generatedClass = generatedClass.replace("${TIMESTAMP}", ISO_INSTANT.format(timestamp));
-//        generatedClass = generatedClass.replace("${ENTITY_BASE_PACKAGES}", entityBasePackages);
-//        generatedClass = generatedClass.replace("${JPA_REPOS_BASE_PACKAGES}", jpaReposBasePackages);
-//        generateClass(className, generatedClass);
-//    }
+    private void generateSpringConfigClass(JpaSpecProcedure procedure) {
+        String jpaSpec = procedure.metadata().jpaSpec();
+        String basePackage = procedure.metadata().jpaSpecConfigPackage();
+        String className = basePackage + '.' + jpaSpec + "JpaSpecConfigurer";
+        messagePrinter.print(Diagnostic.Kind.NOTE, JpaSpecConfigFileUtils.class, "Generating" + className);
+        messagePrinter.print(
+                Diagnostic.Kind.NOTE, JpaSpecConfigFileUtils.class,
+                "Jpa Spec: %s Base package: %s".formatted(jpaSpec, basePackage)
+        );
+        Instant timestamp = Instant.now();
+        try {
+            String generatedClass = readClasspathFile(JPA_SPEC_JPA_CONFIGURER_TEMPLATE_FILE);
+            generatedClass = generatedClass.replace("${BASE_PACKAGE}", basePackage);
+            generatedClass = generatedClass.replace(
+                    "${ANNOTATION_PROCESSOR}",
+                    JpaSpecAnnotationProcessor.class.getCanonicalName()
+            );
+            String compiler = "";
+            String entityBasePackages = collectToArray(procedure.metadata().entitiesPackages());
+            String jpaReposBasePackages = collectToArray(procedure.metadata().jpaRepositoriesPackages());
+            generatedClass = generatedClass.replace("${COMPILER}", compiler);
+            generatedClass = generatedClass.replace("${JPA_SPEC}", jpaSpec);
+            generatedClass = generatedClass.replace("${TIMESTAMP}", ISO_INSTANT.format(timestamp));
+            generatedClass = generatedClass.replace("${ENTITY_BASE_PACKAGES}", entityBasePackages);
+            generatedClass = generatedClass.replace("${JPA_REPOS_BASE_PACKAGES}", jpaReposBasePackages);
+            generateClass(className, generatedClass);
+        } catch (IOException e) {
+            messagePrinter.print(
+                    Diagnostic.Kind.ERROR, JpaSpecConfigFileUtils.class,
+                    "%s was not generated, reason:".formatted(className), e
+            );
+        }
+    }
 
     private void generateClass(String generatedClassName, String generatedClass) throws IOException {
         JavaFileObject classFile = filer.createSourceFile(generatedClassName);
         try (Writer writer = classFile.openWriter()) {
             writer.write(generatedClass);
         }
+        generatedFiles.add(generatedClassName);
     }
 
     private void createChangeLogs(Map.Entry<String, List<Document>> jpaSpecChangeLogs) {
@@ -129,6 +151,7 @@ class JpaSpecConfigFileUtils {
             messagePrinter.print(Diagnostic.Kind.NOTE, JpaSpecConfigFileUtils.class,
                     "Generating change log %s".formatted(location));
             createChangeLog(location, changeLog);
+            generatedFiles.add(location);
         }
     }
 
@@ -156,6 +179,13 @@ class JpaSpecConfigFileUtils {
     }
 
     private void createResource(@NonNull String location, @NonNull String content) throws IOException {
+        if (generatedFiles.contains(location)) {
+            messagePrinter.print(
+                    Diagnostic.Kind.NOTE, JpaSpecConfigFileUtils.class,
+                    "File %s already created".formatted(location)
+            );
+            return;
+        }
         FileObject resourceObject = filer.createResource(
                 CLASS_OUTPUT,
                 "",
@@ -191,6 +221,15 @@ class JpaSpecConfigFileUtils {
                 jpaSpec,
                 id
         );
+    }
+
+    private String collectToArray(Collection<String> basePackages) {
+        return basePackages.stream()
+                .map(basePackage -> "\"" + basePackage + "\"")
+                .collect(Collectors.collectingAndThen(
+                        Collectors.joining(","),
+                        values -> "{" + values + "}"
+                ));
     }
 
 }

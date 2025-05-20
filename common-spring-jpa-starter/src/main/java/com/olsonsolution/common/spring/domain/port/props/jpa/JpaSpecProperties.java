@@ -8,6 +8,8 @@ public interface JpaSpecProperties {
 
     String getSchema();
 
+    boolean isCreateSchema();
+
     boolean isLogSql();
 
     boolean isFormatSqlLog();

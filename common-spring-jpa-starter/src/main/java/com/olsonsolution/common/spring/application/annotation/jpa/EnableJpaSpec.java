@@ -11,6 +11,8 @@ public @interface EnableJpaSpec {
 
     String value();
 
+    String configPackage() default "";
+
     String[] basePackages() default {};
 
 }

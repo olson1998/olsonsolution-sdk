@@ -1,5 +1,6 @@
 package com.olsonsolution.common.migration.domain.model;
 
+import com.olsonsolution.common.migration.domain.port.stereotype.SchemaParseResult;
 import com.olsonsolution.common.migration.domain.port.stereotype.MigrationResult;
 import com.olsonsolution.common.migration.domain.port.stereotype.exception.ChangeLogMigrationException;
 import com.olsonsolution.common.migration.domain.port.stereotype.exception.ChangeLogSkippedException;
@@ -10,6 +11,7 @@ import lombok.ToString;
 import org.apache.commons.lang3.ObjectUtils;
 import org.joda.time.MutableDateTime;
 
+import java.util.Map;
 import java.util.Optional;
 
 @Getter
@@ -17,7 +19,7 @@ import java.util.Optional;
 @EqualsAndHashCode
 public class DomainMigrationResult implements MigrationResult {
 
-    private final boolean createdSchema;
+    private final Map<String, SchemaParseResult> createdSchemas;
 
     private final ChangeLogSkippedException skippingCause;
 
@@ -27,35 +29,35 @@ public class DomainMigrationResult implements MigrationResult {
 
     private final MutableDateTime finishTimestamp;
 
-    @Builder(builderMethodName = "successfulResult")
-    public DomainMigrationResult(boolean createdSchema,
+    @Builder(builderMethodName = "successfulResult", builderClassName = "SuccessfulResultsBuilder")
+    public DomainMigrationResult(Map<String, SchemaParseResult> createdSchemas,
                                  MutableDateTime startTimestamp,
                                  MutableDateTime finishTimestamp) {
-        this.createdSchema = createdSchema;
+        this.createdSchemas = createdSchemas;
         this.skippingCause = null;
         this.failureCause = null;
         this.startTimestamp = startTimestamp;
         this.finishTimestamp = finishTimestamp;
     }
 
-    @Builder(builderMethodName = "skippedResult")
-    public DomainMigrationResult(boolean createdSchema,
+    @Builder(builderMethodName = "skippedResult", builderClassName = "SkippedResultsBuilder")
+    public DomainMigrationResult(Map<String, SchemaParseResult> createdSchemas,
                                  ChangeLogSkippedException skippingCause,
                                  MutableDateTime startTimestamp,
                                  MutableDateTime finishTimestamp) {
-        this.createdSchema = createdSchema;
+        this.createdSchemas = createdSchemas;
         this.skippingCause = skippingCause;
         this.failureCause = null;
         this.startTimestamp = startTimestamp;
         this.finishTimestamp = finishTimestamp;
     }
 
-    @Builder(builderMethodName = "failedResult")
-    public DomainMigrationResult(boolean createdSchema,
+    @Builder(builderMethodName = "failedResult", builderClassName = "FailedResultsBuilder")
+    public DomainMigrationResult(Map<String, SchemaParseResult> createdSchemas,
                                  ChangeLogMigrationException failureCause,
                                  MutableDateTime startTimestamp,
                                  MutableDateTime finishTimestamp) {
-        this.createdSchema = createdSchema;
+        this.createdSchemas = createdSchemas;
         this.skippingCause = null;
         this.failureCause = failureCause;
         this.startTimestamp = startTimestamp;
@@ -64,7 +66,7 @@ public class DomainMigrationResult implements MigrationResult {
 
     @Override
     public boolean isSuccessful() {
-        return ObjectUtils.allNotNull(skippingCause, failureCause);
+        return !isFailed() && !isSkipped();
     }
 
     @Override

@@ -15,6 +15,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
 import java.lang.annotation.Annotation;
 import java.util.*;
@@ -30,6 +31,8 @@ class JpaSpecConfigUtil {
             Configuration.class,
             AutoConfiguration.class
     );
+
+    private final Elements elementUtils;
 
     private final MessagePrinter messagePrinter;
 
@@ -53,7 +56,7 @@ class JpaSpecConfigUtil {
         ));
         return configs.values()
                 .stream()
-                .map(JpaSpecMetadata.Builder::build)
+                .map(metadata -> metadata.build(elementUtils))
                 .toList();
     }
 

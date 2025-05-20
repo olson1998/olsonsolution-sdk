@@ -39,7 +39,12 @@ public class JpaSpecAnnotationProcessor extends AbstractProcessor {
         this.messagePrinter = new MessagePrintingService(processingEnv.getMessager());
         this.changeLogFactory = new ChangeLogFactory(messagePrinter);
         this.jpaSpecProcedureFactory = new JpaSpecProcedureFactory(processingEnv, tableMetadataUtil);
-        this.jpaSpecConfigUtil = new JpaSpecConfigUtil(messagePrinter, tableMetadataUtil, processingEnv);
+        this.jpaSpecConfigUtil = new JpaSpecConfigUtil(
+                processingEnv.getElementUtils(),
+                messagePrinter,
+                tableMetadataUtil,
+                processingEnv
+        );
         this.jpaSpecConfigFileUtils = new JpaSpecConfigFileUtils(processingEnv.getFiler(), messagePrinter);
     }
 
@@ -49,6 +54,7 @@ public class JpaSpecAnnotationProcessor extends AbstractProcessor {
             List<JpaSpecMetadata> jpaSpecMetadata = jpaSpecConfigUtil.mirrorJpaSpecs(roundEnv);
             JpaSpecExecPlan jpaSpecExecPlan = jpaSpecProcedureFactory.fabricate(jpaSpecMetadata);
             jpaSpecConfigFileUtils.createJpaSpecProceduresYaml(jpaSpecExecPlan);
+            jpaSpecConfigFileUtils.createJpaConfigurationClasses(jpaSpecExecPlan);
             Map<String, List<Document>> jpaSpecChangeLogs = changeLogFactory.createChangeLogs(jpaSpecExecPlan);
             Document masterChangeLog = changeLogFactory.generateMasterChangeLog(jpaSpecExecPlan);
             jpaSpecConfigFileUtils.createChangeLogs(jpaSpecChangeLogs);

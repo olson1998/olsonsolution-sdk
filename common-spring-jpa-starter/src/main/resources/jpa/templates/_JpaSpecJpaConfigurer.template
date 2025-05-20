@@ -30,6 +30,8 @@ public class ${JPA_SPEC}JpaSpecConfigurer implements JpaSpecConfig, Initializing
 
     private String schema;
 
+    private boolean createSchema;
+
     private final JpaSpecConfigurer jpaSpecConfigurer;
 
     private final DataSourceSpecManager dataSourceSpecManager;
@@ -52,6 +54,11 @@ public class ${JPA_SPEC}JpaSpecConfigurer implements JpaSpecConfig, Initializing
     @Override
     public String getSchema() {
         return schema;
+    }
+
+    @Override
+    public boolean isCreateSchema() {
+        return createSchema;
     }
 
     @Override
@@ -80,14 +87,15 @@ public class ${JPA_SPEC}JpaSpecConfigurer implements JpaSpecConfig, Initializing
         );
     }
 
-    @Bean("enable " + JPA_SPEC + "JpaSpec")
-    public Enable${JPA_SPEC}JpaRepositories enableTemplateJpaRepositories() {
+    @Bean("enable " + JPA_SPEC + "JpaRepositories")
+    public Enable${JPA_SPEC}JpaRepositories enableJpaRepositories() {
         return new Enable${JPA_SPEC}JpaRepositories();
     }
 
     @Override
     public void afterPropertiesSet() {
         this.schema = jpaSpecConfigurer.resolveSchema(JPA_SPEC);
+        this.createSchema = jpaSpecConfigurer.resolveCreateSchema(JPA_SPEC);
     }
 
 
