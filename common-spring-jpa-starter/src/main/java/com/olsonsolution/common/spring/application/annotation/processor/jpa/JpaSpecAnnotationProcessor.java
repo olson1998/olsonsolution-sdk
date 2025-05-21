@@ -57,6 +57,13 @@ public class JpaSpecAnnotationProcessor extends AbstractProcessor {
             if (CollectionUtils.isEmpty(jpaSpecMetadata)) {
                 return true;
             }
+            for (JpaSpecMetadata spec : jpaSpecMetadata) {
+                messagePrinter.print(
+                        Diagnostic.Kind.NOTE,
+                        JpaSpecAnnotationProcessor.class,
+                        spec.toString()
+                );
+            }
             JpaSpecExecPlan jpaSpecExecPlan = jpaSpecProcedureFactory.fabricate(jpaSpecMetadata);
             jpaSpecConfigFileUtils.createJpaSpecProceduresYaml(jpaSpecExecPlan);
             jpaSpecConfigFileUtils.createJpaConfigurationClasses(jpaSpecExecPlan);

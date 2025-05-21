@@ -26,6 +26,14 @@ class JpaSpecProcedureFactory {
 
     private final TableMetadataUtil tableMetadataUtil;
 
+    /**
+     * Creates and returns a {@link JpaSpecExecPlan} based on the provided list of JPA specification metadata.
+     * The method processes the metadata to generate procedures, sorts the specification names,
+     * and determines the dependency order for change logs.
+     *
+     * @param jpaSpecsMetadata the list of {@link JpaSpecMetadata} instances representing JPA specification metadata that needs to be processed
+     * @return a {@link JpaSpecExecPlan} containing the generated procedures, sorted specification names, and change log execution order
+     */
     JpaSpecExecPlan fabricate(List<JpaSpecMetadata> jpaSpecsMetadata) {
         List<JpaSpecProcedure> procedures = jpaSpecsMetadata.stream()
                 .map(jpaSpecMetadata -> createProcedure(jpaSpecMetadata, jpaSpecsMetadata))
@@ -215,8 +223,8 @@ class JpaSpecProcedureFactory {
                 collectEmbeddableColumnOperations(
                         fieldElement,
                         fieldTypeElement,
-                        tableName,
                         jpaSpec,
+                        tableName,
                         addColumnOpsBuilder,
                         changeSetAtBeginningOperations,
                         changeSetAtEndOperations

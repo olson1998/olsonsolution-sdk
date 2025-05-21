@@ -2,7 +2,7 @@ package com.olsonsolution.common.spring.application.annotation.migration;
 
 public @interface ForeignKey {
 
-    String name();
+    String name() default "";
 
     String referenceJpaSpec() default "";
 
