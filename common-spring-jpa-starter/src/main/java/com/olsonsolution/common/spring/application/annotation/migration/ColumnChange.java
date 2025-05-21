@@ -6,8 +6,16 @@ public @interface ColumnChange {
 
     Operation operation();
 
-    String parameters() default "";
+    Parameter[] parameters() default {};
 
     String version();
+
+    @interface Parameter {
+
+        String name();
+
+        String value();
+
+    }
 
 }

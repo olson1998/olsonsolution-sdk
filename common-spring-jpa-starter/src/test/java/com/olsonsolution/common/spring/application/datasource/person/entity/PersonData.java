@@ -27,20 +27,36 @@ public class PersonData {
 
     @Column(name = "name", length = 63, nullable = false)
     @ColumnChanges(atBeginning = {
-            @ColumnChange(version = "1.0.1", operation = Operation.MODIFY_DATA_TYPE, parameters = "varchar(255)")
+            @ColumnChange(
+                    version = "1.0.1",
+                    operation = Operation.MODIFY_DATA_TYPE,
+                    parameters = @ColumnChange.Parameter(name = "newDataType", value = "varchar(4095)")
+            )
     })
     private String name;
 
     @Column(name = "second_name", length = 63, nullable = false)
     @ColumnChanges(atBeginning = {
-            @ColumnChange(version = "1.0.1", operation = Operation.MODIFY_DATA_TYPE, parameters = "varchar(255)"),
-            @ColumnChange(version = "1.0.1", operation = Operation.ADD_NOT_NULL_CONSTRAINT)
+            @ColumnChange(
+                    version = "1.0.1",
+                    operation = Operation.MODIFY_DATA_TYPE,
+                    parameters = @ColumnChange.Parameter(name = "newDataType", value = "varchar(4095)")
+            ),
+            @ColumnChange(
+                    version = "1.0.1",
+                    operation = Operation.ADD_NOT_NULL_CONSTRAINT,
+                    parameters = @ColumnChange.Parameter(name = "columnDataType", value = "varchar(4095)")
+            )
     })
     private String secondName;
 
     @Column(name = "surname", length = 63, nullable = false)
     @ColumnChanges(atBeginning = {
-            @ColumnChange(version = "1.0.1", operation = Operation.MODIFY_DATA_TYPE, parameters = "varchar(255)")
+            @ColumnChange(
+                    version = "1.0.1",
+                    operation = Operation.MODIFY_DATA_TYPE,
+                    parameters = @ColumnChange.Parameter(name = "newDataType", value = "varchar(4095)")
+            )
     })
     private String surname;
 
