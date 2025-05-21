@@ -2,17 +2,22 @@ package com.olsonsolution.common.spring.application.annotation.processor.jpa;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.olsonsolution.common.spring.application.annotation.jpa.EnableJpaSpec;
+import com.olsonsolution.common.spring.application.annotation.migration.ColumnChange;
+import com.olsonsolution.common.spring.application.annotation.migration.ColumnChanges;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.Elements;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY;
+import static javax.lang.model.element.ElementKind.FIELD;
 
 record JpaSpecMetadata(@NonNull String jpaSpec,
                        @NonNull TypeElement enableJpaSpecElement,
@@ -20,6 +25,8 @@ record JpaSpecMetadata(@NonNull String jpaSpec,
                        @JsonInclude(NON_EMPTY) @NonNull Set<EntityConfig> entitiesConfig,
                        @NonNull Set<String> entitiesPackages,
                        @NonNull Set<String> jpaRepositoriesPackages) {
+
+    static final String FIRST_VERSION = "1.0.0";
 
     public static Builder builder() {
         return new Builder();
@@ -78,10 +85,12 @@ record JpaSpecMetadata(@NonNull String jpaSpec,
             if (presentEntityConfig.isPresent()) {
                 entityConfig = presentEntityConfig.get();
             } else {
+                Set<String> versionChronology = collectVersionChronology(entityType);
                 entityConfig = EntityConfig.builder()
                         .entity(entityType)
                         .table(table)
                         .jpaRepositories(new ArrayList<>())
+                        .versionChronology(versionChronology)
                         .build();
                 entitiesConfig.add(entityConfig);
             }
@@ -110,6 +119,28 @@ record JpaSpecMetadata(@NonNull String jpaSpec,
                 reducedBasePackages.removeIf(p -> !StringUtils.startsWith(p, basePackage));
             }
             return reducedBasePackages;
+        }
+
+        private Set<String> collectVersionChronology(TypeElement entityElement) {
+            Stream<String> firstVersion = Stream.of(FIRST_VERSION);
+            Stream<String> declaredVersions = streamDeclaredFields(entityElement)
+                    .filter(field -> field.getAnnotation(ColumnChanges.class) != null)
+                    .map(field -> field.getAnnotation(ColumnChanges.class))
+                    .flatMap(columnChanges -> Stream.concat(
+                            Arrays.stream(columnChanges.atBeginning()),
+                            Arrays.stream(columnChanges.atEnd()))
+                    ).map(ColumnChange::version);
+            return Stream.concat(firstVersion, declaredVersions)
+                    .sorted(Comparator.naturalOrder())
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+        }
+
+        private Stream<VariableElement> streamDeclaredFields(TypeElement typeElement) {
+            return typeElement.getEnclosedElements()
+                    .stream()
+                    .filter(element -> element.getKind() == FIELD)
+                    .filter(VariableElement.class::isInstance)
+                    .map(VariableElement.class::cast);
         }
 
     }
