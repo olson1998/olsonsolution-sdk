@@ -25,7 +25,7 @@ public class CompanyData {
     private Integer code;
 
     @Column(name = "organization_code", nullable = false, unique = true)
-    @ForeignKey(name = "fk_organization_code", referenceTable = "organization", referenceColumn = "code")
+    @ForeignKey(referenceTable = "organization", referenceColumn = "code")
     private Integer organizationCode;
 
     @Column(name = "long_name", nullable = false, unique = true)
