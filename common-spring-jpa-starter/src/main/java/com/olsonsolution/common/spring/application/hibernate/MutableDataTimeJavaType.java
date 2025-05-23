@@ -38,6 +38,9 @@ public class MutableDataTimeJavaType extends AbstractJavaType<MutableDateTime> {
 
     @Override
     public <X> MutableDateTime wrap(X value, WrapperOptions options) {
+        if (value == null) {
+            return null;
+        }
         return wrapTimestamp(value);
     }
 
