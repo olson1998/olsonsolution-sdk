@@ -36,8 +36,8 @@ public class JpaSpecAnnotationProcessor extends AbstractProcessor {
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
         super.init(processingEnv);
-        TableMetadataUtil tableMetadataUtil = new TableMetadataUtil(processingEnv);
         this.messagePrinter = new MessagePrintingService(processingEnv.getMessager());
+        TableMetadataUtil tableMetadataUtil = new TableMetadataUtil(messagePrinter, processingEnv);
         ChangeLogOrderer changeLogOrderer = new ChangeLogOrderer(messagePrinter);
         this.changeLogFactory = new ChangeLogFactory(messagePrinter);
         this.jpaSpecProcedureFactory = new JpaSpecProcedureFactory(changeLogOrderer, processingEnv, tableMetadataUtil);

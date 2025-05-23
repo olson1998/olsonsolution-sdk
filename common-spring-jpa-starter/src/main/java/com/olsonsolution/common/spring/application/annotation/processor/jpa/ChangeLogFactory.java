@@ -29,7 +29,6 @@ class ChangeLogFactory {
 
     private final MessagePrinter messagePrinter;
 
-
     Map<String, List<Document>> createChangeLogs(JpaSpecExecPlan jpaSpecExecPlan) {
         Map<String, List<Document>> jpaSpecChangeLogs = new HashMap<>(jpaSpecExecPlan.jpaSpecNames().size());
         try {

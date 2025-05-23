@@ -348,7 +348,7 @@ class JpaSpecProcedureFactory {
         ChangeOp.Builder addColumnOp = ChangeOp.builder()
                 .operation("column")
                 .attribute("name", columnName)
-                .attribute("type", tableMetadataUtil.assumeSqlType(fieldElement, column));
+                .attribute("type", tableMetadataUtil.getSqlType(fieldElement, column));
         ChangeOp.Builder constraints = null;
         if (tableMetadataUtil.isIdentifier(fieldElement)) {
             constraints = ChangeOp.builder()
