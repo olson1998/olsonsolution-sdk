@@ -644,7 +644,8 @@ class JpaSpecProcedureFactory {
         ChangeSet changeSet = entity.getAnnotation(ChangeSet.class);
         String version = "1.0.0";
         if (StringUtils.isBlank(version) && field.getAnnotation(ColumnChanges.class) != null) {
-
+            ColumnChanges columnChanges = field.getAnnotation(ColumnChanges.class);
+            Stream<ColumnChange> atBeginningOps = Arrays.stream(columnChanges.atBeginning());
         }
         return generateId(changeSet, version, entityConfig.table());
     }
