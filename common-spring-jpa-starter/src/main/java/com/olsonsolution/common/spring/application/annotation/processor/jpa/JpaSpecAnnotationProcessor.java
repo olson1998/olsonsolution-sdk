@@ -2,7 +2,9 @@ package com.olsonsolution.common.spring.application.annotation.processor.jpa;
 
 import com.google.auto.service.AutoService;
 import com.olsonsolution.common.reflection.domain.port.repository.annotion.processor.MessagePrinter;
+import com.olsonsolution.common.reflection.domain.port.repository.annotion.processor.TypeElementUtils;
 import com.olsonsolution.common.reflection.domain.service.annotion.processor.MessagePrintingService;
+import com.olsonsolution.common.reflection.domain.service.annotion.processor.TypeElementUtilityService;
 import org.apache.commons.collections4.CollectionUtils;
 import org.w3c.dom.Document;
 
@@ -37,10 +39,16 @@ public class JpaSpecAnnotationProcessor extends AbstractProcessor {
     public synchronized void init(ProcessingEnvironment processingEnv) {
         super.init(processingEnv);
         this.messagePrinter = new MessagePrintingService(processingEnv.getMessager());
+        TypeElementUtils typeElementUtils =
+                new TypeElementUtilityService(processingEnv.getTypeUtils(), processingEnv.getElementUtils());
         TableMetadataUtil tableMetadataUtil = new TableMetadataUtil(messagePrinter, processingEnv);
         ChangeLogOrderer changeLogOrderer = new ChangeLogOrderer(messagePrinter);
         this.changeLogFactory = new ChangeLogFactory(messagePrinter);
-        this.jpaSpecProcedureFactory = new JpaSpecProcedureFactory(changeLogOrderer, processingEnv, tableMetadataUtil);
+        this.jpaSpecProcedureFactory = new JpaSpecProcedureFactory(
+                changeLogOrderer,
+                tableMetadataUtil,
+                typeElementUtils
+        );
         this.jpaSpecConfigUtil = new JpaSpecConfigUtil(
                 processingEnv.getElementUtils(),
                 messagePrinter,

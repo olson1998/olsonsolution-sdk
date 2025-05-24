@@ -17,7 +17,7 @@ public class ItemCategory {
     @ForeignKey(referenceTable = "category", referenceColumn = "id", version = "1.0.0")
     private Long categoryId;
 
-    @Column(name = "item_id", nullable = false, unique = true)
+    @Column(name = "item_id", nullable = false, unique = true, length = 63)
     @ForeignKey(referenceTable = "item", referenceColumn = "id", version = "1.0.0")
     private String itemId;
 

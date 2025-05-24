@@ -1,5 +1,6 @@
 package com.olsonsolution.common.spring.application.annotation.processor.jpa;
 
+import com.olsonsolution.common.reflection.domain.port.repository.annotion.processor.TypeElementUtils;
 import com.olsonsolution.common.spring.application.annotation.migration.*;
 import jakarta.persistence.Column;
 import jakarta.persistence.SequenceGenerator;
@@ -7,27 +8,23 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.keyvalue.DefaultMapEntry;
 import org.apache.commons.lang3.StringUtils;
 
-import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.Types;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.olsonsolution.common.spring.application.annotation.processor.jpa.JpaSpecMetadata.FIRST_VERSION;
-import static javax.lang.model.element.ElementKind.FIELD;
 
 @RequiredArgsConstructor
 class JpaSpecProcedureFactory {
 
     private final ChangeLogOrderer changeLogOrderer;
 
-    private final ProcessingEnvironment processingEnv;
-
     private final TableMetadataUtil tableMetadataUtil;
+
+    private final TypeElementUtils typeElementUtils;
 
     /**
      * Creates and returns a {@link JpaSpecExecPlan} based on the provided list of JPA specification metadata.
@@ -84,7 +81,7 @@ class JpaSpecProcedureFactory {
         Map<String, List<ChangeOp>> changeSetCreateTableOperations = new LinkedHashMap<>();
         Map<String, List<ChangeOp>> changeSetAtEndOperations = new LinkedHashMap<>();
         Map<String, LinkedList<ChangeOp>> changeSetOperations = new LinkedHashMap<>();
-        Set<VariableElement> fields = getDeclaredFields(entityConfig.entity());
+        Set<VariableElement> fields = typeElementUtils.getDeclaredVariableElements(entityConfig.entity(), true);
         collectColumnsChanges(
                 fields,
                 entityConfig,
@@ -141,14 +138,10 @@ class JpaSpecProcedureFactory {
                                    Map<String, List<ChangeOp>> changeSetColumnOperations,
                                    Map<String, List<ChangeOp>> changeSetAtEndOperations,
                                    Map<String, LinkedList<ChangeOp>> changeSetOperations) {
-        List<ChangeOp> operations =
-                changeSetOperations.computeIfAbsent(version, k -> new LinkedList<>());
-        Optional.ofNullable(changeSetAtBeginningOperations.get(version))
-                .ifPresent(operations::addAll);
-        Optional.ofNullable(changeSetColumnOperations.get(version))
-                .ifPresent(operations::addAll);
-        Optional.ofNullable(changeSetAtEndOperations.get(version))
-                .ifPresent(operations::addAll);
+        List<ChangeOp> operations = changeSetOperations.computeIfAbsent(version, k -> new LinkedList<>());
+        Optional.ofNullable(changeSetAtBeginningOperations.get(version)).ifPresent(operations::addAll);
+        Optional.ofNullable(changeSetColumnOperations.get(version)).ifPresent(operations::addAll);
+        Optional.ofNullable(changeSetAtEndOperations.get(version)).ifPresent(operations::addAll);
     }
 
     private Map<String, Set<String>> collectDependsOn(ChangeSet changeSet,
@@ -165,14 +158,29 @@ class JpaSpecProcedureFactory {
                                                JpaSpecMetadata jpaSpecMetadata,
                                                List<JpaSpecMetadata> jpaSpecsMetadata,
                                                Map<String, Set<String>> dependencies) {
-        fields.stream()
-                .filter(fieldElement -> fieldElement.getAnnotation(ForeignKey.class) != null)
-                .map(fieldElement -> fieldElement.getAnnotation(ForeignKey.class))
-                .map(foreignKey -> mapToJpaSpecDependency(foreignKey, jpaSpecMetadata, jpaSpecsMetadata))
-                .forEach(jpaSpecChangeLog -> dependencies.computeIfAbsent(
-                        jpaSpecChangeLog.getKey(),
-                        s -> new HashSet<>()
-                ).add(jpaSpecChangeLog.getValue()));
+        for (VariableElement field : fields) {
+            if (tableMetadataUtil.isEmbeddable(field)) {
+                TypeElement fieldTypeElement = typeElementUtils.getFieldTypeElement(field);
+                Set<VariableElement> embeddableFields =
+                        typeElementUtils.getDeclaredVariableElements(fieldTypeElement, true);
+                collectForeignKeyDependencies(embeddableFields, jpaSpecMetadata, jpaSpecsMetadata, dependencies);
+            } else {
+                collectForeignKeyDependencies(field, jpaSpecMetadata, jpaSpecsMetadata, dependencies);
+            }
+        }
+    }
+
+    private void collectForeignKeyDependencies(VariableElement field,
+                                               JpaSpecMetadata jpaSpecMetadata,
+                                               List<JpaSpecMetadata> jpaSpecsMetadata,
+                                               Map<String, Set<String>> dependencies) {
+        if (field.getAnnotation(ForeignKey.class) != null) {
+            ForeignKey foreignKey = field.getAnnotation(ForeignKey.class);
+            Map.Entry<String, String> jpaSpecDependency =
+                    mapToJpaSpecDependency(foreignKey, jpaSpecMetadata, jpaSpecsMetadata);
+            dependencies.computeIfAbsent(jpaSpecDependency.getKey(), k -> new HashSet<>())
+                    .add(jpaSpecDependency.getValue());
+        }
     }
 
     private void collectChangeSetDependencies(ChangeSet changeSet,
@@ -222,7 +230,8 @@ class JpaSpecProcedureFactory {
                                        Map<String, List<ChangeOp>> changeSetAtBeginningOperations,
                                        Map<String, List<ChangeOp>> changeSetAtEndOperations) {
         if (tableMetadataUtil.isEmbeddable(fieldElement)) {
-            if (processingEnv.getTypeUtils().asElement(fieldElement.asType()) instanceof TypeElement fieldTypeElement) {
+            if (fieldElement.getKind() == ElementKind.FIELD) {
+                TypeElement fieldTypeElement = typeElementUtils.getFieldTypeElement(fieldElement);
                 collectEmbeddableColumnOperations(
                         fieldElement,
                         fieldTypeElement,
@@ -252,7 +261,8 @@ class JpaSpecProcedureFactory {
                                                    Stream.Builder<ChangeOp> addColumnOpsBuilder,
                                                    Map<String, List<ChangeOp>> changeSetAtBeginningOperations,
                                                    Map<String, List<ChangeOp>> changeSetAtEndOperations) {
-        Set<VariableElement> embeddableFieldElements = getDeclaredFields(fieldTypeElement);
+        Set<VariableElement> embeddableFieldElements =
+                typeElementUtils.getDeclaredVariableElements(fieldTypeElement, true);
         if (tableMetadataUtil.isEmbeddableIdentifier(embeddableFieldElement)) {
             String fkName = "fk_" + tableName;
             ChangeOp addUniqueConstraintOp = embeddableFieldElements.stream()
@@ -614,7 +624,7 @@ class JpaSpecProcedureFactory {
     private Optional<String> resolveReferencedChangeLogId(EntityConfig entityConfig,
                                                           String referencedColumns) {
         TypeElement entity = entityConfig.entity();
-        Set<VariableElement> entityFields = getDeclaredFields(entity);
+        Set<VariableElement> entityFields = typeElementUtils.getDeclaredVariableElements(entity, true);
         return entityFields.stream()
                 .map(field -> new DefaultMapEntry<>(tableMetadataUtil.getColumnName(field), field))
                 .filter(columnField ->
@@ -651,33 +661,6 @@ class JpaSpecProcedureFactory {
                 .findFirst()
                 .map(ColumnChange.Parameter::value)
                 .orElseThrow();
-    }
-
-    private Set<VariableElement> getDeclaredFields(TypeElement typeElement) {
-        Stream.Builder<VariableElement> fields = Stream.builder();
-        collectDeclaredFields(typeElement, fields);
-        return fields.build().collect(Collectors.toCollection(LinkedHashSet::new));
-    }
-
-    private void collectDeclaredFields(TypeElement typeElement, Stream.Builder<VariableElement> fields) {
-        typeElement.getEnclosedElements()
-                .stream()
-                .filter(element -> element.getKind() == FIELD)
-                .filter(VariableElement.class::isInstance)
-                .map(VariableElement.class::cast)
-                .forEach(fields::add);
-        TypeMirror superClassMirror = typeElement.getSuperclass();
-        TypeElement objectClassElement = processingEnv.getElementUtils().getTypeElement("java.lang.Object");
-        TypeMirror objectClassMirror = objectClassElement.asType();
-        Types typeUtils = processingEnv.getTypeUtils();
-        boolean isObjectClass = typeUtils.isSameType(
-                typeUtils.erasure(superClassMirror),
-                typeUtils.erasure(objectClassMirror)
-        );
-        if (!isObjectClass && superClassMirror instanceof DeclaredType &&
-                typeUtils.asElement(superClassMirror) instanceof TypeElement superClassElement) {
-            collectDeclaredFields(superClassElement, fields);
-        }
     }
 
 }
