@@ -1,23 +1,26 @@
 package com.olsonsolution.common.spring.application.datasource.item.entity;
 
 import com.olsonsolution.common.spring.application.annotation.migration.ChangeSet;
+import com.olsonsolution.common.spring.application.config.jpa.TimeAuditingEntityListener;
 import com.olsonsolution.common.spring.application.datasource.common.entity.AuditableEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.joda.time.MutableDateTime;
 
 @Getter
 @Setter
 @ToString(callSuper = true)
 
 @NoArgsConstructor
-@AllArgsConstructor
 
 @Entity
 @ChangeSet
 @Table(name = "category")
+@EntityListeners({TimeAuditingEntityListener.class})
 public class CategoryData extends AuditableEntity {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "category_id_seq")
     @SequenceGenerator(name = "category_id_seq", sequenceName = "category_id_seq", allocationSize = 1)
     private Long id;
 
@@ -30,4 +33,20 @@ public class CategoryData extends AuditableEntity {
     @Column(name = "description", nullable = false, length = 4095)
     private String description;
 
+    @Builder(builderMethodName = "newCategory", builderClassName = "NewCategoryBuilder")
+    public CategoryData(String fullName, String shortName, String description) {
+        this.fullName = fullName;
+        this.shortName = shortName;
+        this.description = description;
+    }
+
+    @Builder(builderMethodName = "category")
+    public CategoryData(MutableDateTime creationTimestamp, MutableDateTime lastUpdateTimestamp,
+                        Long version, Long id, String fullName, String shortName, String description) {
+        super(creationTimestamp, lastUpdateTimestamp, version);
+        this.id = id;
+        this.fullName = fullName;
+        this.shortName = shortName;
+        this.description = description;
+    }
 }

@@ -4,20 +4,23 @@ import com.olsonsolution.common.spring.application.annotation.migration.ForeignK
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@Embeddable
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
+
+@Embeddable
 public class ItemCategory {
 
-    @Column(name = "category_id", nullable = false, unique = true)
+    @Column(name = "category_id", nullable = false)
     @ForeignKey(referenceTable = "category", referenceColumn = "id", version = "1.0.0")
     private Long categoryId;
 
-    @Column(name = "item_id", nullable = false, unique = true, length = 63)
+    @Column(name = "item_id", nullable = false, length = 63)
     @ForeignKey(referenceTable = "item", referenceColumn = "id", version = "1.0.0")
     private String itemId;
 

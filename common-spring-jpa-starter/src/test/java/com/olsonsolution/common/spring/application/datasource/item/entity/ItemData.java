@@ -1,21 +1,23 @@
 package com.olsonsolution.common.spring.application.datasource.item.entity;
 
 import com.olsonsolution.common.spring.application.annotation.migration.ChangeSet;
+import com.olsonsolution.common.spring.application.config.jpa.TimeAuditingEntityListener;
 import com.olsonsolution.common.spring.application.datasource.common.entity.AuditableEntity;
 import com.olsonsolution.common.spring.application.datasource.item.entity.support.ItemType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.joda.time.MutableDateTime;
 
 @Getter
 @Setter
 @ToString(callSuper = true)
 
 @NoArgsConstructor
-@AllArgsConstructor
 
 @Entity
 @ChangeSet
 @Table(name = "item")
+@EntityListeners(TimeAuditingEntityListener.class)
 public class ItemData extends AuditableEntity {
 
     @Id
@@ -26,7 +28,7 @@ public class ItemData extends AuditableEntity {
     @Column(name = "type", nullable = false)
     private ItemType type;
 
-    @Column(name = "packagingId_id", length = 63)
+    @Column(name = "packaging_id", length = 63)
     private String packagingId;
 
     @Column(name = "name", nullable = false)
@@ -53,4 +55,38 @@ public class ItemData extends AuditableEntity {
     @Column(name = "gross_weight", nullable = false, precision = 15)
     private Double grossWeight;
 
+    @Builder(builderMethodName = "newItem", builderClassName = "NewItemBuilder")
+    public ItemData(String id, ItemType type, String fullName, String description, Integer yDimension,
+                    Double grossWeight, Integer zDimension, Double netWeight, Integer xDimension,
+                    String shortName, String packagingId) {
+        this.id = id;
+        this.type = type;
+        this.fullName = fullName;
+        this.description = description;
+        this.yDimension = yDimension;
+        this.grossWeight = grossWeight;
+        this.zDimension = zDimension;
+        this.netWeight = netWeight;
+        this.xDimension = xDimension;
+        this.shortName = shortName;
+        this.packagingId = packagingId;
+    }
+
+    @Builder(builderMethodName = "item")
+    public ItemData(MutableDateTime creationTimestamp, MutableDateTime lastUpdateTimestamp, Long version, String id,
+                    ItemType type, String packagingId, String fullName, String description, Integer yDimension,
+                    Double netWeight, Double grossWeight, Integer zDimension, Integer xDimension, String shortName) {
+        super(creationTimestamp, lastUpdateTimestamp, version);
+        this.id = id;
+        this.type = type;
+        this.packagingId = packagingId;
+        this.fullName = fullName;
+        this.description = description;
+        this.yDimension = yDimension;
+        this.netWeight = netWeight;
+        this.grossWeight = grossWeight;
+        this.zDimension = zDimension;
+        this.xDimension = xDimension;
+        this.shortName = shortName;
+    }
 }

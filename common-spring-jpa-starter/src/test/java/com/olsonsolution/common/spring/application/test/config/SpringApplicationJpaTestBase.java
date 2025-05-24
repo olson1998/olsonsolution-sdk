@@ -1,7 +1,6 @@
 package com.olsonsolution.common.spring.application.test.config;
 
 import com.microsoft.sqlserver.jdbc.SQLServerDataSource;
-import com.microsoft.sqlserver.jdbc.SQLServerException;
 import com.olsonsolution.common.migration.domain.port.repository.MigrationService;
 import com.olsonsolution.common.migration.domain.port.stereotype.MigrationResults;
 import com.olsonsolution.common.spring.application.async.config.AsyncConfig;
@@ -30,6 +29,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -54,9 +54,11 @@ import static com.olsonsolution.common.data.domain.model.sql.SqlVendors.SQL_SERV
 import static com.olsonsolution.common.spring.application.jpa.config.DataSourceModelersConfig.SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX;
 import static com.olsonsolution.common.spring.application.jpa.props.SpringApplicationDestinationDataSourceProperties.SPRING_APPLICATION_JPA_DESTINATION_DATA_SOURCE_PROPERTIES_PREFIX;
 import static com.olsonsolution.common.spring.application.jpa.props.SpringApplicationJpaProperties.SPRING_APPLICATION_JPA_PROPERTIES_PREFIX;
-import static com.olsonsolution.common.spring.application.test.config.SpringApplicationJpaTestBase.*;
+import static com.olsonsolution.common.spring.application.test.config.SpringApplicationJpaTestBase.CLASSIC_ENTITY_PACKAGE;
+import static com.olsonsolution.common.spring.application.test.config.SpringApplicationJpaTestBase.CLASSIC_REPO_PACKAGE;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@EnableJpaAuditing
 @EnableTransactionManagement
 @EnableConfigurationProperties
 @ContextConfiguration(classes = {

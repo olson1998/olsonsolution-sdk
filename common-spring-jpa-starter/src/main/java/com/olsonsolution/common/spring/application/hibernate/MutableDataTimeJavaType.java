@@ -1,11 +1,11 @@
 package com.olsonsolution.common.spring.application.hibernate;
 
+import jakarta.persistence.TemporalType;
 import lombok.Getter;
 import org.hibernate.type.descriptor.WrapperOptions;
-import org.hibernate.type.descriptor.java.AbstractJavaType;
-import org.hibernate.type.descriptor.jdbc.JdbcType;
-import org.hibernate.type.descriptor.jdbc.JdbcTypeIndicators;
-import org.hibernate.type.descriptor.jdbc.OffsetDateTimeJdbcType;
+import org.hibernate.type.descriptor.java.AbstractTemporalJavaType;
+import org.hibernate.type.descriptor.java.TemporalJavaType;
+import org.hibernate.type.spi.TypeConfiguration;
 import org.joda.time.DateTimeZone;
 import org.joda.time.MutableDateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -16,13 +16,16 @@ import java.time.*;
 
 import static java.time.ZoneOffset.UTC;
 
-public class MutableDataTimeJavaType extends AbstractJavaType<MutableDateTime> {
+public class MutableDataTimeJavaType extends AbstractTemporalJavaType<MutableDateTime> {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormat.forPattern("MM/dd/yyyy hh:mm:ss.SSSZZ a");
 
     @Getter
     private final boolean temporalType = true;
+
+    @Getter
+    private final TemporalType precision = TemporalType.TIMESTAMP;
 
     public MutableDataTimeJavaType() {
         super(MutableDateTime.class);
@@ -45,8 +48,18 @@ public class MutableDataTimeJavaType extends AbstractJavaType<MutableDateTime> {
     }
 
     @Override
-    public JdbcType getRecommendedJdbcType(JdbcTypeIndicators indicators) {
-        return new OffsetDateTimeJdbcType();
+    protected <X> TemporalJavaType<X> forTimestampPrecision(TypeConfiguration typeConfiguration) {
+        return (TemporalJavaType<X>) this;
+    }
+
+    @Override
+    protected <X> TemporalJavaType<X> forDatePrecision(TypeConfiguration typeConfiguration) {
+        return (TemporalJavaType<X>) this;
+    }
+
+    @Override
+    protected <X> TemporalJavaType<X> forTimePrecision(TypeConfiguration typeConfiguration) {
+        return (TemporalJavaType<X>) this;
     }
 
     private Object unwrapTimestamp(MutableDateTime dateTime, Class<?> temporalType) {
@@ -136,5 +149,6 @@ public class MutableDataTimeJavaType extends AbstractJavaType<MutableDateTime> {
         }
         return new MutableDateTime(year, month, day, hour, minute, second, millisecond, dateTimeZone);
     }
+
 
 }

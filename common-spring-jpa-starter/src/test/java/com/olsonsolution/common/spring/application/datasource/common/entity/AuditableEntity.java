@@ -1,7 +1,7 @@
 package com.olsonsolution.common.spring.application.datasource.common.entity;
 
 import com.olsonsolution.common.spring.application.hibernate.MutableDataTimeJavaType;
-import jakarta.persistence.Column;
+import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JavaType;
 import org.hibernate.annotations.JdbcType;
@@ -14,6 +14,8 @@ import org.joda.time.MutableDateTime;
 
 @NoArgsConstructor
 @AllArgsConstructor
+
+@MappedSuperclass
 public class AuditableEntity {
 
     @JavaType(MutableDataTimeJavaType.class)
@@ -26,7 +28,8 @@ public class AuditableEntity {
     @Column(name = "last_update_timestamp", nullable = false)
     private MutableDateTime lastUpdateTimestamp;
 
+    @Version
     @Column(name = "version", nullable = false)
-    private Integer version;
+    private Long version;
 
 }
