@@ -68,7 +68,6 @@ class TableMetadataUtil {
             new DefaultMapEntry<>(NAMED_ORDINAL_ENUM, "int")                             // 6003 :contentReference[oaicite:19]{index=19}
     );
 
-
     private final MessagePrinter messagePrinter;
 
     private final ProcessingEnvironment processingEnv;

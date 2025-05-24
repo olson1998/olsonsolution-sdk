@@ -3,6 +3,7 @@ package com.olsonsolution.common.spring.application.annotation.processor.jpa;
 import com.olsonsolution.common.reflection.domain.port.repository.annotion.processor.TypeElementUtils;
 import com.olsonsolution.common.spring.application.annotation.migration.*;
 import jakarta.persistence.Column;
+import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.SequenceGenerator;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.keyvalue.DefaultMapEntry;
@@ -11,6 +12,8 @@ import org.apache.commons.lang3.StringUtils;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -81,7 +84,7 @@ class JpaSpecProcedureFactory {
         Map<String, List<ChangeOp>> changeSetCreateTableOperations = new LinkedHashMap<>();
         Map<String, List<ChangeOp>> changeSetAtEndOperations = new LinkedHashMap<>();
         Map<String, LinkedList<ChangeOp>> changeSetOperations = new LinkedHashMap<>();
-        Set<VariableElement> fields = typeElementUtils.getDeclaredVariableElements(entityConfig.entity(), true);
+        Set<VariableElement> fields = getEntityClassFields(entityConfig.entity());
         collectColumnsChanges(
                 fields,
                 entityConfig,
@@ -161,8 +164,7 @@ class JpaSpecProcedureFactory {
         for (VariableElement field : fields) {
             if (tableMetadataUtil.isEmbeddable(field)) {
                 TypeElement fieldTypeElement = typeElementUtils.getFieldTypeElement(field);
-                Set<VariableElement> embeddableFields =
-                        typeElementUtils.getDeclaredVariableElements(fieldTypeElement, true);
+                Set<VariableElement> embeddableFields = getEntityClassFields(fieldTypeElement);
                 collectForeignKeyDependencies(embeddableFields, jpaSpecMetadata, jpaSpecsMetadata, dependencies);
             } else {
                 collectForeignKeyDependencies(field, jpaSpecMetadata, jpaSpecsMetadata, dependencies);
@@ -261,8 +263,7 @@ class JpaSpecProcedureFactory {
                                                    Stream.Builder<ChangeOp> addColumnOpsBuilder,
                                                    Map<String, List<ChangeOp>> changeSetAtBeginningOperations,
                                                    Map<String, List<ChangeOp>> changeSetAtEndOperations) {
-        Set<VariableElement> embeddableFieldElements =
-                typeElementUtils.getDeclaredVariableElements(fieldTypeElement, true);
+        Set<VariableElement> embeddableFieldElements = getEntityClassFields(fieldTypeElement);
         if (tableMetadataUtil.isEmbeddableIdentifier(embeddableFieldElement)) {
             String fkName = "fk_" + tableName;
             ChangeOp addUniqueConstraintOp = embeddableFieldElements.stream()
@@ -624,7 +625,7 @@ class JpaSpecProcedureFactory {
     private Optional<String> resolveReferencedChangeLogId(EntityConfig entityConfig,
                                                           String referencedColumns) {
         TypeElement entity = entityConfig.entity();
-        Set<VariableElement> entityFields = typeElementUtils.getDeclaredVariableElements(entity, true);
+        Set<VariableElement> entityFields = getEntityClassFields(entity);
         return entityFields.stream()
                 .map(field -> new DefaultMapEntry<>(tableMetadataUtil.getColumnName(field), field))
                 .filter(columnField ->
@@ -661,6 +662,26 @@ class JpaSpecProcedureFactory {
                 .findFirst()
                 .map(ColumnChange.Parameter::value)
                 .orElseThrow();
+    }
+
+    private Set<VariableElement> getEntityClassFields(TypeElement typeElement) {
+        Stream.Builder<VariableElement> fields = Stream.builder();
+        collectEntityFieldElements(typeElement, fields);
+        return fields.build().collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private void collectEntityFieldElements(TypeElement typeElement,
+                                            Stream.Builder<VariableElement> fields) {
+        typeElementUtils.getDeclaredVariableElements(typeElement, false)
+                .forEach(fields::add);
+        TypeElement mappedSuperClassElement = null;
+        TypeMirror superClassMirror = typeElement.getSuperclass();
+        if (superClassMirror != null && superClassMirror.getKind() != TypeKind.NONE) {
+            mappedSuperClassElement = typeElementUtils.getClassElement(superClassMirror);
+        }
+        if (mappedSuperClassElement != null && mappedSuperClassElement.getAnnotation(MappedSuperclass.class) != null) {
+            collectEntityFieldElements(mappedSuperClassElement, fields);
+        }
     }
 
 }

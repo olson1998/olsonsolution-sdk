@@ -31,6 +31,16 @@ public class TypeElementUtilityService implements TypeElementUtils {
     }
 
     @Override
+    public TypeElement getClassElement(TypeMirror typeMirror) {
+        if (typeMirror instanceof DeclaredType &&
+                typeUtils.asElement(typeMirror) instanceof TypeElement classElement) {
+            return classElement;
+        } else {
+            return null;
+        }
+    }
+
+    @Override
     public TypeElement getFieldTypeElement(VariableElement fieldElement) {
         if (fieldElement.getKind() == FIELD && typeUtils.asElement(fieldElement.asType())
                 instanceof TypeElement fieldTypeElement) {
@@ -56,9 +66,9 @@ public class TypeElementUtilityService implements TypeElementUtils {
                     typeUtils.erasure(superClassMirror),
                     typeUtils.erasure(objectClassMirror)
             );
-            if (!isObjectClass && superClassMirror instanceof DeclaredType &&
-                    typeUtils.asElement(superClassMirror) instanceof TypeElement superClassElement) {
-                collectDeclaredVariableElements(superClassElement, fields, includeSuperClass);
+            TypeElement superClassElement = getClassElement(superClassMirror);
+            if (superClassElement != null && !isObjectClass) {
+                collectDeclaredVariableElements(superClassElement, fields, true);
             }
         }
     }
