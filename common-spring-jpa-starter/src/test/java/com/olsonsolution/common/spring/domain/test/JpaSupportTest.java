@@ -69,6 +69,7 @@ class JpaSupportTest extends SpringApplicationJpaTestBase {
 
     private CategoryData createCategory() {
         return CategoryData.newCategory()
+                .code(100)
                 .fullName("Test Category")
                 .shortName("test")
                 .description("Test Category")

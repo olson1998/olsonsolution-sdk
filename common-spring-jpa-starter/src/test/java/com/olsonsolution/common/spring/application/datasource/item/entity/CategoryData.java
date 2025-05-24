@@ -1,6 +1,9 @@
 package com.olsonsolution.common.spring.application.datasource.item.entity;
 
 import com.olsonsolution.common.spring.application.annotation.migration.ChangeSet;
+import com.olsonsolution.common.spring.application.annotation.migration.ColumnChange;
+import com.olsonsolution.common.spring.application.annotation.migration.ColumnChanges;
+import com.olsonsolution.common.spring.application.annotation.migration.Operation;
 import com.olsonsolution.common.spring.application.datasource.model.audit.AuditableEntity;
 import com.olsonsolution.common.spring.application.jpa.service.AuditableEntityListener;
 import jakarta.persistence.*;
@@ -24,6 +27,10 @@ public class CategoryData extends AuditableEntity {
     @SequenceGenerator(name = "category_id_seq", sequenceName = "category_id_seq", allocationSize = 1)
     private Long id;
 
+    @Column(name = "code", nullable = false)
+    @ColumnChanges(atBeginning = @ColumnChange(operation = Operation.ADD_COLUMN, version = "1.0.1"))
+    private Integer code;
+
     @Column(name = "name", nullable = false, unique = true)
     private String fullName;
 
@@ -34,7 +41,8 @@ public class CategoryData extends AuditableEntity {
     private String description;
 
     @Builder(builderMethodName = "newCategory", builderClassName = "NewCategoryBuilder")
-    public CategoryData(String fullName, String shortName, String description) {
+    public CategoryData(Integer code, String fullName, String shortName, String description) {
+        this.code = code;
         this.fullName = fullName;
         this.shortName = shortName;
         this.description = description;
@@ -42,9 +50,10 @@ public class CategoryData extends AuditableEntity {
 
     @Builder(builderMethodName = "category")
     public CategoryData(MutableDateTime creationTimestamp, MutableDateTime lastUpdateTimestamp,
-                        Long version, Long id, String fullName, String shortName, String description) {
+                        Long version, Long id, Integer code, String fullName, String shortName, String description) {
         super(creationTimestamp, lastUpdateTimestamp, version);
         this.id = id;
+        this.code = code;
         this.fullName = fullName;
         this.shortName = shortName;
         this.description = description;
