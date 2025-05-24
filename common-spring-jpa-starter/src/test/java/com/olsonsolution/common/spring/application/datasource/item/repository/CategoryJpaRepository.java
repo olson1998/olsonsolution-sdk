@@ -6,6 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-@JpaSpec("ItemManagement")
+@JpaSpec("WarehouseIndex")
 public interface CategoryJpaRepository extends JpaRepository<CategoryData, Long> {
 }

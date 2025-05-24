@@ -7,10 +7,7 @@ import com.olsonsolution.common.spring.application.async.config.AsyncConfig;
 import com.olsonsolution.common.spring.application.async.props.AsyncProperties;
 import com.olsonsolution.common.spring.application.caching.InMemoryCachingConfig;
 import com.olsonsolution.common.spring.application.config.time.TimeUtilsConfig;
-import com.olsonsolution.common.spring.application.jpa.config.DataSourceModelersConfig;
-import com.olsonsolution.common.spring.application.jpa.config.DataSourceSpecConfig;
-import com.olsonsolution.common.spring.application.jpa.config.JpaConfig;
-import com.olsonsolution.common.spring.application.jpa.config.SqlVendorPropertiesResolverConfig;
+import com.olsonsolution.common.spring.application.jpa.config.*;
 import com.olsonsolution.common.spring.application.jpa.props.SpringApplicationDestinationDataSourceProperties;
 import com.olsonsolution.common.spring.application.jpa.props.SpringApplicationJpaProperties;
 import com.olsonsolution.common.spring.application.migration.config.ChangeLogProviderConfig;
@@ -71,6 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         JpaConfig.class,
         LiquibaseConfig.class,
         InMemoryCachingConfig.class,
+        AuditableEntityListenerConfig.class,
         SqlVendorPropertiesResolverConfig.class,
         AsyncProperties.class,
         JodaDateTimeProperties.class,
@@ -84,8 +82,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestPropertySource(properties = {
         SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".sql-server=enabled",
         SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".postgresql=enabled",
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.name=ItemManagement",
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.schema=item",
+        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.name=WarehouseIndex",
+        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.schema=warehouse_index",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.log-sql=true",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.format-sql-log=true",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.entity.packages-to-scan.0=" + CLASSIC_ENTITY_PACKAGE,

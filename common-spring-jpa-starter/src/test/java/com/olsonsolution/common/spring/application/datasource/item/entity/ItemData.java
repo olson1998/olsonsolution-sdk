@@ -1,9 +1,9 @@
 package com.olsonsolution.common.spring.application.datasource.item.entity;
 
 import com.olsonsolution.common.spring.application.annotation.migration.ChangeSet;
-import com.olsonsolution.common.spring.application.config.jpa.TimeAuditingEntityListener;
-import com.olsonsolution.common.spring.application.datasource.common.entity.AuditableEntity;
 import com.olsonsolution.common.spring.application.datasource.item.entity.support.ItemType;
+import com.olsonsolution.common.spring.application.datasource.model.audit.AuditableEntity;
+import com.olsonsolution.common.spring.application.jpa.service.AuditableEntityListener;
 import jakarta.persistence.*;
 import lombok.*;
 import org.joda.time.MutableDateTime;
@@ -17,7 +17,7 @@ import org.joda.time.MutableDateTime;
 @Entity
 @ChangeSet
 @Table(name = "item")
-@EntityListeners(TimeAuditingEntityListener.class)
+@EntityListeners(AuditableEntityListener.class)
 public class ItemData extends AuditableEntity {
 
     @Id

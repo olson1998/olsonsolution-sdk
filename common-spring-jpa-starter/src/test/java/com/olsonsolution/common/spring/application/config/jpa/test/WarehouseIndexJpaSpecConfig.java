@@ -4,6 +4,6 @@ import com.olsonsolution.common.spring.application.annotation.jpa.EnableJpaSpec;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@EnableJpaSpec("ItemManagement")
-public class ItemManagementJpaSpecConfig {
+@EnableJpaSpec("WarehouseIndex")
+public class WarehouseIndexJpaSpecConfig {
 }
