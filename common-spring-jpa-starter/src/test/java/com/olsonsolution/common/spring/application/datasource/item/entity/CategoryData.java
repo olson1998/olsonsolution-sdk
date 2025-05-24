@@ -21,10 +21,10 @@ public class CategoryData extends AuditableEntity {
     @SequenceGenerator(name = "category_id_seq", sequenceName = "category_id_seq", allocationSize = 1)
     private Long id;
 
-    @Column(name = "full_name", nullable = false, unique = true)
+    @Column(name = "name", nullable = false, unique = true)
     private String fullName;
 
-    @Column(name = "full_name", nullable = false, unique = true, length = 63)
+    @Column(name = "short_name", nullable = false, unique = true, length = 63)
     private String shortName;
 
     @Column(name = "description", nullable = false, length = 4095)

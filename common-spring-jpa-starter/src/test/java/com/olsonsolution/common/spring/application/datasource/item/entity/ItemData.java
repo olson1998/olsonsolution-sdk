@@ -3,10 +3,7 @@ package com.olsonsolution.common.spring.application.datasource.item.entity;
 import com.olsonsolution.common.spring.application.annotation.migration.ChangeSet;
 import com.olsonsolution.common.spring.application.datasource.common.entity.AuditableEntity;
 import com.olsonsolution.common.spring.application.datasource.item.entity.support.ItemType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 
 @Getter
@@ -25,6 +22,7 @@ public class ItemData extends AuditableEntity {
     @Column(name = "id", length = 63, nullable = false, unique = true)
     private String id;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false)
     private ItemType type;
 

@@ -10,6 +10,9 @@ import org.apache.commons.lang3.StringUtils;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Types;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -651,12 +654,30 @@ class JpaSpecProcedureFactory {
     }
 
     private Set<VariableElement> getDeclaredFields(TypeElement typeElement) {
-        return typeElement.getEnclosedElements()
+        Stream.Builder<VariableElement> fields = Stream.builder();
+        collectDeclaredFields(typeElement, fields);
+        return fields.build().collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private void collectDeclaredFields(TypeElement typeElement, Stream.Builder<VariableElement> fields) {
+        typeElement.getEnclosedElements()
                 .stream()
                 .filter(element -> element.getKind() == FIELD)
                 .filter(VariableElement.class::isInstance)
                 .map(VariableElement.class::cast)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+                .forEach(fields::add);
+        TypeMirror superClassMirror = typeElement.getSuperclass();
+        TypeElement objectClassElement = processingEnv.getElementUtils().getTypeElement("java.lang.Object");
+        TypeMirror objectClassMirror = objectClassElement.asType();
+        Types typeUtils = processingEnv.getTypeUtils();
+        boolean isObjectClass = typeUtils.isSameType(
+                typeUtils.erasure(superClassMirror),
+                typeUtils.erasure(objectClassMirror)
+        );
+        if (!isObjectClass && superClassMirror instanceof DeclaredType &&
+                typeUtils.asElement(superClassMirror) instanceof TypeElement superClassElement) {
+            collectDeclaredFields(superClassElement, fields);
+        }
     }
 
 }

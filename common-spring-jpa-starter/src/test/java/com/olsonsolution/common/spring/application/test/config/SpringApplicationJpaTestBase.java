@@ -82,18 +82,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestPropertySource(properties = {
         SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".sql-server=enabled",
         SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".postgresql=enabled",
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.name=Membership",
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.schema=membership",
+        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.name=ItemManagement",
+        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.schema=item",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.log-sql=true",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.format-sql-log=true",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.entity.packages-to-scan.0=" + CLASSIC_ENTITY_PACKAGE,
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.repository.packages-to-scan.0=" + CLASSIC_REPO_PACKAGE,
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.name=Person",
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.schema=person",
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.log-sql=true",
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.format-sql-log=true",
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.entity.packages-to-scan.0=" + ENTITY_PACKAGE,
-        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.1.repository.packages-to-scan.0=" + REPO_PACKAGE,
         "spring.jpa.show-sql=true"
 })
 public abstract class SpringApplicationJpaTestBase implements InitializingBean {

@@ -111,7 +111,7 @@ final class ChangeLogOrderer {
                 graph.addEdge(dependantJpaSpecChangeSet, jpaSpecChangeSet);
                 messagePrinter.print(
                         Diagnostic.Kind.NOTE, ChangeLogOrderer.class,
-                        "Jpa Spec: '%s' change log: '%s' depends on Jpa Spec: '%s' change log: '%s'".formatted(
+                        "Jpa Spec: %s change log: '%s' depends on Jpa Spec: '%s' change log: '%s'".formatted(
                                 dependentJpaSpec.jpaSpec(), dependentChangeLog.id(),
                                 jpaSpec.jpaSpec(), changeLog
                         )
