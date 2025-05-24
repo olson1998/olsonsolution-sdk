@@ -1,7 +1,9 @@
-package com.olsonsolution.common.spring.application.datasource.common.entity;
+package com.olsonsolution.common.spring.application.datasource.model.audit;
 
 import com.olsonsolution.common.spring.application.hibernate.MutableDataTimeJavaType;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.Version;
 import lombok.*;
 import org.hibernate.annotations.JavaType;
 import org.hibernate.annotations.JdbcType;
