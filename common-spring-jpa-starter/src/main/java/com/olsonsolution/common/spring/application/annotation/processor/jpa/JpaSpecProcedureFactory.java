@@ -11,6 +11,7 @@ import org.apache.commons.lang3.StringUtils;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -208,12 +209,7 @@ class JpaSpecProcedureFactory {
         ));
         List<ChangeOp> columnOps = addColumnOpsBuilder.build()
                 .collect(Collectors.toCollection(LinkedList::new));
-        ChangeOp createTableOp = ChangeOp.builder()
-                .operation("createTable")
-                .attribute("schemaName", "${" + jpaSpec + "Schema}")
-                .attribute("tableName", entityConfig.table())
-                .childOperations(columnOps)
-                .build();
+        ChangeOp createTableOp = liquibaseUtils.buildCreateTable(jpaSpec, entityConfig.table(), columnOps);
         LinkedList<ChangeOp> tableOperations = new LinkedList<>();
         tableOperations.add(createTableOp);
         changeSetCreateTableOperations.put(FIRST_VERSION, tableOperations);
@@ -250,21 +246,13 @@ class JpaSpecProcedureFactory {
                                                    Map<String, List<ChangeOp>> changeSetAtEndOperations) {
         Set<VariableElement> embeddableFieldElements = jpaEntityUtil.getEntityClassFields(fieldTypeElement);
         if (jpaEntityUtil.isEmbeddableIdentifier(embeddableFieldElement)) {
-            String fkName = "fk_" + tableName;
-            ChangeOp addUniqueConstraintOp = embeddableFieldElements.stream()
+            List<ChangeOp> addUniqueConstraintOp = embeddableFieldElements.stream()
                     .map(jpaEntityUtil::getColumnName)
-                    .collect(Collectors.collectingAndThen(
-                            Collectors.joining(","),
-                            columnNames -> ChangeOp.builder()
-                                    .operation("addUniqueConstraint")
-                                    .attribute("schemaName", "${" + jpaSpec + "Schema}")
-                                    .attribute("tableName", tableName)
-                                    .attribute("columnNames", columnNames)
-                                    .attribute("constraintName", fkName)
-                                    .build()
-                    ));
+                    .collect(Collectors.collectingAndThen(Collectors.joining(","), Stream::of))
+                    .flatMap(columnNames -> addUniqueConstraint(columnNames, jpaSpec, tableName).stream())
+                    .toList();
             changeSetAtEndOperations.computeIfAbsent(FIRST_VERSION, k -> new LinkedList<>())
-                    .add(addUniqueConstraintOp);
+                    .addAll(addUniqueConstraintOp);
         }
         embeddableFieldElements.forEach(fieldElement -> collectColumnOperations(
                 fieldTypeElement, fieldElement,
@@ -470,6 +458,61 @@ class JpaSpecProcedureFactory {
                 .map(ColumnChange::version)
                 .min(Comparator.naturalOrder())
                 .orElse(FIRST_VERSION);
+    }
+
+    private List<ChangeOp> addUniqueConstraint(String columnNames, String jpaSpec, String tableName) {
+        String constraintName = "id_" + tableName;
+        ColumnChange.Parameter columnNamesParam = crateParameter("columnNames", columnNames);
+        ColumnChange.Parameter constraintNameParam = crateParameter("constraintName", constraintName);
+        ColumnChange addUniqueConstraint = new ColumnChange() {
+            @Override
+            public String column() {
+                return "";
+            }
+
+            @Override
+            public Operation operation() {
+                return Operation.ADD_UNIQUE_CONSTRAINT;
+            }
+
+            @Override
+            public Parameter[] parameters() {
+                return new Parameter[]{columnNamesParam, constraintNameParam};
+            }
+
+            @Override
+            public String version() {
+                return FIRST_VERSION;
+            }
+
+            @Override
+            public Class<? extends Annotation> annotationType() {
+                return ColumnChange.class;
+            }
+        };
+        return liquibaseUtils.buildChangeOps(
+                Operation.ADD_UNIQUE_CONSTRAINT, jpaSpec, tableName, "",
+                addUniqueConstraint, null, null
+        );
+    }
+
+    private ColumnChange.Parameter crateParameter(String name, String value) {
+        return new ColumnChange.Parameter() {
+            @Override
+            public Class<? extends Annotation> annotationType() {
+                return ColumnChange.Parameter.class;
+            }
+
+            @Override
+            public String name() {
+                return name;
+            }
+
+            @Override
+            public String value() {
+                return value;
+            }
+        };
     }
 
 }

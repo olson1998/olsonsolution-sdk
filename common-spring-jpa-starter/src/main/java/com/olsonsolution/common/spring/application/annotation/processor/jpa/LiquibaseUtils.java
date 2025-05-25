@@ -154,6 +154,20 @@ class LiquibaseUtils {
                     .childOperation(columnOp)
                     .build();
             return Collections.singletonList(addColumn);
+        } else if (operation == Operation.ADD_UNIQUE_CONSTRAINT) {
+            String columnNames = getParameter(columnChange, "columnNames");
+            String constraintName = getParameter(columnChange, "constraintName");
+            constraintName = constraintName == null ?
+                    "unique_" + tableName + '_' + StringUtils.replace(columnNames, ",", "_")
+                    : constraintName;
+            ChangeOp addUniqueConstraint = ChangeOp.builder()
+                    .operation("addUniqueConstraint")
+                    .attribute("schemaName", "${" + jpaSpec + "Schema}")
+                    .attribute("tableName", tableName)
+                    .attribute("columnNames", columnNames)
+                    .attribute("constraintName", constraintName)
+                    .build();
+            return Collections.singletonList(addUniqueConstraint);
         } else if (operation == Operation.ADD_NOT_NULL_CONSTRAINT) {
             String dataType = getParameter(columnChange, "columnDataType");
             ChangeOp addNotNull = ChangeOp.builder()
@@ -222,6 +236,15 @@ class LiquibaseUtils {
                 .attribute("schemaName", schema)
                 .attribute("startValue", String.valueOf(sequenceGenerator.initialValue()))
                 .attribute("incrementBy", String.valueOf(sequenceGenerator.allocationSize()))
+                .build();
+    }
+
+    ChangeOp buildCreateTable(String jpaSpec, String table, Collection<ChangeOp> columns) {
+        return ChangeOp.builder()
+                .operation("createTable")
+                .attribute("schemaName", "${" + jpaSpec + "Schema}")
+                .attribute("tableName", table)
+                .childOperations(columns)
                 .build();
     }
 
@@ -375,11 +398,13 @@ class LiquibaseUtils {
     }
 
     private String getParameter(ColumnChange columnChange, String parameterName) {
-        return Arrays.stream(columnChange.parameters())
+        return Optional.ofNullable(columnChange.parameters())
+                .stream()
+                .flatMap(Arrays::stream)
                 .filter(parameter -> StringUtils.equals(parameter.name(), parameterName))
                 .findFirst()
                 .map(ColumnChange.Parameter::value)
-                .orElseThrow();
+                .orElse(null);
     }
 
 }
