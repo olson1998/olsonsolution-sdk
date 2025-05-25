@@ -1,12 +1,14 @@
 package com.olsonsolution.common.spring.application.annotation.processor.jpa;
 
 import com.olsonsolution.common.reflection.domain.port.repository.annotion.processor.MessagePrinter;
-import jakarta.persistence.*;
+import com.olsonsolution.common.reflection.domain.port.repository.annotion.processor.TypeElementUtils;
+import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import liquibase.database.Database;
 import liquibase.database.core.MockDatabase;
 import liquibase.datatype.DataTypeFactory;
 import liquibase.datatype.LiquibaseDataType;
-import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.keyvalue.DefaultMapEntry;
 import org.apache.commons.lang3.ClassUtils;
@@ -16,15 +18,12 @@ import org.hibernate.type.descriptor.java.JavaType;
 import org.hibernate.type.descriptor.jdbc.*;
 import org.hibernate.type.spi.TypeConfiguration;
 
-import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.JDBCType;
@@ -33,8 +32,8 @@ import java.util.Map;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.hibernate.type.SqlTypes.*;
 
-@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-class TableMetadataUtil {
+@RequiredArgsConstructor
+class LiquibaseUtils {
 
     public static final Map<Integer, String> CODE_TO_LIQUIBASE = Map.ofEntries(
             // ───── core “virtual” temporal + UUID ───────────────────────────────
@@ -70,7 +69,7 @@ class TableMetadataUtil {
 
     private final MessagePrinter messagePrinter;
 
-    private final ProcessingEnvironment processingEnv;
+    private final TypeElementUtils typeElementUtils;
 
     private final Database anyDatabase = new MockDatabase();
 
@@ -78,23 +77,12 @@ class TableMetadataUtil {
 
     private final DataTypeFactory dataTypeFactory = DataTypeFactory.getInstance();
 
-    String getTableName(Element entityElement) {
-        return entityElement.getAnnotation(Table.class) == null ?
-                entityElement.getSimpleName().toString() :
-                entityElement.getAnnotation(Table.class).name();
-    }
-
-    String getColumnName(VariableElement entityFieldElement) {
-        return entityFieldElement.getAnnotation(Column.class) == null ?
-                entityFieldElement.getSimpleName().toString() :
-                entityFieldElement.getAnnotation(Column.class).name();
-    }
-
-    String getSqlType(VariableElement entityFieldElement, Column column) {
+    String getLiquibaseType(VariableElement entityFieldElement) {
         JdbcType jdbcType = null;
         Integer length = null;
         Integer scale = null;
         Integer precision = null;
+        Column column = entityFieldElement.getAnnotation(Column.class);
         if (column != null) {
             length = column.length();
             scale = column.scale();
@@ -120,25 +108,10 @@ class TableMetadataUtil {
             return null;
         }
         messagePrinter.print(
-                Diagnostic.Kind.NOTE, TableMetadataUtil.class,
+                Diagnostic.Kind.NOTE, JpaEntityUtil.class,
                 "Entity field mirror %s resolve Jdbc Type %s".formatted(entityFieldElement, jdbcType)
         );
         return getLiquibaseDataType(jdbcType, length, precision, scale);
-    }
-
-    boolean isEmbeddable(VariableElement variableElement) {
-        if (processingEnv.getTypeUtils().asElement(variableElement.asType()) instanceof TypeElement fieldTypeElement) {
-            return fieldTypeElement.getAnnotation(Embeddable.class) != null;
-        }
-        return false;
-    }
-
-    boolean isIdentifier(VariableElement entityFieldElement) {
-        return entityFieldElement.getAnnotation(Id.class) != null;
-    }
-
-    boolean isEmbeddableIdentifier(VariableElement entityFieldElement) {
-        return entityFieldElement.getAnnotation(EmbeddedId.class) != null;
     }
 
     private JdbcType getFromAnnotation(org.hibernate.annotations.JdbcType jdbcTypeAnnotation) {
@@ -148,7 +121,7 @@ class TableMetadataUtil {
         } catch (NoSuchMethodException | InvocationTargetException |
                  InstantiationException | IllegalAccessException e) {
             messagePrinter.print(
-                    Diagnostic.Kind.ERROR, TableMetadataUtil.class,
+                    Diagnostic.Kind.ERROR, LiquibaseUtils.class,
                     "Jdbc type can not be resolved. No constructor found for jdbc type", e
             );
             return null;
@@ -165,7 +138,7 @@ class TableMetadataUtil {
             return javaTypeDescriptor.getRecommendedJdbcType(indicators);
         } catch (ClassNotFoundException e) {
             messagePrinter.print(
-                    Diagnostic.Kind.WARNING, TableMetadataUtil.class,
+                    Diagnostic.Kind.WARNING, LiquibaseUtils.class,
                     "Column type could not be resolved", e
             );
             return null;
@@ -187,12 +160,7 @@ class TableMetadataUtil {
     }
 
     private JdbcType getAnnotationJdbcType(TypeMirror jdbcTypeMirror) {
-        TypeElement jdbcTypeElement = null;
-        Types typeUtils = processingEnv.getTypeUtils();
-        if (jdbcTypeMirror instanceof DeclaredType declaredClass &&
-                typeUtils.asElement(declaredClass) instanceof TypeElement classElement) {
-            jdbcTypeElement = classElement;
-        }
+        TypeElement jdbcTypeElement = typeElementUtils.getClassElement(jdbcTypeMirror);
         if (jdbcTypeElement == null) {
             return null;
         }
@@ -214,13 +182,13 @@ class TableMetadataUtil {
             return ConstructorUtils.invokeConstructor(jdbcClass);
         } catch (ClassNotFoundException e) {
             messagePrinter.print(
-                    Diagnostic.Kind.WARNING, TableMetadataUtil.class,
+                    Diagnostic.Kind.WARNING, LiquibaseUtils.class,
                     "Jdbc type %s not found in runtime".formatted(jdbcClassName), e
             );
         } catch (NoSuchMethodException | IllegalAccessException |
                  InvocationTargetException | InstantiationException e) {
             messagePrinter.print(
-                    Diagnostic.Kind.WARNING, TableMetadataUtil.class,
+                    Diagnostic.Kind.WARNING, LiquibaseUtils.class,
                     "Jdbc type %s can not be instantiate".formatted(jdbcClassName), e
             );
         }

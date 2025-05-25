@@ -3,7 +3,6 @@ package com.olsonsolution.common.spring.application.annotation.processor.jpa;
 import com.olsonsolution.common.reflection.domain.port.repository.annotion.processor.TypeElementUtils;
 import com.olsonsolution.common.spring.application.annotation.migration.*;
 import jakarta.persistence.Column;
-import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.SequenceGenerator;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.keyvalue.DefaultMapEntry;
@@ -12,8 +11,6 @@ import org.apache.commons.lang3.StringUtils;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.TypeKind;
-import javax.lang.model.type.TypeMirror;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -25,9 +22,13 @@ class JpaSpecProcedureFactory {
 
     private final ChangeLogOrderer changeLogOrderer;
 
-    private final TableMetadataUtil tableMetadataUtil;
+    private final LiquibaseUtils liquibaseUtils;
+
+    private final JpaEntityUtil jpaEntityUtil;
 
     private final TypeElementUtils typeElementUtils;
+
+    private final JpaSpecAnnotationUtils jpaSpecAnnotationUtils;
 
     /**
      * Creates and returns a {@link JpaSpecExecPlan} based on the provided list of JPA specification metadata.
@@ -57,8 +58,7 @@ class JpaSpecProcedureFactory {
                 entityConfig,
                 jpaSpecMetadata, jpaSpecsMetadata, changeSets
         ));
-        return changeSets.build()
-                .collect(Collectors.collectingAndThen(
+        return changeSets.build().collect(Collectors.collectingAndThen(
                         Collectors.toList(),
                         changeSetOps -> JpaSpecProcedure.builder()
                                 .metadata(jpaSpecMetadata)
@@ -84,7 +84,7 @@ class JpaSpecProcedureFactory {
         Map<String, List<ChangeOp>> changeSetCreateTableOperations = new LinkedHashMap<>();
         Map<String, List<ChangeOp>> changeSetAtEndOperations = new LinkedHashMap<>();
         Map<String, LinkedList<ChangeOp>> changeSetOperations = new LinkedHashMap<>();
-        Set<VariableElement> fields = getEntityClassFields(entityConfig.entity());
+        Set<VariableElement> fields = jpaEntityUtil.getEntityClassFields(entityConfig.entity());
         collectColumnsChanges(
                 fields,
                 entityConfig,
@@ -129,7 +129,7 @@ class JpaSpecProcedureFactory {
         ChangeSetOp changeSetOp = ChangeSetOp.builder()
                 .table(entityConfig.table())
                 .version(version)
-                .id(generateId(changeSet, version, entityConfig.table()))
+                .id(jpaSpecAnnotationUtils.generateId(changeSet, version, entityConfig.table()))
                 .operations(operations)
                 .dependsOn(dependsOn)
                 .build();
@@ -162,9 +162,9 @@ class JpaSpecProcedureFactory {
                                                List<JpaSpecMetadata> jpaSpecsMetadata,
                                                Map<String, Set<String>> dependencies) {
         for (VariableElement field : fields) {
-            if (tableMetadataUtil.isEmbeddable(field)) {
+            if (jpaEntityUtil.isEmbeddable(field)) {
                 TypeElement fieldTypeElement = typeElementUtils.getFieldTypeElement(field);
-                Set<VariableElement> embeddableFields = getEntityClassFields(fieldTypeElement);
+                Set<VariableElement> embeddableFields = jpaEntityUtil.getEntityClassFields(fieldTypeElement);
                 collectForeignKeyDependencies(embeddableFields, jpaSpecMetadata, jpaSpecsMetadata, dependencies);
             } else {
                 collectForeignKeyDependencies(field, jpaSpecMetadata, jpaSpecsMetadata, dependencies);
@@ -205,13 +205,14 @@ class JpaSpecProcedureFactory {
                                        Map<String, List<ChangeOp>> changeSetAtEndOperations) {
         Stream.Builder<ChangeOp> addColumnOpsBuilder = Stream.builder();
         fieldsElements.forEach(fieldElement -> collectColumnsChanges(
-                        fieldElement,
-                        entityConfig.table(),
-                        jpaSpec,
-                        addColumnOpsBuilder,
-                        changeSetAtBeginningOperations,
-                        changeSetAtEndOperations
-                ));
+                entityConfig.entity(),
+                fieldElement,
+                entityConfig.table(),
+                jpaSpec,
+                addColumnOpsBuilder,
+                changeSetAtBeginningOperations,
+                changeSetAtEndOperations
+        ));
         List<ChangeOp> columnOps = addColumnOpsBuilder.build()
                 .collect(Collectors.toCollection(LinkedList::new));
         ChangeOp createTableOp = ChangeOp.builder()
@@ -225,20 +226,17 @@ class JpaSpecProcedureFactory {
         changeSetCreateTableOperations.put(FIRST_VERSION, tableOperations);
     }
 
-    private void collectColumnsChanges(VariableElement fieldElement,
-                                       String tableName,
-                                       String jpaSpec,
+    private void collectColumnsChanges(TypeElement entityElement, VariableElement fieldElement,
+                                       String tableName, String jpaSpec,
                                        Stream.Builder<ChangeOp> addColumnOpsBuilder,
                                        Map<String, List<ChangeOp>> changeSetAtBeginningOperations,
                                        Map<String, List<ChangeOp>> changeSetAtEndOperations) {
-        if (tableMetadataUtil.isEmbeddable(fieldElement)) {
+        if (jpaEntityUtil.isEmbeddable(fieldElement)) {
             if (fieldElement.getKind() == ElementKind.FIELD) {
                 TypeElement fieldTypeElement = typeElementUtils.getFieldTypeElement(fieldElement);
                 collectEmbeddableColumnOperations(
-                        fieldElement,
-                        fieldTypeElement,
-                        jpaSpec,
-                        tableName,
+                        fieldElement, fieldTypeElement,
+                        jpaSpec, tableName,
                         addColumnOpsBuilder,
                         changeSetAtBeginningOperations,
                         changeSetAtEndOperations
@@ -246,9 +244,8 @@ class JpaSpecProcedureFactory {
             }
         } else {
             collectColumnOperations(
-                    fieldElement,
-                    jpaSpec,
-                    tableName,
+                    entityElement, fieldElement,
+                    jpaSpec, tableName,
                     addColumnOpsBuilder,
                     changeSetAtBeginningOperations,
                     changeSetAtEndOperations
@@ -263,11 +260,11 @@ class JpaSpecProcedureFactory {
                                                    Stream.Builder<ChangeOp> addColumnOpsBuilder,
                                                    Map<String, List<ChangeOp>> changeSetAtBeginningOperations,
                                                    Map<String, List<ChangeOp>> changeSetAtEndOperations) {
-        Set<VariableElement> embeddableFieldElements = getEntityClassFields(fieldTypeElement);
-        if (tableMetadataUtil.isEmbeddableIdentifier(embeddableFieldElement)) {
+        Set<VariableElement> embeddableFieldElements = jpaEntityUtil.getEntityClassFields(fieldTypeElement);
+        if (jpaEntityUtil.isEmbeddableIdentifier(embeddableFieldElement)) {
             String fkName = "fk_" + tableName;
             ChangeOp addUniqueConstraintOp = embeddableFieldElements.stream()
-                    .map(tableMetadataUtil::getColumnName)
+                    .map(jpaEntityUtil::getColumnName)
                     .collect(Collectors.collectingAndThen(
                             Collectors.joining(","),
                             columnNames -> ChangeOp.builder()
@@ -282,6 +279,7 @@ class JpaSpecProcedureFactory {
                     .add(addUniqueConstraintOp);
         }
         embeddableFieldElements.forEach(fieldElement -> collectColumnOperations(
+                fieldTypeElement,
                 fieldElement,
                 jpaSpec,
                 tableName,
@@ -292,32 +290,27 @@ class JpaSpecProcedureFactory {
     }
 
     private void collectColumnOperations(
-            VariableElement fieldElement,
-            String jpaSpec,
-            String tableName,
+            TypeElement entityElement, VariableElement fieldElement,
+            String jpaSpec, String tableName,
             Stream.Builder<ChangeOp> addColumnOpsBuilder,
             Map<String, List<ChangeOp>> changeSetAtBeginningOperations,
             Map<String, List<ChangeOp>> changeSetAtEndOperations) {
-        String columnName = tableMetadataUtil.getColumnName(fieldElement);
+        String columnName = jpaEntityUtil.getColumnName(fieldElement);
         collectColumnOperations(
-                fieldElement,
-                jpaSpec,
-                tableName,
-                columnName,
+                entityElement, fieldElement,
+                jpaSpec, tableName, columnName,
                 addColumnOpsBuilder,
                 changeSetAtBeginningOperations,
                 changeSetAtEndOperations
         );
     }
 
-    private void collectColumnOperations(VariableElement fieldElement,
-                                         String jpaSpec,
-                                         String tableName,
-                                         String columnName,
+    private void collectColumnOperations(TypeElement entityElement, VariableElement fieldElement,
+                                         String jpaSpec, String tableName, String columnName,
                                          Stream.Builder<ChangeOp> addColumnOpsBuilder,
                                          Map<String, List<ChangeOp>> changeSetAtBeginningOperations,
                                          Map<String, List<ChangeOp>> changeSetAtEndOperations) {
-        String version = getAddColumnVersion(fieldElement);
+        String version = getAddColumnVersion(entityElement, fieldElement, columnName);
         Column column = fieldElement.getAnnotation(Column.class);
         if (StringUtils.equals(version, FIRST_VERSION)) {
             resolveAddColumnOperations(
@@ -329,7 +322,7 @@ class JpaSpecProcedureFactory {
                     addColumnOpsBuilder
             );
         }
-        if (tableMetadataUtil.isIdentifier(fieldElement) &&
+        if (jpaEntityUtil.isIdentifier(fieldElement) &&
                 fieldElement.getAnnotation(SequenceGenerator.class) != null) {
             SequenceGenerator sequenceGenerator = fieldElement.getAnnotation(SequenceGenerator.class);
             String schema = sequenceGenerator.schema();
@@ -368,9 +361,9 @@ class JpaSpecProcedureFactory {
         ChangeOp.Builder addColumnOp = ChangeOp.builder()
                 .operation("column")
                 .attribute("name", columnName)
-                .attribute("type", tableMetadataUtil.getSqlType(fieldElement, column));
+                .attribute("type", liquibaseUtils.getLiquibaseType(fieldElement));
         ChangeOp.Builder constraints = null;
-        if (tableMetadataUtil.isIdentifier(fieldElement)) {
+        if (jpaEntityUtil.isIdentifier(fieldElement)) {
             constraints = ChangeOp.builder()
                     .operation("constraints")
                     .attribute("primaryKey", String.valueOf(true))
@@ -497,12 +490,13 @@ class JpaSpecProcedureFactory {
                     .build();
             return Collections.singletonList(addColumn);
         } else if (operation == Operation.ADD_NOT_NULL_CONSTRAINT) {
+            String dataType = jpaSpecAnnotationUtils.getParameter(columnChange, "columnDataType");
             ChangeOp addNotNull = ChangeOp.builder()
                     .operation("addNotNullConstraint")
                     .attribute("tableName", tableName)
                     .attribute("columnName", columnName)
                     .attribute("schemaName", "${" + jpaSpec + "Schema}")
-                    .attribute("columnDataType", getParameter(columnChange, "columnDataType"))
+                    .attribute("columnDataType", dataType)
                     .build();
             return Collections.singletonList(addNotNull);
         } else if (operation == Operation.DROP_DEFAULT_VALUE) {
@@ -538,12 +532,13 @@ class JpaSpecProcedureFactory {
                     .build();
             return Collections.singletonList(dropNotNullConstraint);
         } else if (operation == Operation.MODIFY_DATA_TYPE) {
+            String newDataType = jpaSpecAnnotationUtils.getParameter(columnChange, "newDataType");
             ChangeOp modifyDataType = ChangeOp.builder()
                     .operation("modifyDataType")
                     .attribute("columnName", columnName)
                     .attribute("tableName", tableName)
                     .attribute("schemaName", "${" + jpaSpec + "Schema}")
-                    .attribute("newDataType", getParameter(columnChange, "newDataType"))
+                    .attribute("newDataType", newDataType)
                     .build();
             return Collections.singletonList(modifyDataType);
         } else {
@@ -620,11 +615,11 @@ class JpaSpecProcedureFactory {
                 .stream()
                 .filter(entityConfig -> StringUtils.equals(entityConfig.table(), table))
                 .findFirst()
-                .map(entityConfig -> resolveChangeLogIdByTable(entityConfig, version));
-    }
-
-    private String resolveChangeLogIdByTable(EntityConfig entityConfig, String version) {
-        return generateId(entityConfig.entity().getAnnotation(ChangeSet.class), version, entityConfig.table());
+                .map(entityConfig -> jpaSpecAnnotationUtils.generateId(
+                        entityConfig.entity().getAnnotation(ChangeSet.class),
+                        entityConfig.table(),
+                        version
+                ));
     }
 
     private String resolveReferencedChangeLogId(String referencedJpaSpec,
@@ -655,80 +650,30 @@ class JpaSpecProcedureFactory {
 
     private Optional<String> resolveReferencedChangeLogId(EntityConfig entityConfig,
                                                           String referencedColumns) {
-        TypeElement entity = entityConfig.entity();
-        Set<VariableElement> entityFields = getEntityClassFields(entity);
+        Set<VariableElement> entityFields = jpaEntityUtil.getEntityClassFields(entityConfig.entity());
         return entityFields.stream()
-                .map(field -> new DefaultMapEntry<>(tableMetadataUtil.getColumnName(field), field))
+                .map(field -> new DefaultMapEntry<>(jpaEntityUtil.getColumnName(field), field))
                 .filter(columnField ->
                         StringUtils.equals(columnField.getKey(), referencedColumns)
                 ).findFirst()
-                .map(DefaultMapEntry::getValue)
-                .map(columnField -> resolveReferencedChangeLogId(
-                        columnField,
-                        entityConfig
-                ));
+                .map(column -> resolveReferencedChangeLogId(column, entityConfig));
     }
 
-    private String resolveReferencedChangeLogId(VariableElement field,
+    private String resolveReferencedChangeLogId(DefaultMapEntry<String, VariableElement> columnField,
                                                 EntityConfig entityConfig) {
-        TypeElement entity = entityConfig.entity();
-        ChangeSet changeSet = entity.getAnnotation(ChangeSet.class);
-        String version = getAddColumnVersion(field);
-        return generateId(changeSet, version, entityConfig.table());
+        TypeElement entityElement = entityConfig.entity();
+        ChangeSet changeSet = entityElement.getAnnotation(ChangeSet.class);
+        String version = getAddColumnVersion(entityElement, columnField.getValue(), columnField.getKey());
+        return jpaSpecAnnotationUtils.generateId(changeSet, version, entityConfig.table());
     }
 
-    private String generateId(ChangeSet changeSet, String version, String tableName) {
-        String id = changeSet.id();
-        id = id.replace("{version}", version);
-        id = id.replace("{table}", tableName);
-        return id;
-    }
-
-    private String getParameter(ColumnChange columnChange, String parameterName) {
-        return Arrays.stream(columnChange.parameters())
-                .filter(parameter -> StringUtils.equals(parameter.name(), parameterName))
-                .findFirst()
-                .map(ColumnChange.Parameter::value)
-                .orElseThrow();
-    }
-
-    private Set<VariableElement> getEntityClassFields(TypeElement typeElement) {
-        Stream.Builder<VariableElement> fields = Stream.builder();
-        collectEntityFieldElements(typeElement, fields);
-        return fields.build().collect(Collectors.toCollection(LinkedHashSet::new));
-    }
-
-    private void collectEntityFieldElements(TypeElement typeElement,
-                                            Stream.Builder<VariableElement> fields) {
-        typeElementUtils.getDeclaredVariableElements(typeElement, false)
-                .forEach(fields::add);
-        TypeElement mappedSuperClassElement = null;
-        TypeMirror superClassMirror = typeElement.getSuperclass();
-        if (superClassMirror != null && superClassMirror.getKind() != TypeKind.NONE) {
-            mappedSuperClassElement = typeElementUtils.getClassElement(superClassMirror);
-        }
-        if (mappedSuperClassElement != null && mappedSuperClassElement.getAnnotation(MappedSuperclass.class) != null) {
-            collectEntityFieldElements(mappedSuperClassElement, fields);
-        }
-    }
-
-    private String getAddColumnVersion(VariableElement fieldElement) {
-        ColumnChanges columnChanges = fieldElement.getAnnotation(ColumnChanges.class);
-        if (columnChanges == null) {
-            return FIRST_VERSION;
-        }
-        Stream<ColumnChange> atBeginningOps = Arrays.stream(columnChanges.atBeginning());
-        Stream<ColumnChange> atEndOps = Arrays.stream(columnChanges.atEnd());
-        return Stream.concat(atBeginningOps, atEndOps)
+    private String getAddColumnVersion(TypeElement entityElement, VariableElement fieldElement, String column) {
+        return jpaSpecAnnotationUtils.listColumnChangesForField(entityElement, fieldElement, column)
+                .stream()
                 .filter(columnChange -> columnChange.operation() == Operation.ADD_COLUMN)
                 .map(ColumnChange::version)
-                .max(Comparator.naturalOrder())
+                .min(Comparator.naturalOrder())
                 .orElse(FIRST_VERSION);
-    }
-
-    private boolean isFirstVersionColumn(VariableElement fieldElement) {
-        String addVersion = getAddColumnVersion(fieldElement);
-        return StringUtils.equals(addVersion, FIRST_VERSION);
     }
 
 }

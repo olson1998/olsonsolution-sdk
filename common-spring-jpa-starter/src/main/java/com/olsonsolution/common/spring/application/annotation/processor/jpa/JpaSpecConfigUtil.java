@@ -36,7 +36,7 @@ class JpaSpecConfigUtil {
 
     private final MessagePrinter messagePrinter;
 
-    private final TableMetadataUtil tableMetadataUtil;
+    private final JpaEntityUtil jpaEntityUtil;
 
     private final ProcessingEnvironment processingEnv;
 
@@ -117,7 +117,7 @@ class JpaSpecConfigUtil {
                     entityDeclaredType.asElement() instanceof TypeElement entityType) {
                 if (jpaSpecAllPackagesScan.contains(jpaSpecName) ||
                         isInEnabledPackage(jpaSpecName, entityType, jpaSpecBasePackagesScan)) {
-                    String table = tableMetadataUtil.getTableName(entityType);
+                    String table = jpaEntityUtil.getTableName(entityType);
                     config.appendJpaRepository(entityType, jpaRepositoryType, table);
                 }
             }

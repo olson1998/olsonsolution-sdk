@@ -41,18 +41,22 @@ public class JpaSpecAnnotationProcessor extends AbstractProcessor {
         this.messagePrinter = new MessagePrintingService(processingEnv.getMessager());
         TypeElementUtils typeElementUtils =
                 new TypeElementUtilityService(processingEnv.getTypeUtils(), processingEnv.getElementUtils());
-        TableMetadataUtil tableMetadataUtil = new TableMetadataUtil(messagePrinter, processingEnv);
+        JpaEntityUtil jpaEntityUtil = new JpaEntityUtil(processingEnv, typeElementUtils);
+        LiquibaseUtils liquibaseUtils = new LiquibaseUtils(messagePrinter, typeElementUtils);
         ChangeLogOrderer changeLogOrderer = new ChangeLogOrderer(messagePrinter);
+        JpaSpecAnnotationUtils jpaSpecAnnotationUtils = new JpaSpecAnnotationUtils();
         this.changeLogFactory = new ChangeLogFactory(messagePrinter);
         this.jpaSpecProcedureFactory = new JpaSpecProcedureFactory(
                 changeLogOrderer,
-                tableMetadataUtil,
-                typeElementUtils
+                liquibaseUtils,
+                jpaEntityUtil,
+                typeElementUtils,
+                jpaSpecAnnotationUtils
         );
         this.jpaSpecConfigUtil = new JpaSpecConfigUtil(
                 processingEnv.getElementUtils(),
                 messagePrinter,
-                tableMetadataUtil,
+                jpaEntityUtil,
                 processingEnv
         );
         this.jpaSpecConfigFileUtils = new JpaSpecConfigFileUtils(processingEnv.getFiler(), messagePrinter);
