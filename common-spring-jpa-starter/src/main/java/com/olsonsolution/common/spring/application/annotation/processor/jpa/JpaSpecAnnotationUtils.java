@@ -45,14 +45,6 @@ class JpaSpecAnnotationUtils {
         return id;
     }
 
-    String getParameter(ColumnChange columnChange, String parameterName) {
-        return Arrays.stream(columnChange.parameters())
-                .filter(parameter -> StringUtils.equals(parameter.name(), parameterName))
-                .findFirst()
-                .map(ColumnChange.Parameter::value)
-                .orElseThrow();
-    }
-
     private Stream<ColumnChange> streamTypeAnnotation(TypeElement typeElement) {
         return Optional.ofNullable(typeElement.getAnnotation(ColumnChanges.class))
                 .stream()

@@ -2,9 +2,13 @@ package com.olsonsolution.common.spring.application.annotation.processor.jpa;
 
 import com.olsonsolution.common.reflection.domain.port.repository.annotion.processor.MessagePrinter;
 import com.olsonsolution.common.reflection.domain.port.repository.annotion.processor.TypeElementUtils;
+import com.olsonsolution.common.spring.application.annotation.migration.ColumnChange;
+import com.olsonsolution.common.spring.application.annotation.migration.ForeignKey;
+import com.olsonsolution.common.spring.application.annotation.migration.Operation;
 import jakarta.persistence.Column;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.SequenceGenerator;
 import liquibase.database.Database;
 import liquibase.database.core.MockDatabase;
 import liquibase.datatype.DataTypeFactory;
@@ -12,6 +16,7 @@ import liquibase.datatype.LiquibaseDataType;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.keyvalue.DefaultMapEntry;
 import org.apache.commons.lang3.ClassUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.ConstructorUtils;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.descriptor.java.JavaType;
@@ -27,7 +32,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.JDBCType;
-import java.util.Map;
+import java.util.*;
 
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.hibernate.type.SqlTypes.*;
@@ -77,7 +82,150 @@ class LiquibaseUtils {
 
     private final DataTypeFactory dataTypeFactory = DataTypeFactory.getInstance();
 
-    String getLiquibaseType(VariableElement entityFieldElement) {
+    ChangeOp buildColumnOp(VariableElement fieldElement,
+                           String jpaSpec,
+                           String tableName,
+                           String columnName,
+                           Column column,
+                           boolean isIdentifier) {
+        ChangeOp.Builder addColumnOp = ChangeOp.builder()
+                .operation("column")
+                .attribute("name", columnName)
+                .attribute("type", getLiquibaseType(fieldElement));
+        ChangeOp.Builder constraints = null;
+        if (isIdentifier) {
+            constraints = ChangeOp.builder()
+                    .operation("constraints")
+                    .attribute("primaryKey", String.valueOf(true))
+                    .attribute("primaryKeyName", "pk_" + tableName);
+        }
+        if (column != null) {
+            if (column.unique()) {
+                if (constraints == null) {
+                    constraints = ChangeOp.builder()
+                            .operation("constraints");
+                }
+                constraints.attribute("unique", String.valueOf(true));
+                constraints.attribute("uniqueConstraintName", "unique_" + tableName + '_' + columnName);
+            }
+            if (!column.nullable()) {
+                if (constraints == null) {
+                    constraints = ChangeOp.builder()
+                            .operation("constraints");
+                }
+                constraints.attribute("nullable", String.valueOf(false));
+                constraints.attribute("notNullConstraintName", "nonnull_" + tableName + '_' + columnName);
+            }
+        }
+        if (fieldElement.getAnnotation(ForeignKey.class) != null) {
+            if (constraints == null) {
+                constraints = ChangeOp.builder()
+                        .operation("constraints");
+            }
+            ForeignKey foreignKey = fieldElement.getAnnotation(ForeignKey.class);
+            String foreginKeyName = foreignKey.name();
+            if (StringUtils.isEmpty(foreginKeyName)) {
+                foreginKeyName = "fk_" + tableName + '_' + columnName;
+            }
+            constraints.attribute("foreignKeyName", foreginKeyName);
+            constraints.attribute("referencedTableName", foreignKey.referenceTable());
+            constraints.attribute("referencedColumnNames", foreignKey.referenceColumn());
+            String schemaVariable = "${" + jpaSpec + "Schema}";
+            if (StringUtils.isNotEmpty(foreignKey.referenceJpaSpec())) {
+                schemaVariable = "${" + foreignKey.referenceJpaSpec() + "Schema}";
+            }
+            constraints.attribute("referencedTableSchemaName", schemaVariable);
+        }
+        if (constraints != null) {
+            addColumnOp.childOperation(constraints.build());
+        }
+        return addColumnOp.build();
+    }
+
+    List<ChangeOp> buildChangeOps(Operation operation,
+                                  String jpaSpec, String tableName, String columnName,
+                                  ColumnChange columnChange, Column column, VariableElement entityField) {
+        if (operation == Operation.ADD_COLUMN) {
+            ChangeOp columnOp = buildColumnOp(entityField, jpaSpec, tableName, columnName, column, false);
+            ChangeOp addColumn = ChangeOp.builder()
+                    .operation("addColumn")
+                    .attribute("tableName", tableName)
+                    .attribute("schemaName", "${" + jpaSpec + "Schema}")
+                    .childOperation(columnOp)
+                    .build();
+            return Collections.singletonList(addColumn);
+        } else if (operation == Operation.ADD_NOT_NULL_CONSTRAINT) {
+            String dataType = getParameter(columnChange, "columnDataType");
+            ChangeOp addNotNull = ChangeOp.builder()
+                    .operation("addNotNullConstraint")
+                    .attribute("tableName", tableName)
+                    .attribute("columnName", columnName)
+                    .attribute("schemaName", "${" + jpaSpec + "Schema}")
+                    .attribute("columnDataType", dataType)
+                    .build();
+            return Collections.singletonList(addNotNull);
+        } else if (operation == Operation.DROP_DEFAULT_VALUE) {
+            ChangeOp dropDefaultValue = ChangeOp.builder()
+                    .operation("dropDefaultValue")
+                    .attribute("table", tableName)
+                    .attribute("column", columnName)
+                    .build();
+            return Collections.singletonList(dropDefaultValue);
+        } else if (operation == Operation.DEFAULT_VALUE_CHANGE) {
+            List<ChangeOp> operations = new LinkedList<>();
+            ChangeOp dropDefaultValue = ChangeOp.builder()
+                    .operation("dropDefaultValue")
+                    .attribute("tableName", tableName)
+                    .attribute("columnName", columnName)
+                    .attribute("schemaName", "${" + jpaSpec + "Schema}")
+                    .build();
+            ChangeOp addDefaultValue = ChangeOp.builder()
+                    .operation("addDefaultValue")
+                    .attribute("tableName", tableName)
+                    .attribute("columnName", columnName)
+                    .attribute("schemaName", "${" + jpaSpec + "Schema}")
+                    .build();
+            operations.add(dropDefaultValue);
+            operations.add(addDefaultValue);
+            return operations;
+        } else if (operation == Operation.DROP_NULL_CONSTRAINT) {
+            ChangeOp dropNotNullConstraint = ChangeOp.builder()
+                    .operation("dropNotNullConstraint")
+                    .attribute("columnName", columnName)
+                    .attribute("tableName", tableName)
+                    .attribute("schemaName", "${" + jpaSpec + "Schema}")
+                    .build();
+            return Collections.singletonList(dropNotNullConstraint);
+        } else if (operation == Operation.MODIFY_DATA_TYPE) {
+            String newDataType = getParameter(columnChange, "newDataType");
+            ChangeOp modifyDataType = ChangeOp.builder()
+                    .operation("modifyDataType")
+                    .attribute("columnName", columnName)
+                    .attribute("tableName", tableName)
+                    .attribute("schemaName", "${" + jpaSpec + "Schema}")
+                    .attribute("newDataType", newDataType)
+                    .build();
+            return Collections.singletonList(modifyDataType);
+        } else {
+            return Collections.emptyList();
+        }
+    }
+
+    ChangeOp parseSequenceGenerator(String jpaSpec, SequenceGenerator sequenceGenerator) {
+        String schema = sequenceGenerator.schema();
+        if (StringUtils.isEmpty(schema)) {
+            schema = "${" + jpaSpec + "Schema}";
+        }
+        return ChangeOp.builder()
+                .operation("createSequence")
+                .attribute("sequenceName", sequenceGenerator.name())
+                .attribute("schemaName", schema)
+                .attribute("startValue", String.valueOf(sequenceGenerator.initialValue()))
+                .attribute("incrementBy", String.valueOf(sequenceGenerator.allocationSize()))
+                .build();
+    }
+
+    private String getLiquibaseType(VariableElement entityFieldElement) {
         JdbcType jdbcType = null;
         Integer length = null;
         Integer scale = null;
@@ -224,6 +372,14 @@ class LiquibaseUtils {
     private boolean canSetLength(JdbcType jdbcType) {
         return jdbcType instanceof VarcharJdbcType || jdbcType instanceof NVarcharJdbcType |
                 jdbcType instanceof VarbinaryJdbcType;
+    }
+
+    private String getParameter(ColumnChange columnChange, String parameterName) {
+        return Arrays.stream(columnChange.parameters())
+                .filter(parameter -> StringUtils.equals(parameter.name(), parameterName))
+                .findFirst()
+                .map(ColumnChange.Parameter::value)
+                .orElseThrow();
     }
 
 }
