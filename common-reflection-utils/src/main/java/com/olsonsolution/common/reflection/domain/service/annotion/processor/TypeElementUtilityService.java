@@ -46,7 +46,7 @@ public class TypeElementUtilityService implements TypeElementUtils {
                 instanceof TypeElement fieldTypeElement) {
             return fieldTypeElement;
         } else {
-            throw new IllegalArgumentException("Field element is not a field");
+            throw new IllegalArgumentException("Variable element %s is not a field".formatted(fieldElement));
         }
     }
 

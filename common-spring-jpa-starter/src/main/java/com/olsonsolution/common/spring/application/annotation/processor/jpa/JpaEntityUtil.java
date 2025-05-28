@@ -1,17 +1,19 @@
 package com.olsonsolution.common.spring.application.annotation.processor.jpa;
 
+import com.olsonsolution.common.reflection.domain.port.repository.annotion.processor.MessagePrinter;
 import com.olsonsolution.common.reflection.domain.port.repository.annotion.processor.TypeElementUtils;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.keyvalue.DefaultMapEntry;
 
-import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import java.util.LinkedHashSet;
+import javax.tools.Diagnostic;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -19,14 +21,14 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 class JpaEntityUtil {
 
-    private final ProcessingEnvironment processingEnv;
+    private final MessagePrinter messagePrinter;
 
     private final TypeElementUtils typeElementUtils;
 
-    Set<VariableElement> getEntityClassFields(TypeElement typeElement) {
-        Stream.Builder<VariableElement> fields = Stream.builder();
-        collectEntityFieldElements(typeElement, fields);
-        return fields.build().collect(Collectors.toCollection(LinkedHashSet::new));
+    Map<String, VariableElement> obtainColumnMappings(TypeElement typeElement) {
+        Stream.Builder<Map.Entry<String, VariableElement>> mappings = Stream.builder();
+        collectColumnMappings(typeElement, mappings);
+        return mappings.build().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     String getTableName(Element entityElement) {
@@ -41,13 +43,6 @@ class JpaEntityUtil {
                 entityFieldElement.getAnnotation(Column.class).name();
     }
 
-    boolean isEmbeddable(VariableElement variableElement) {
-        if (processingEnv.getTypeUtils().asElement(variableElement.asType()) instanceof TypeElement fieldTypeElement) {
-            return fieldTypeElement.getAnnotation(Embeddable.class) != null;
-        }
-        return false;
-    }
-
     boolean isIdentifier(VariableElement entityFieldElement) {
         return entityFieldElement.getAnnotation(Id.class) != null;
     }
@@ -56,17 +51,38 @@ class JpaEntityUtil {
         return entityFieldElement.getAnnotation(EmbeddedId.class) != null;
     }
 
-    private void collectEntityFieldElements(TypeElement typeElement,
-                                            Stream.Builder<VariableElement> fields) {
-        typeElementUtils.getDeclaredVariableElements(typeElement, false)
-                .forEach(fields::add);
+    private void collectColumnMappings(TypeElement typeElement,
+                                       Stream.Builder<Map.Entry<String, VariableElement>> mappings) {
+        Set<VariableElement> typeFields = typeElementUtils.getDeclaredVariableElements(typeElement, false);
+        for (VariableElement field : typeFields) {
+            collectFieldMappings(typeElement, field, mappings);
+        }
         TypeElement mappedSuperClassElement = null;
         TypeMirror superClassMirror = typeElement.getSuperclass();
         if (superClassMirror != null && superClassMirror.getKind() != TypeKind.NONE) {
             mappedSuperClassElement = typeElementUtils.getClassElement(superClassMirror);
         }
         if (mappedSuperClassElement != null && mappedSuperClassElement.getAnnotation(MappedSuperclass.class) != null) {
-            collectEntityFieldElements(mappedSuperClassElement, fields);
+            collectColumnMappings(mappedSuperClassElement, mappings);
         }
     }
+
+    private void collectFieldMappings(TypeElement classElement, VariableElement field,
+                                      Stream.Builder<Map.Entry<String, VariableElement>> mappings) {
+        try {
+            TypeElement fieldType = typeElementUtils.getFieldTypeElement(field);
+            if (fieldType.getAnnotation(Embeddable.class) != null) {
+                collectColumnMappings(fieldType, mappings);
+            } else {
+                String columnName = getColumnName(field);
+                mappings.add(new DefaultMapEntry<>(columnName, field));
+            }
+        } catch (IllegalArgumentException e) {
+            messagePrinter.print(
+                    Diagnostic.Kind.WARNING, JpaEntityUtil.class,
+                    "Type=%s field=%s can not resolve field type".formatted(classElement, field), e
+            );
+        }
+    }
+
 }
