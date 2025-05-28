@@ -80,16 +80,33 @@ final class ChangeLogOrderer {
                                           Set<String> processedChangeLogs,
                                           Collection<JpaSpecMetadata> jpaSpecs,
                                           Map<JpaSpecMetadata, List<ChangeSetOp>> jpaSpecChangeSetOps) {
+        Stream.Builder<DefaultMapEntry<JpaSpecMetadata, ChangeSetOp>> independent = Stream.builder();
         for (ChangeSetOp changeSetOp : changeSetOps) {
             collectOrderedChangeLogs(
-                    changeSetOp, jpaSpec, graph, processedChangeLogs,
+                    changeSetOp, jpaSpec, graph, independent, processedChangeLogs,
                     jpaSpecs, jpaSpecChangeSetOps
             );
+        }
+        Set<DefaultMapEntry<JpaSpecMetadata, ChangeSetOp>> independentChangeLogs = independent.build()
+                .sorted(Comparator.comparing(j -> j.getKey().jpaSpec()))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        Iterator<DefaultMapEntry<JpaSpecMetadata, ChangeSetOp>> independentIterator = independentChangeLogs.iterator();
+        while (independentIterator.hasNext()) {
+            DefaultMapEntry<JpaSpecMetadata, ChangeSetOp> independentChangeLog = independentIterator.next();
+            messagePrinter.print(Diagnostic.Kind.NOTE, ChangeLogOrderer.class, "independent: %s".formatted(independentChangeLog.getValue().id()));
+            graph.addVertex(independentChangeLog);
+            if (independentIterator.hasNext()) {
+                DefaultMapEntry<JpaSpecMetadata, ChangeSetOp> nextIndependentChangeLog = independentIterator.next();
+                messagePrinter.print(Diagnostic.Kind.NOTE, ChangeLogOrderer.class, "next independent: %s".formatted(nextIndependentChangeLog.getValue().id()));
+                graph.addVertex(nextIndependentChangeLog);
+                graph.addEdge(independentChangeLog, nextIndependentChangeLog);
+            }
         }
     }
 
     private void collectOrderedChangeLogs(ChangeSetOp changeSetOp, JpaSpecMetadata jpaSpec,
                                           Graph<DefaultMapEntry<JpaSpecMetadata, ChangeSetOp>, DefaultEdge> graph,
+                                          Stream.Builder<DefaultMapEntry<JpaSpecMetadata, ChangeSetOp>> independent,
                                           Set<String> processedChangeLogs,
                                           Collection<JpaSpecMetadata> jpaSpecsMetadata,
                                           Map<JpaSpecMetadata, List<ChangeSetOp>> jpaSpecChangeSetOps) {
@@ -99,7 +116,12 @@ final class ChangeLogOrderer {
                 jpaSpecsMetadata, jpaSpecChangeSetOps
         );
         DefaultMapEntry<JpaSpecMetadata, ChangeSetOp> jpaSpecChangeSet = new DefaultMapEntry<>(jpaSpec, changeSetOp);
-        graph.addVertex(jpaSpecChangeSet);
+        if (dependsOn.isEmpty()) {
+            independent.add(jpaSpecChangeSet);
+            return;
+        } else {
+            graph.addVertex(jpaSpecChangeSet);
+        }
         for (Map.Entry<JpaSpecMetadata, Set<ChangeSetOp>> jpaSpecDependentChangeLogs : dependsOn.entrySet()) {
             JpaSpecMetadata dependentJpaSpec = jpaSpecDependentChangeLogs.getKey();
             Set<ChangeSetOp> dependentChangeLogs = jpaSpecDependentChangeLogs.getValue();
@@ -118,7 +140,7 @@ final class ChangeLogOrderer {
                 );
             }
             collectDependentChangeLogs(
-                    jpaSpecChangeSet, dependentJpaSpec, dependentChangeLogs, graph,
+                    jpaSpecChangeSet, dependentJpaSpec, dependentChangeLogs, graph, independent,
                     processedChangeLogs, jpaSpecsMetadata, jpaSpecChangeSetOps
             );
         }
@@ -129,6 +151,7 @@ final class ChangeLogOrderer {
                                             JpaSpecMetadata dependentJpaSpec,
                                             Set<ChangeSetOp> dependentChangeLogs,
                                             Graph<DefaultMapEntry<JpaSpecMetadata, ChangeSetOp>, DefaultEdge> graph,
+                                            Stream.Builder<DefaultMapEntry<JpaSpecMetadata, ChangeSetOp>> independent,
                                             Set<String> processedChangeLogs,
                                             Collection<JpaSpecMetadata> jpaSpecsMetadata,
                                             Map<JpaSpecMetadata, List<ChangeSetOp>> jpaSpecChangeSetOps) {
@@ -141,7 +164,7 @@ final class ChangeLogOrderer {
                 graph.addEdge(dependentJpaSpecChangeSet, jpaSpecChangeSet);
             }
             collectOrderedChangeLogs(
-                    changeSetOp, dependentJpaSpec, graph,
+                    changeSetOp, dependentJpaSpec, graph, independent,
                     processedChangeLogs, jpaSpecsMetadata, jpaSpecChangeSetOps
             );
         }

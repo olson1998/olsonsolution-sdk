@@ -57,7 +57,7 @@ class JpaSpecProcedureFactory {
                 jpaSpecMetadata, jpaSpecsMetadata, changeSets
         ));
         return changeSets.build().collect(Collectors.collectingAndThen(
-                Collectors.toList(),
+                Collectors.toCollection(LinkedList::new),
                 changeSetOps -> JpaSpecProcedure.builder()
                         .metadata(jpaSpecMetadata)
                         .changeSets(changeSetOps)
