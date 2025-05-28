@@ -4,6 +4,7 @@ import com.olsonsolution.common.spring.application.annotation.migration.*;
 import jakarta.persistence.Column;
 import jakarta.persistence.SequenceGenerator;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.keyvalue.DefaultMapEntry;
 import org.apache.commons.lang3.StringUtils;
 
@@ -91,6 +92,7 @@ class JpaSpecProcedureFactory {
         changeSetOps.forEach((version, ops) -> collectChangeSetOps(
                 version, ops, jpaSpecMetadata, jpaSpecsMetadata, table, changeSet, columnMappings, changeSets
         ));
+        collectEmbeddableIds(entityType, jpaSpec, table, changeSetOps);
     }
 
     private void collectEntityChangesOps(ColumnChanges columnChanges, String jpaSpec, String table,
@@ -131,6 +133,16 @@ class JpaSpecProcedureFactory {
         SequenceGenerator sequenceGenerator = columnMapping.getValue().getAnnotation(SequenceGenerator.class);
         ChangeOp createSequence = liquibaseUtils.parseSequenceGenerator(jpaSpec, sequenceGenerator);
         changeSetOps.computeIfAbsent(FIRST_VERSION, k -> new LinkedList<>()).add(createSequence);
+    }
+
+    private void collectEmbeddableIds(TypeElement entityElement, String jpaSpec, String table,
+                                      Map<String, List<ChangeOp>> changeSetOps) {
+        Set<String> embeddableIdColumns = jpaEntityUtil.obtainEmbeddableIdColumns(entityElement);
+        if (CollectionUtils.isNotEmpty(embeddableIdColumns)) {
+            String columnNames = String.join(",", embeddableIdColumns);
+            List<ChangeOp> addUniqueConstraint = addUniqueConstraint(columnNames, jpaSpec, table);
+            changeSetOps.computeIfAbsent(FIRST_VERSION, k -> new LinkedList<>()).addAll(addUniqueConstraint);
+        }
     }
 
     private void collectChangeSetOps(String version, List<ChangeOp> operations,
