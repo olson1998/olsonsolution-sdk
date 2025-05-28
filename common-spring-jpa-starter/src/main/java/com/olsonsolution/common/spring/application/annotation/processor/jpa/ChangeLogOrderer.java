@@ -75,6 +75,20 @@ final class ChangeLogOrderer {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
+    /**
+     * Builds and organizes a directed graph of change log operations for a given JPA specification metadata.
+     * The method processes a list of change set operations and organizes them into a dependency-aware sequence,
+     * ensuring the proper execution order of the specified operations.
+     *
+     * @param jpaSpec             the {@link JpaSpecMetadata} representing the metadata of the specific JPA specification
+     *                            for which change logs are being organized
+     * @param changeSetOps        a list of {@link ChangeSetOp} instances representing the change set operations to include
+     * @param graph               a {@link Graph} structure that holds the ordered relationships between change set operations
+     * @param processedChangeLogs a set of change log identifiers that have already been processed to avoid duplication
+     * @param jpaSpecs            a collection of {@link JpaSpecMetadata} containing all the JPA specifications involved
+     * @param jpaSpecChangeSetOps a map where the keys are {@link JpaSpecMetadata} objects and the values are lists of
+     *                            {@link ChangeSetOp} instances representing the change set operations for each specification
+     */
     private void collectOrderedChangeLogs(JpaSpecMetadata jpaSpec, List<ChangeSetOp> changeSetOps,
                                           Graph<DefaultMapEntry<JpaSpecMetadata, ChangeSetOp>, DefaultEdge> graph,
                                           Set<String> processedChangeLogs,
@@ -93,17 +107,27 @@ final class ChangeLogOrderer {
         Iterator<DefaultMapEntry<JpaSpecMetadata, ChangeSetOp>> independentIterator = independentChangeLogs.iterator();
         while (independentIterator.hasNext()) {
             DefaultMapEntry<JpaSpecMetadata, ChangeSetOp> independentChangeLog = independentIterator.next();
-            messagePrinter.print(Diagnostic.Kind.NOTE, ChangeLogOrderer.class, "independent: %s".formatted(independentChangeLog.getValue().id()));
             graph.addVertex(independentChangeLog);
             if (independentIterator.hasNext()) {
                 DefaultMapEntry<JpaSpecMetadata, ChangeSetOp> nextIndependentChangeLog = independentIterator.next();
-                messagePrinter.print(Diagnostic.Kind.NOTE, ChangeLogOrderer.class, "next independent: %s".formatted(nextIndependentChangeLog.getValue().id()));
                 graph.addVertex(nextIndependentChangeLog);
                 graph.addEdge(independentChangeLog, nextIndependentChangeLog);
             }
         }
     }
 
+    /**
+     * Collects and orders change logs for a given {@code ChangeSetOp} in the specified graph structure
+     * while solving dependencies between change logs and building a collection of independent entries.
+     *
+     * @param changeSetOp         The current {@code ChangeSetOp} that is being processed.
+     * @param jpaSpec             The corresponding {@code JpaSpecMetadata} associated with the given {@code ChangeSetOp}.
+     * @param graph               A directed graph representation of {@code JpaSpecMetadata} and {@code ChangeSetOp} dependencies.
+     * @param independent         A stream builder that collects entries of independent {@code JpaSpecMetadata} and {@code ChangeSetOp}.
+     * @param processedChangeLogs A set of already processed change log IDs to avoid redundant operations.
+     * @param jpaSpecsMetadata    A collection of metadata objects representing different JPA specifications.
+     * @param jpaSpecChangeSetOps A mapping between {@code JpaSpecMetadata} objects and their associated lists of {@code ChangeSetOp}.
+     */
     private void collectOrderedChangeLogs(ChangeSetOp changeSetOp, JpaSpecMetadata jpaSpec,
                                           Graph<DefaultMapEntry<JpaSpecMetadata, ChangeSetOp>, DefaultEdge> graph,
                                           Stream.Builder<DefaultMapEntry<JpaSpecMetadata, ChangeSetOp>> independent,
