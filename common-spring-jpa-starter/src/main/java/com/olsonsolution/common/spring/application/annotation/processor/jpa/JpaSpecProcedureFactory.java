@@ -82,10 +82,18 @@ class JpaSpecProcedureFactory {
         Map<String, List<ChangeOp>> changeSetAtEndOperations = new LinkedHashMap<>();
         Map<String, LinkedList<ChangeOp>> changeSetOperations = new LinkedHashMap<>();
         TypeElement entityType = entityConfig.entity();
+        String jpaSpec = jpaSpecMetadata.jpaSpec();
         String table = entityConfig.table();
         Map<String, VariableElement> columnMappings = jpaEntityUtil.obtainColumnMappings(entityType);
+        if (entityType.getAnnotation(ColumnChanges.class) != null) {
+            ColumnChanges columnChanges = entityType.getAnnotation(ColumnChanges.class);
+            collectEntityChangesOps(
+                    columnChanges, jpaSpec, table, columnMappings,
+                    changeSetAtBeginningOperations, changeSetAtEndOperations
+            );
+        }
         collectColumnsChanges(
-                columnMappings, entityType, table, jpaSpecMetadata.jpaSpec(),
+                columnMappings, entityType, table, jpaSpec,
                 changeSetAtBeginningOperations, changeSetCreateTableOperations, changeSetAtEndOperations
         );
         List<String> changeSetVersion = resolveVersions(
@@ -101,6 +109,32 @@ class JpaSpecProcedureFactory {
         changeSetOperations.forEach((version, ops) -> collectChangeSetOps(
                 version, ops, jpaSpecMetadata, jpaSpecsMetadata, table, changeSet, columnMappings, changeSets
         ));
+    }
+
+    private void collectEntityChangesOps(ColumnChanges columnChanges, String jpaSpec, String table,
+                                         Map<String, VariableElement> columnMappings,
+                                         Map<String, List<ChangeOp>> changeSetAtBeginningOperations,
+                                         Map<String, List<ChangeOp>> changeSetAtEndOperations) {
+        for (ColumnChange columnChange : columnChanges.atBeginning()) {
+            collectEntityChangesOps(columnChange, jpaSpec, table, columnMappings, changeSetAtBeginningOperations);
+        }
+        for (ColumnChange columnChange : columnChanges.atEnd()) {
+            collectEntityChangesOps(columnChange, jpaSpec, table, columnMappings, changeSetAtEndOperations);
+        }
+    }
+
+    private void collectEntityChangesOps(ColumnChange columnChange,
+                                         String jpaSpec, String table,
+                                         Map<String, VariableElement> columnMappings,
+                                         Map<String, List<ChangeOp>> changeSetOps) {
+        VariableElement entityField;
+        String column = columnChange.column();
+        if (StringUtils.isEmpty(column) || !columnMappings.containsKey(column)) {
+            return;
+        } else {
+            entityField = columnMappings.get(column);
+        }
+        collectOperations(columnChange, null, entityField, jpaSpec, table, columnChange.column(), changeSetOps);
     }
 
     private void collectChangeSetOps(String version, List<ChangeOp> operations,

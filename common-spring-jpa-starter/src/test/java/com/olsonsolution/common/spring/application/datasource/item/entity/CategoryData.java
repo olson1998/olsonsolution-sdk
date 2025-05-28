@@ -18,6 +18,7 @@ import org.joda.time.MutableDateTime;
 
 @Entity
 @ChangeSet
+@ColumnChanges(atBeginning = @ColumnChange(operation = Operation.ADD_COLUMN, column = "code", version = "1.0.1"))
 @Table(name = "category")
 @EntityListeners({AuditableEntityListener.class})
 public class CategoryData extends AuditableEntity {
@@ -28,7 +29,6 @@ public class CategoryData extends AuditableEntity {
     private Long id;
 
     @Column(name = "code", nullable = false)
-    @ColumnChanges(atBeginning = @ColumnChange(operation = Operation.ADD_COLUMN, version = "1.0.1"))
     private Integer code;
 
     @Column(name = "name", nullable = false, unique = true)
