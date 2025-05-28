@@ -48,7 +48,7 @@ class JpaSpecAnnotationUtils {
     private Stream<ColumnChange> streamTypeAnnotation(TypeElement typeElement) {
         return Optional.ofNullable(typeElement.getAnnotation(ColumnChanges.class))
                 .stream()
-                .flatMap(this::parseAnnotation);
+                .flatMap(columnChanges -> Arrays.stream(columnChanges.value()));
     }
 
     private Stream<ColumnChange> streamFieldsAnnotations(Set<VariableElement> entityFields) {
@@ -58,13 +58,7 @@ class JpaSpecAnnotationUtils {
     private Stream<ColumnChange> streamFieldAnnotations(VariableElement entityField) {
         return Optional.ofNullable(entityField.getAnnotation(ColumnChanges.class))
                 .stream()
-                .flatMap(this::parseAnnotation);
-    }
-
-    private Stream<ColumnChange> parseAnnotation(ColumnChanges columnChanges) {
-        Stream<ColumnChange> atBeginning = Arrays.stream(columnChanges.atBeginning());
-        Stream<ColumnChange> atEnd = Arrays.stream(columnChanges.atEnd());
-        return Stream.concat(atBeginning, atEnd);
+                .flatMap(columnChanges -> Arrays.stream(columnChanges.value()));
     }
 
 }

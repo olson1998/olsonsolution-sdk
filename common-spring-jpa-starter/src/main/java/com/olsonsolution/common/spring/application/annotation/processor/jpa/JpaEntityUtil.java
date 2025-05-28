@@ -13,8 +13,7 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -28,7 +27,10 @@ class JpaEntityUtil {
     Map<String, VariableElement> obtainColumnMappings(TypeElement typeElement) {
         Stream.Builder<Map.Entry<String, VariableElement>> mappings = Stream.builder();
         collectColumnMappings(typeElement, mappings);
-        return mappings.build().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+        return mappings.build().collect(Collectors.collectingAndThen(
+                Collectors.toCollection(LinkedList::new),
+                this::toOrderedMap
+        ));
     }
 
     String getTableName(Element entityElement) {
@@ -83,6 +85,14 @@ class JpaEntityUtil {
                     "Type=%s field=%s can not resolve field type".formatted(classElement, field), e
             );
         }
+    }
+
+    private LinkedHashMap<String, VariableElement> toOrderedMap(List<Map.Entry<String, VariableElement>> mappingsList) {
+        LinkedHashMap<String, VariableElement> mappings = new LinkedHashMap<>(mappingsList.size());
+        for (Map.Entry<String, VariableElement> mapping : mappingsList) {
+            mappings.put(mapping.getKey(), mapping.getValue());
+        }
+        return mappings;
     }
 
 }

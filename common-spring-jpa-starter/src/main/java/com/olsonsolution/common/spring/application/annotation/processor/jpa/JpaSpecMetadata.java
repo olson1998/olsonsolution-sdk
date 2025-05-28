@@ -126,10 +126,8 @@ record JpaSpecMetadata(@NonNull String jpaSpec,
             Stream<String> declaredVersions = streamDeclaredFields(entityElement)
                     .filter(field -> field.getAnnotation(ColumnChanges.class) != null)
                     .map(field -> field.getAnnotation(ColumnChanges.class))
-                    .flatMap(columnChanges -> Stream.concat(
-                            Arrays.stream(columnChanges.atBeginning()),
-                            Arrays.stream(columnChanges.atEnd()))
-                    ).map(ColumnChange::version);
+                    .flatMap(columnChanges -> Arrays.stream(columnChanges.value()))
+                    .map(ColumnChange::ver);
             return Stream.concat(firstVersion, declaredVersions)
                     .sorted(Comparator.naturalOrder())
                     .collect(Collectors.toCollection(LinkedHashSet::new));

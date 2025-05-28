@@ -1,7 +1,9 @@
 package com.olsonsolution.common.spring.application.annotation.migration;
 
-public @interface ColumnChanges {
+public @interface Param {
 
-    ColumnChange[] value() default {};
+    String name();
+
+    String value();
 
 }

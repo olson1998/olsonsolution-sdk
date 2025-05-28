@@ -5,6 +5,7 @@ import com.olsonsolution.common.reflection.domain.port.repository.annotion.proce
 import com.olsonsolution.common.spring.application.annotation.migration.ColumnChange;
 import com.olsonsolution.common.spring.application.annotation.migration.ForeignKey;
 import com.olsonsolution.common.spring.application.annotation.migration.Operation;
+import com.olsonsolution.common.spring.application.annotation.migration.Param;
 import jakarta.persistence.Column;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -398,12 +399,12 @@ class LiquibaseUtils {
     }
 
     private String getParameter(ColumnChange columnChange, String parameterName) {
-        return Optional.ofNullable(columnChange.parameters())
+        return Optional.ofNullable(columnChange.params())
                 .stream()
                 .flatMap(Arrays::stream)
                 .filter(parameter -> StringUtils.equals(parameter.name(), parameterName))
                 .findFirst()
-                .map(ColumnChange.Parameter::value)
+                .map(Param::value)
                 .orElse(null);
     }
 

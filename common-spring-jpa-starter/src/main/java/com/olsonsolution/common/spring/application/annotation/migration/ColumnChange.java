@@ -4,18 +4,10 @@ public @interface ColumnChange {
 
     String column() default "";
 
-    Operation operation();
+    Operation op();
 
-    Parameter[] parameters() default {};
+    Param[] params() default {};
 
-    String version();
-
-    @interface Parameter {
-
-        String name();
-
-        String value();
-
-    }
+    String ver();
 
 }

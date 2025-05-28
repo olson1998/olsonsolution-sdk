@@ -3,12 +3,15 @@ package com.olsonsolution.common.spring.application.datasource.item.entity;
 import com.olsonsolution.common.spring.application.annotation.migration.ChangeSet;
 import com.olsonsolution.common.spring.application.annotation.migration.ColumnChange;
 import com.olsonsolution.common.spring.application.annotation.migration.ColumnChanges;
-import com.olsonsolution.common.spring.application.annotation.migration.Operation;
+import com.olsonsolution.common.spring.application.annotation.migration.Param;
 import com.olsonsolution.common.spring.application.datasource.model.audit.AuditableEntity;
 import com.olsonsolution.common.spring.application.jpa.service.AuditableEntityListener;
 import jakarta.persistence.*;
 import lombok.*;
 import org.joda.time.MutableDateTime;
+
+import static com.olsonsolution.common.spring.application.annotation.migration.Operation.ADD_COLUMN;
+import static com.olsonsolution.common.spring.application.annotation.migration.Operation.MODIFY_DATA_TYPE;
 
 @Getter
 @Setter
@@ -18,7 +21,9 @@ import org.joda.time.MutableDateTime;
 
 @Entity
 @ChangeSet
-@ColumnChanges(atBeginning = @ColumnChange(operation = Operation.ADD_COLUMN, column = "code", version = "1.0.1"))
+@ColumnChanges({
+        @ColumnChange(op = ADD_COLUMN, column = "code", ver = "1.0.1"),
+})
 @Table(name = "category")
 @EntityListeners({AuditableEntityListener.class})
 public class CategoryData extends AuditableEntity {
@@ -35,6 +40,9 @@ public class CategoryData extends AuditableEntity {
     private String fullName;
 
     @Column(name = "short_name", nullable = false, unique = true, length = 63)
+    @ColumnChanges({
+            @ColumnChange(op = MODIFY_DATA_TYPE, ver = "1.0.1", params = @Param(name = "newDataType", value = "VARCHAR(127)"))
+    })
     private String shortName;
 
     @Column(name = "description", nullable = false, length = 4095)
