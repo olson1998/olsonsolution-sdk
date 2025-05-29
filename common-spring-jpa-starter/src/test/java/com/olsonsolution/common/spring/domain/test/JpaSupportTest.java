@@ -10,7 +10,7 @@ import com.olsonsolution.common.spring.application.datasource.item.repository.It
 import com.olsonsolution.common.spring.application.datasource.item.repository.ItemJpaRepository;
 import com.olsonsolution.common.spring.application.test.config.SpringApplicationJpaTestBase;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
-import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
+import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpecification;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -45,7 +45,7 @@ class JpaSupportTest extends SpringApplicationJpaTestBase {
     @ParameterizedTest
     @MethodSource("com.olsonsolution.common.spring.application.test.config.SpringApplicationJpaTestBase#" +
             "dataSourceSpecStream")
-    void shouldSaveTestData(DataSourceSpec spec) {
+    void shouldSaveTestData(DataSourceSpecification spec) {
         dataSourceSpecManager.setThreadLocal(spec);
         CategoryData category = createCategory();
         categoryJpaRepository.saveAndFlush(category);

@@ -1,9 +1,9 @@
 package com.olsonsolution.common.spring.domain.port.props.jpa;
 
-import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
+import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpecification;
 
 public interface DefaultDataSourceSpecProperties {
 
-    DataSourceSpec getSpecProperties();
+    DataSourceSpecification getSpecProperties();
 
 }

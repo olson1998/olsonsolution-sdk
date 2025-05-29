@@ -8,7 +8,7 @@ import com.olsonsolution.common.data.domain.service.datasource.DomainPermissionM
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
-import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
+import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpecification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,7 +18,7 @@ import javax.sql.DataSource;
 @RequiredArgsConstructor
 public class RoutingDataSourceManagingService extends DestinationDataSourceManager {
 
-    private final DataSourceSpec defaultDataSourceSpec;
+    private final DataSourceSpecification defaultDataSourceSpecification;
 
     private final SqlDataSourceFactory sqlDataSourceFactory;
 
@@ -29,17 +29,17 @@ public class RoutingDataSourceManagingService extends DestinationDataSourceManag
     private final Cache<String, PermissionManagingDataSource> destinationDataSourcesCache;
 
     @Override
-    public DataSource selectDataSourceBySpec(DataSourceSpec dataSourceSpec) {
-        return destinationDataSourcesCache.get(dataSourceSpec.getName(), this::createPermissionManagingDataSource);
+    public DataSource selectDataSourceBySpec(DataSourceSpecification dataSourceSpecification) {
+        return destinationDataSourcesCache.get(dataSourceSpecification.getName(), this::createPermissionManagingDataSource);
     }
 
     @Override
     protected DataSource selectAnyDataSource() {
-        return selectDataSource(defaultDataSourceSpec);
+        return selectDataSource(defaultDataSourceSpecification);
     }
 
     @Override
-    protected DataSource selectDataSource(DataSourceSpec tenantIdentifier) {
+    protected DataSource selectDataSource(DataSourceSpecification tenantIdentifier) {
         return selectDataSourceBySpec(tenantIdentifier);
     }
 

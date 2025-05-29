@@ -15,10 +15,10 @@ import com.olsonsolution.common.spring.application.migration.config.LiquibaseCon
 import com.olsonsolution.common.spring.application.migration.config.SqlVendorSupportersConfig;
 import com.olsonsolution.common.spring.application.migration.props.LiquibaseProperties;
 import com.olsonsolution.common.spring.application.props.time.JodaDateTimeProperties;
-import com.olsonsolution.common.spring.domain.model.datasource.DataSourceSpecification;
+import com.olsonsolution.common.spring.domain.model.datasource.DomainDataSourceSpecification;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
-import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
+import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpecification;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.postgresql.ds.PGSimpleDataSource;
@@ -134,18 +134,18 @@ public abstract class SpringApplicationJpaTestBase implements InitializingBean {
     @Autowired
     private DestinationDataSourceManager destinationDataSourceManager;
 
-    public static Stream<DataSourceSpec> dataSourceSpecStream() {
+    public static Stream<DataSourceSpecification> dataSourceSpecStream() {
         return Stream.of(
-                new DataSourceSpecification(SQL_SERVER_DATASOURCE, RWX),
-                new DataSourceSpecification(POSTGRES_DATASOURCE, RWX)
+                new DomainDataSourceSpecification(SQL_SERVER_DATASOURCE, RWX),
+                new DomainDataSourceSpecification(POSTGRES_DATASOURCE, RWX)
         );
     }
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        for (DataSourceSpec dataSourceSpec : dataSourceSpecStream().toList()) {
-            dataSourceSpecManager.setThreadLocal(dataSourceSpec);
-            DataSource dataSource = destinationDataSourceManager.selectDataSourceBySpec(dataSourceSpec);
+        for (DataSourceSpecification dataSourceSpecification : dataSourceSpecStream().toList()) {
+            dataSourceSpecManager.setThreadLocal(dataSourceSpecification);
+            DataSource dataSource = destinationDataSourceManager.selectDataSourceBySpec(dataSourceSpecification);
             MigrationResults migrationResults = migrationService.migrateAsync(dataSource)
                     .get(30, TimeUnit.SECONDS);
             dataSourceSpecManager.clear();

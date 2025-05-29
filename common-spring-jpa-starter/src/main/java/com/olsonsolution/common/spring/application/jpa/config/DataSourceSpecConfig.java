@@ -9,22 +9,24 @@ import com.olsonsolution.common.data.domain.port.repository.sql.SqlDataSourceFac
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSource;
 import com.olsonsolution.common.spring.application.jpa.props.ApplicationSqlDataSourceProperties;
 import com.olsonsolution.common.spring.application.jpa.props.ApplicationSqlUserProperties;
-import com.olsonsolution.common.spring.domain.model.datasource.DataSourceSpecification;
+import com.olsonsolution.common.spring.domain.model.datasource.DomainDataSourceSpecification;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.RoutingDataSourceProperties;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DataSourceEvictor;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
-import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
+import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpecification;
 import com.olsonsolution.common.spring.domain.service.datasource.DataSourceEvictionService;
 import com.olsonsolution.common.spring.domain.service.datasource.DataSourceSpecificationManagingService;
 import com.olsonsolution.common.spring.domain.service.datasource.RoutingDataSourceManagingService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import static com.olsonsolution.common.data.domain.model.sql.SqlPermissions.RWX;
 import static com.olsonsolution.common.data.domain.model.sql.SqlVendors.H2;
+import static com.olsonsolution.common.spring.application.jpa.props.SpringApplicationJpaProperties.SPRING_APPLICATION_PROPERTIES_PREFIX;
 
 @Configuration
 public class DataSourceSpecConfig {
@@ -35,10 +37,15 @@ public class DataSourceSpecConfig {
 
     public static final SqlDataSource H2_INITIAL_DATA_SOURCE = initialDataSource();
 
-    private static final DataSourceSpec H2_INITIAL_DATA_SOURCE_SPEC = DataSourceSpecification.builder()
+    public static final DataSourceSpecification H2_INITIAL_DATA_SOURCE_SPEC = DomainDataSourceSpecification.builder()
             .name(H2_INITIAL_DATA_SOURCE_NAME)
             .permissions(RWX)
             .build();
+
+    public static final String DATA_SOURCE_SPEC_MANAGER_TOGGLE_CONFIG =
+            SPRING_APPLICATION_PROPERTIES_PREFIX + ".data-source.spec-manager.toggle";
+
+    public static final String DEFAULT_DATA_SOURCE_SPEC_MANAGER = "default";
 
     @Bean(ROUTING_DATA_SOURCE_EVICTOR_BEAN)
     public DataSourceEvictor routingDataSourceEvictor() {
@@ -46,7 +53,12 @@ public class DataSourceSpecConfig {
     }
 
     @Bean
-    public DataSourceSpecManager jpaEnvironmentManager() {
+    @ConditionalOnProperty(
+            value = DATA_SOURCE_SPEC_MANAGER_TOGGLE_CONFIG,
+            havingValue = DEFAULT_DATA_SOURCE_SPEC_MANAGER,
+            matchIfMissing = true
+    )
+    public DataSourceSpecManager dataSourceSpecManager() {
         DataSourceSpecManager manager = new DataSourceSpecificationManagingService();
         manager.setThreadLocal(H2_INITIAL_DATA_SOURCE_SPEC);
         return manager;

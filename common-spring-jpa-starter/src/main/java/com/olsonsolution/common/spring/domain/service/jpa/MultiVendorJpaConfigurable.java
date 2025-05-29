@@ -6,7 +6,7 @@ import com.olsonsolution.common.spring.domain.model.exception.datasource.DataSou
 import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecConfigurable;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
-import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
+import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpecification;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,20 +28,20 @@ abstract class MultiVendorJpaConfigurable<D> implements DataSourceSpecConfigurab
 
     @Override
     public D getDelegate() {
-        DataSourceSpec dataSourceSpec = dataSourceSpecManager.getThreadLocal();
-        if (dataSourceSpec == null) {
+        DataSourceSpecification dataSourceSpecification = dataSourceSpecManager.getThreadLocal();
+        if (dataSourceSpecification == null) {
             throw new DataSourceException("No DataSourceSpec configured for current thread");
         }
-        SqlDataSource sqlDataSource = sqlDataSourceProvider.findDestination(dataSourceSpec.getName())
+        SqlDataSource sqlDataSource = sqlDataSourceProvider.findDestination(dataSourceSpecification.getName())
                 .orElseThrow(() -> new DataSourceException("Destination data source not found for name: '%s'"
-                        .formatted(dataSourceSpec.getName())));
+                        .formatted(dataSourceSpecification.getName())));
         SqlVendor vendor = sqlDataSource.getVendor();
         return obtainDelegate(vendor);
     }
 
     @Override
-    public void unregisterDelegate(DataSourceSpec dataSourceSpec) throws Exception {
-        SqlDataSource sqlDataSource = sqlDataSourceProvider.findDestination(dataSourceSpec.getName())
+    public void unregisterDelegate(DataSourceSpecification dataSourceSpecification) throws Exception {
+        SqlDataSource sqlDataSource = sqlDataSourceProvider.findDestination(dataSourceSpecification.getName())
                 .orElseThrow();
         SqlVendor vendor = sqlDataSource.getVendor();
         D delegate = delegatesRegistry.get(vendor);
