@@ -1,5 +1,6 @@
 package com.olsonsolution.common.spring.application.migration.config;
 
+import com.olsonsolution.common.liquibase.domain.service.datasource.MariaDBSqlVendorSupporter;
 import com.olsonsolution.common.liquibase.domain.service.datasource.PostgresqlVendorSupporter;
 import com.olsonsolution.common.liquibase.domain.service.datasource.SqlServerVendorSupporter;
 import com.olsonsolution.common.migration.domain.port.repository.SqlVendorSupporter;
@@ -29,6 +30,15 @@ public class SqlVendorSupportersConfig {
     )
     public SqlVendorSupporter postgresqlVendorSupporter() {
         return new PostgresqlVendorSupporter();
+    }
+
+    @Bean
+    @ConditionalOnProperty(
+            value = SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".mariadb",
+            havingValue = ENABLED_VALUE
+    )
+    public SqlVendorSupporter mariaDbSqlVendorSupporter() {
+        return new MariaDBSqlVendorSupporter();
     }
 
 }

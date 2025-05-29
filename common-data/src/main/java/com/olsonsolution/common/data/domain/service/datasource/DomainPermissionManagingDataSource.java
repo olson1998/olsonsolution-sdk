@@ -29,6 +29,7 @@ public class DomainPermissionManagingDataSource implements PermissionManagingDat
     @Getter
     private boolean closed;
 
+    @Getter
     private final SqlDataSource sqlDataSource;
 
     private final SqlDataSourceFactory sqlDataSourceFactory;

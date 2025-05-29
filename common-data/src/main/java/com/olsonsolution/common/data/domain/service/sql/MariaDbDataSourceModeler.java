@@ -3,6 +3,7 @@ package com.olsonsolution.common.data.domain.service.sql;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSource;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlPermission;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlUser;
+import com.olsonsolution.common.data.domain.service.datasource.MariaDbDataSourceWrapper;
 import com.olsonsolution.common.property.domain.model.PropertySpecModel;
 import com.olsonsolution.common.property.domain.port.stereotype.PropertySpec;
 import lombok.extern.slf4j.Slf4j;
@@ -92,7 +93,7 @@ public class MariaDbDataSourceModeler extends AbstractDataSourceModeler {
 
     @Override
     public DataSource create(SqlDataSource dataSource, SqlUser user, SqlPermission permission) {
-        MariaDbDataSource mariaDbDataSource = new MariaDbDataSource();
+        MariaDbDataSource mariaDbDataSource = new MariaDbDataSourceWrapper();
         String url = writeURL(dataSource);
         try {
             mariaDbDataSource.setUrl(url);

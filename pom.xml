@@ -12,10 +12,7 @@
         <module>common-time-utils</module>
         <module>common-jackson-utils</module>
         <module>common-jackson-databind</module>
-        <module>common-spring-boot-web-starter</module>
         <module>common-reflection-utils</module>
-        <module>common-spring-jpa-starter</module>
-        <module>common-spring-tenant-core</module>
         <module>common-caching</module>
         <module>common-spring-config</module>
         <module>common-data</module>
@@ -23,8 +20,10 @@
         <module>common-properties</module>
         <module>common-datasource-migration</module>
         <module>common-liquibase-migration</module>
+        <module>common-spring-jpa-starter</module>
         <module>common-spring-async</module>
         <module>common-spring-context</module>
+        <module>common-spring-boot-web-starter</module>
         <module>common-spring-tenant-jpa-starter</module>
         <module>common-spring-tenant-core</module>
     </modules>
