@@ -123,9 +123,9 @@ public abstract class SpringApplicationJpaTestBase implements InitializingBean {
                     .withPassword(PASSWORD);
 
     @Container
-    private static final MariaDBContainer<?> MARIA_DB_CONTAINER = new MariaDBContainer<>("mariadb:10.6.1")
-            .withUsername("sa")
-            .withPassword(PASSWORD);
+    private static final MariaDBContainer<?> MARIA_DB_CONTAINER =
+            new MariaDBContainer<>("mariadb:10.6.1")
+                    .withEnv("MARIADB_ROOT_PASSWORD", PASSWORD);
 
     @Autowired
     private MigrationService migrationService;
@@ -188,8 +188,8 @@ public abstract class SpringApplicationJpaTestBase implements InitializingBean {
         registry.add(prefix + ".2.data-source.host", MARIA_DB_CONTAINER::getHost);
         registry.add(prefix + ".2.data-source.port", () -> MARIA_DB_CONTAINER.getMappedPort(3306));
         registry.add(prefix + ".2.data-source.database", MARIA_DB_CONTAINER::getDatabaseName);
-        registry.add(prefix + ".2.data-source.user.rwx.0.username", MARIA_DB_CONTAINER::getUsername);
-        registry.add(prefix + ".2.data-source.user.rwx.0.password", MARIA_DB_CONTAINER::getPassword);
+        registry.add(prefix + ".2.data-source.user.rwx.0.username", () -> "root");
+        registry.add(prefix + ".2.data-source.user.rwx.0.password", () -> PASSWORD);
     }
 
     private static void createSQLServerTestEnv() throws SQLException {
