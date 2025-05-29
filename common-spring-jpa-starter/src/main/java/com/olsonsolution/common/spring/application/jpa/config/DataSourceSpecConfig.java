@@ -39,7 +39,7 @@ public class DataSourceSpecConfig {
 
     public static final DataSourceSpecification H2_INITIAL_DATA_SOURCE_SPEC = DomainDataSourceSpecification.builder()
             .name(H2_INITIAL_DATA_SOURCE_NAME)
-            .permissions(RWX)
+            .permission(RWX)
             .build();
 
     public static final String DATA_SOURCE_SPEC_MANAGER_TOGGLE_CONFIG =
