@@ -8,6 +8,6 @@ public @interface ColumnChange {
 
     Param[] params() default {};
 
-    String ver();
+    String version();
 
 }

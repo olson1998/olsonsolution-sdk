@@ -254,7 +254,7 @@ class JpaSpecProcedureFactory {
     private void collectOperations(ColumnChange columnChange, Column column, VariableElement entityField,
                                    String jpaSpec, String tableName, String columnName,
                                    Map<String, List<ChangeOp>> changeSetOps) {
-        String version = columnChange.ver().isEmpty() ? FIRST_VERSION : columnChange.ver();
+        String version = columnChange.version().isEmpty() ? FIRST_VERSION : columnChange.version();
         List<ChangeOp> atEndOperations = changeSetOps.computeIfAbsent(version, k -> new LinkedList<>());
         atEndOperations.addAll(liquibaseUtils.buildChangeOps(
                 columnChange.op(), jpaSpec, tableName, columnName,
@@ -368,7 +368,7 @@ class JpaSpecProcedureFactory {
         return jpaSpecAnnotationUtils.listColumnChangesForField(entityElement, fieldElement, column)
                 .stream()
                 .filter(columnChange -> columnChange.op() == Operation.ADD_COLUMN)
-                .map(ColumnChange::ver)
+                .map(ColumnChange::version)
                 .min(Comparator.naturalOrder())
                 .orElse(FIRST_VERSION);
     }
@@ -394,7 +394,7 @@ class JpaSpecProcedureFactory {
             }
 
             @Override
-            public String ver() {
+            public String version() {
                 return FIRST_VERSION;
             }
 

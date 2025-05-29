@@ -11,6 +11,7 @@ import com.olsonsolution.common.spring.application.datasource.item.repository.It
 import com.olsonsolution.common.spring.application.test.config.SpringApplicationJpaTestBase;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -47,9 +48,11 @@ class JpaSupportTest extends SpringApplicationJpaTestBase {
     void shouldSaveTestData(DataSourceSpec spec) {
         dataSourceSpecManager.setThreadLocal(spec);
         CategoryData category = createCategory();
-        category = categoryJpaRepository.saveAndFlush(category);
+        categoryJpaRepository.saveAndFlush(category);
+        category = categoryJpaRepository.findById(category.getId()).orElseThrow();
         ItemData packageItem = createPackage();
-        packageItem = itemJpaRepository.saveAndFlush(packageItem);
+        itemJpaRepository.saveAndFlush(packageItem);
+        packageItem = itemJpaRepository.findById(packageItem.getId()).orElseThrow();
         List<ItemData> products = itemJpaRepository.saveAllAndFlush(createProducts(10, packageItem.getId()));
         List<ItemCategoryData> itemCategories = new ArrayList<>(products.size());
         for (ItemData product : products) {
@@ -71,7 +74,7 @@ class JpaSupportTest extends SpringApplicationJpaTestBase {
         return CategoryData.newCategory()
                 .code(100)
                 .fullName("Test Category")
-                .shortName("test")
+                .shortName(RandomStringUtils.secure().next(120, true, true))
                 .description("Test Category")
                 .build();
     }

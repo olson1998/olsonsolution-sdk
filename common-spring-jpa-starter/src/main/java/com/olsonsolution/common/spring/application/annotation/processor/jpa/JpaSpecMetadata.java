@@ -127,7 +127,7 @@ record JpaSpecMetadata(@NonNull String jpaSpec,
                     .filter(field -> field.getAnnotation(ColumnChanges.class) != null)
                     .map(field -> field.getAnnotation(ColumnChanges.class))
                     .flatMap(columnChanges -> Arrays.stream(columnChanges.value()))
-                    .map(ColumnChange::ver);
+                    .map(ColumnChange::version);
             return Stream.concat(firstVersion, declaredVersions)
                     .sorted(Comparator.naturalOrder())
                     .collect(Collectors.toCollection(LinkedHashSet::new));

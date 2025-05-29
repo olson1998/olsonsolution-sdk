@@ -26,8 +26,7 @@ class JpaEntityUtil {
     private final TypeElementUtils typeElementUtils;
 
     private final Set<Class<? extends Annotation>> mappingAnnotations = Set.of(
-            Transient.class,
-            OneToMany.class, ManyToOne.class, ManyToMany.class
+            Transient.class, OneToOne.class, OneToMany.class, ManyToOne.class, ManyToMany.class
     );
 
     Map<String, VariableElement> obtainColumnMappings(TypeElement typeElement) {

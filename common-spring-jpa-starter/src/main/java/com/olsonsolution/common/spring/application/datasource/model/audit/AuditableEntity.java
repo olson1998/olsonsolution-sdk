@@ -1,14 +1,8 @@
 package com.olsonsolution.common.spring.application.datasource.model.audit;
 
-import com.olsonsolution.common.spring.application.hibernate.MutableDataTimeJavaType;
-import jakarta.persistence.Column;
-import jakarta.persistence.MappedSuperclass;
-import jakarta.persistence.Version;
+import com.olsonsolution.common.spring.application.hibernate.EmbeddedMutableDateTime;
+import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.JavaType;
-import org.hibernate.annotations.JdbcType;
-import org.hibernate.type.descriptor.jdbc.OffsetDateTimeJdbcType;
-import org.joda.time.MutableDateTime;
 
 @Getter
 @Setter
@@ -18,17 +12,19 @@ import org.joda.time.MutableDateTime;
 @AllArgsConstructor
 
 @MappedSuperclass
+@AttributeOverrides({
+        @AttributeOverride(name = "creationTimestamp.dateTime", column = @Column(name = "creation_timestamp") ),
+        @AttributeOverride(name = "creationTimestamp.zoneId", column = @Column(name = "creation_timestamp_timezone") ),
+        @AttributeOverride(name = "lastUpdateTimestamp.dateTime", column = @Column(name = "last_update_timestamp")),
+        @AttributeOverride(name = "lastUpdateTimestamp.zoneId", column = @Column(name = "last_update_timestamp_timezone"))
+})
 public class AuditableEntity {
 
-    @JavaType(MutableDataTimeJavaType.class)
-    @JdbcType(OffsetDateTimeJdbcType.class)
-    @Column(name = "creation_timestamp", nullable = false)
-    private MutableDateTime creationTimestamp;
+    @Embedded
+    private EmbeddedMutableDateTime creationTimestamp;
 
-    @JavaType(MutableDataTimeJavaType.class)
-    @JdbcType(OffsetDateTimeJdbcType.class)
-    @Column(name = "last_update_timestamp", nullable = false)
-    private MutableDateTime lastUpdateTimestamp;
+    @Embedded
+    private EmbeddedMutableDateTime lastUpdateTimestamp;
 
     @Version
     @Column(name = "version", nullable = false)

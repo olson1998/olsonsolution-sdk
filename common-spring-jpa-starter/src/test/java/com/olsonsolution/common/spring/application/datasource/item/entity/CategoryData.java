@@ -22,7 +22,7 @@ import static com.olsonsolution.common.spring.application.annotation.migration.O
 @Entity
 @ChangeSet
 @ColumnChanges({
-        @ColumnChange(op = ADD_COLUMN, column = "code", ver = "1.0.1"),
+        @ColumnChange(op = ADD_COLUMN, column = "code", version = "1.0.1"),
 })
 @Table(name = "category")
 @EntityListeners({AuditableEntityListener.class})
@@ -41,7 +41,7 @@ public class CategoryData extends AuditableEntity {
 
     @Column(name = "short_name", nullable = false, unique = true, length = 63)
     @ColumnChanges({
-            @ColumnChange(op = MODIFY_DATA_TYPE, ver = "1.0.1", params = @Param(name = "newDataType", value = "VARCHAR(127)"))
+            @ColumnChange(op = MODIFY_DATA_TYPE, version = "1.0.1", params = @Param(name = "newDataType", value = "VARCHAR(127)"))
     })
     private String shortName;
 

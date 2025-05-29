@@ -70,7 +70,7 @@ public class MutableDataTimeJavaType extends AbstractTemporalJavaType<MutableDat
                 dateTime.getHourOfDay(),
                 dateTime.getMinuteOfHour(),
                 dateTime.getSecondOfMinute(),
-                dateTime.getMillisOfSecond(),
+                dateTime.getMillisOfSecond() * 1000000,
                 ZoneId.of(dateTime.getZone().getID())
         );
         if (ZonedDateTime.class.isAssignableFrom(temporalType)) {
@@ -112,7 +112,7 @@ public class MutableDataTimeJavaType extends AbstractTemporalJavaType<MutableDat
             hour = dateTime.getHour();
             minute = dateTime.getMinute();
             second = dateTime.getSecond();
-            millisecond = dateTime.getNano();
+            millisecond = dateTime.getNano() / 1000000;
             dateTimeZone = DateTimeZone.forID(dateTime.getZone().getId());
         } else if (value instanceof OffsetDateTime dateTime) {
             return wrapTimestamp(dateTime.toZonedDateTime());
@@ -142,7 +142,7 @@ public class MutableDataTimeJavaType extends AbstractTemporalJavaType<MutableDat
             hour = time.getHour();
             minute = time.getMinute();
             second = time.getSecond();
-            millisecond = time.getNano();
+            millisecond = time.getNano() / 1000000;
             dateTimeZone = DateTimeZone.UTC;
         } else {
             throw unknownWrap(value.getClass());
