@@ -3,6 +3,7 @@ package com.olsonsolution.common.spring.domain.port.repository.jpa;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;
 import lombok.NonNull;
+import org.springframework.transaction.PlatformTransactionManager;
 
 public interface JpaSpecConfigurer {
 
@@ -17,9 +18,6 @@ public interface JpaSpecConfigurer {
             SqlDataSourceProvider sqlDataSourceProvider,
             DestinationDataSourceManager destinationDataSourceManager);
 
-    PlatformTransactionManagerDelegate createPlatformTransactionManagerDelegate(
-            DataSourceSpecManager dataSourceSpecManager,
-            SqlDataSourceProvider sqlDataSourceProvider,
-            EntityManagerFactoryDelegate entityManagerFactoryDelegate);
+    PlatformTransactionManager createPlatformTransactionManager(EntityManagerFactoryDelegate em);
 
 }

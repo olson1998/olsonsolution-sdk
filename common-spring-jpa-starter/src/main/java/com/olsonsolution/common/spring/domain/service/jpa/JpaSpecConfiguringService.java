@@ -8,11 +8,12 @@ import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlData
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.EntityManagerFactoryDelegate;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.JpaSpecConfigurer;
-import com.olsonsolution.common.spring.domain.port.repository.jpa.PlatformTransactionManagerDelegate;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.transaction.PlatformTransactionManager;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -55,15 +56,8 @@ public class JpaSpecConfiguringService implements JpaSpecConfigurer {
     }
 
     @Override
-    public PlatformTransactionManagerDelegate createPlatformTransactionManagerDelegate(
-            DataSourceSpecManager dataSourceSpecManager,
-            SqlDataSourceProvider sqlDataSourceProvider,
-            EntityManagerFactoryDelegate entityManagerFactoryDelegate) {
-        return new MultiVendorPlatformTransactionManager(
-                dataSourceSpecManager,
-                sqlDataSourceProvider,
-                entityManagerFactoryDelegate
-        );
+    public PlatformTransactionManager createPlatformTransactionManager(EntityManagerFactoryDelegate em) {
+        return new JpaTransactionManager(em);
     }
 
     private JpaSpecProperties getJpaSpecProperties(String jpaSpecName) {

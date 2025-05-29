@@ -6,13 +6,13 @@ import com.olsonsolution.common.spring.domain.port.repository.datasource.Destina
 import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.EntityManagerFactoryDelegate;
-import com.olsonsolution.common.spring.domain.port.repository.jpa.PlatformTransactionManagerDelegate;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.annotation.processing.Generated;
 
@@ -78,13 +78,9 @@ public class ${JPA_SPEC}JpaSpecConfigurer implements JpaSpecConfig, Initializing
     }
 
     @Bean(JPA_SPEC + "_platformTransactionManagerDelegate")
-    public PlatformTransactionManagerDelegate platformTransactionManagerDelegate(
+    public PlatformTransactionManager platformTransactionManager(
             @Qualifier(JPA_SPEC + "_entityManagerFactoryDelegate") EntityManagerFactoryDelegate entityManagerFactory) {
-        return jpaSpecConfigurer.createPlatformTransactionManagerDelegate(
-                dataSourceSpecManager,
-                sqlDataSourceProvider,
-                entityManagerFactory
-        );
+        return jpaSpecConfigurer.createPlatformTransactionManager(entityManagerFactory);
     }
 
     @Bean("enable " + JPA_SPEC + "JpaRepositories")

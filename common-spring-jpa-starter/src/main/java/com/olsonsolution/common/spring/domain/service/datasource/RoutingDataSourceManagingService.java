@@ -30,7 +30,10 @@ public class RoutingDataSourceManagingService extends DestinationDataSourceManag
 
     @Override
     public DataSource selectDataSourceBySpec(DataSourceSpecification dataSourceSpecification) {
-        return destinationDataSourcesCache.get(dataSourceSpecification.getName(), this::createPermissionManagingDataSource);
+        return destinationDataSourcesCache.get(
+                dataSourceSpecification.getName(),
+                this::createPermissionManagingDataSource
+        );
     }
 
     @Override
