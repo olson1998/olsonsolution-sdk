@@ -8,8 +8,10 @@ import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Table;
-import lombok.*;
-import org.joda.time.MutableDateTime;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
@@ -30,10 +32,4 @@ public class ItemCategoryData extends AuditableEntity {
         this.bound = bound;
     }
 
-    @Builder(builderMethodName = "itemCategory")
-    public ItemCategoryData(MutableDateTime creationTimestamp, MutableDateTime lastUpdateTimestamp,
-                            Long version, ItemCategory bound) {
-        super(creationTimestamp, lastUpdateTimestamp, version);
-        this.bound = bound;
-    }
 }

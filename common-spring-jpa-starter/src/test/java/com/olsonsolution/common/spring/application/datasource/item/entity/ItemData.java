@@ -72,21 +72,4 @@ public class ItemData extends AuditableEntity {
         this.packagingId = packagingId;
     }
 
-    @Builder(builderMethodName = "item")
-    public ItemData(MutableDateTime creationTimestamp, MutableDateTime lastUpdateTimestamp, Long version, String id,
-                    ItemType type, String packagingId, String fullName, String description, Integer yDimension,
-                    Double netWeight, Double grossWeight, Integer zDimension, Integer xDimension, String shortName) {
-        super(creationTimestamp, lastUpdateTimestamp, version);
-        this.id = id;
-        this.type = type;
-        this.packagingId = packagingId;
-        this.fullName = fullName;
-        this.description = description;
-        this.yDimension = yDimension;
-        this.netWeight = netWeight;
-        this.grossWeight = grossWeight;
-        this.zDimension = zDimension;
-        this.xDimension = xDimension;
-        this.shortName = shortName;
-    }
 }

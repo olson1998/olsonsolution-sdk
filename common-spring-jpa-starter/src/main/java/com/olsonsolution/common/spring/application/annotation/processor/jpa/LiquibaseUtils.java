@@ -89,10 +89,12 @@ class LiquibaseUtils {
                            String columnName,
                            Column column,
                            boolean isIdentifier) {
+        messagePrinter.print(Diagnostic.Kind.NOTE, LiquibaseUtils.class,
+                "%s.%s.%s field=%s metadata=%s".formatted(jpaSpec, tableName, columnName, fieldElement, column));
         ChangeOp.Builder addColumnOp = ChangeOp.builder()
                 .operation("column")
                 .attribute("name", columnName)
-                .attribute("type", getLiquibaseType(fieldElement));
+                .attribute("type", getLiquibaseType(fieldElement, column));
         ChangeOp.Builder constraints = null;
         if (isIdentifier) {
             constraints = ChangeOp.builder()
@@ -249,12 +251,11 @@ class LiquibaseUtils {
                 .build();
     }
 
-    private String getLiquibaseType(VariableElement entityFieldElement) {
+    private String getLiquibaseType(VariableElement entityFieldElement, Column column) {
         JdbcType jdbcType = null;
         Integer length = null;
         Integer scale = null;
         Integer precision = null;
-        Column column = entityFieldElement.getAnnotation(Column.class);
         if (column != null) {
             length = column.length();
             scale = column.scale();
@@ -308,7 +309,7 @@ class LiquibaseUtils {
             JavaType<?> javaTypeDescriptor = typeConfiguration.getJavaTypeRegistry().getDescriptor(javaClass);
             JdbcTypeIndicators indicators = new GenericJdbcTypeIndicators(typeConfiguration);
             return javaTypeDescriptor.getRecommendedJdbcType(indicators);
-        } catch (ClassNotFoundException e) {
+        } catch (Exception e) {
             messagePrinter.print(
                     Diagnostic.Kind.WARNING, LiquibaseUtils.class,
                     "Column type could not be resolved", e

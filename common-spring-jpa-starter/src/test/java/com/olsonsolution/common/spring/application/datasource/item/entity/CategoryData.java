@@ -56,14 +56,4 @@ public class CategoryData extends AuditableEntity {
         this.description = description;
     }
 
-    @Builder(builderMethodName = "category")
-    public CategoryData(MutableDateTime creationTimestamp, MutableDateTime lastUpdateTimestamp,
-                        Long version, Long id, Integer code, String fullName, String shortName, String description) {
-        super(creationTimestamp, lastUpdateTimestamp, version);
-        this.id = id;
-        this.code = code;
-        this.fullName = fullName;
-        this.shortName = shortName;
-        this.description = description;
-    }
 }

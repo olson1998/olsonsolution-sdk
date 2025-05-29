@@ -1,6 +1,7 @@
 package com.olsonsolution.common.spring.application.jpa.service;
 
 import com.olsonsolution.common.spring.application.datasource.model.audit.AuditableEntity;
+import com.olsonsolution.common.spring.application.hibernate.EmbeddedTimestamp;
 import com.olsonsolution.common.time.domain.port.TimeUtils;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
@@ -14,8 +15,9 @@ public class AuditableEntityListener {
     public void onSave(Object entity) {
         if (entity instanceof AuditableEntity auditable) {
             MutableDateTime timestamp = obtainTimestamp();
-            auditable.setCreationTimestamp(timestamp);
-            auditable.setLastUpdateTimestamp(timestamp);
+            EmbeddedTimestamp embeddedTimestamp = new EmbeddedTimestamp(timestamp);
+            auditable.setCreation(embeddedTimestamp);
+            auditable.setLastUpdate(embeddedTimestamp);
             auditable.setVersion(1L);
         }
     }
@@ -23,8 +25,10 @@ public class AuditableEntityListener {
     @PreUpdate
     public void onUpdate(Object entity) {
         if (entity instanceof AuditableEntity auditable) {
-            auditable.setLastUpdateTimestamp(obtainTimestamp());
-            auditable.setCreationTimestamp(auditable.getCreationTimestamp());
+            MutableDateTime timestamp = obtainTimestamp();
+            EmbeddedTimestamp embeddedTimestamp = new EmbeddedTimestamp(timestamp);
+            auditable.setCreation(auditable.getCreation());
+            auditable.setLastUpdate(embeddedTimestamp);
         }
     }
 
