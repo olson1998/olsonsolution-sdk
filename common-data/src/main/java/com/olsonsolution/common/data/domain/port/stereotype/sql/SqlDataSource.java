@@ -12,7 +12,11 @@ public interface SqlDataSource {
 
     String getDatabase();
 
-    SqlDataSourceUsers getUsers();
+    String getSchema();
+
+    SqlUser getUser();
+
+    SqlPermission getPermission();
 
     Map<String, String> getProperties();
 

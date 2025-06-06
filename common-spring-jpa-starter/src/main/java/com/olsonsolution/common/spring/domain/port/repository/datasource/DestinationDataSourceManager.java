@@ -1,13 +1,13 @@
 package com.olsonsolution.common.spring.domain.port.repository.datasource;
 
-import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpecification;
+import com.olsonsolution.common.spring.domain.port.stereotype.datasource.JpaDataSourceSpec;
 import org.hibernate.engine.jdbc.connections.spi.AbstractDataSourceBasedMultiTenantConnectionProviderImpl;
 
 import javax.sql.DataSource;
 
 public abstract class DestinationDataSourceManager
-        extends AbstractDataSourceBasedMultiTenantConnectionProviderImpl<DataSourceSpecification> {
+        extends AbstractDataSourceBasedMultiTenantConnectionProviderImpl<JpaDataSourceSpec> {
 
-    public abstract DataSource selectDataSourceBySpec(DataSourceSpecification dataSourceSpecification);
+    public abstract DataSource selectDataSourceBySpec(JpaDataSourceSpec jpaDataSourceSpec);
 
 }

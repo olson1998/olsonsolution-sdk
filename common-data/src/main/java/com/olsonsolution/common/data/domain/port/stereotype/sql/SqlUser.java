@@ -6,6 +6,4 @@ public interface SqlUser {
 
     String getPassword();
 
-    String getSchema();
-
 }

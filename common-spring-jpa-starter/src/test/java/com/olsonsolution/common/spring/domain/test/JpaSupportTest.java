@@ -9,7 +9,7 @@ import com.olsonsolution.common.spring.application.datasource.item.repository.Ca
 import com.olsonsolution.common.spring.application.datasource.item.repository.ItemCategoryJpaRepository;
 import com.olsonsolution.common.spring.application.datasource.item.repository.ItemJpaRepository;
 import com.olsonsolution.common.spring.application.test.config.SpringApplicationJpaTestBase;
-import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.JpaSpecDataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpecification;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class JpaSupportTest extends SpringApplicationJpaTestBase {
 
     @Autowired
-    private DataSourceSpecManager dataSourceSpecManager;
+    private JpaSpecDataSourceSpecManager jpaSpecDataSourceSpecManager;
 
     @Autowired
     private ItemJpaRepository itemJpaRepository;
@@ -39,14 +39,14 @@ class JpaSupportTest extends SpringApplicationJpaTestBase {
 
     @AfterEach
     void clearDataSourceSpec() {
-        dataSourceSpecManager.clear();
+        jpaSpecDataSourceSpecManager.clear();
     }
 
     @ParameterizedTest
     @MethodSource("com.olsonsolution.common.spring.application.test.config.SpringApplicationJpaTestBase#" +
             "dataSourceSpecStream")
     void shouldSaveTestData(DataSourceSpecification spec) {
-        dataSourceSpecManager.setThreadLocal(spec);
+        jpaSpecDataSourceSpecManager.setThreadLocal(spec);
         CategoryData category = createCategory();
         categoryJpaRepository.saveAndFlush(category);
         category = categoryJpaRepository.findById(category.getId()).orElseThrow();

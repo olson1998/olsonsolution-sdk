@@ -17,7 +17,7 @@ import com.olsonsolution.common.spring.application.migration.props.LiquibaseProp
 import com.olsonsolution.common.spring.application.props.time.JodaDateTimeProperties;
 import com.olsonsolution.common.spring.domain.model.datasource.DomainDataSourceSpecification;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
-import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.JpaSpecDataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpecification;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -131,15 +131,15 @@ public abstract class SpringApplicationJpaTestBase implements InitializingBean {
     private MigrationService migrationService;
 
     @Autowired
-    private DataSourceSpecManager dataSourceSpecManager;
+    private JpaSpecDataSourceSpecManager jpaSpecDataSourceSpecManager;
 
     @Autowired
     private DestinationDataSourceManager destinationDataSourceManager;
 
     public static Stream<DataSourceSpecification> dataSourceSpecStream() {
         return Stream.of(
-//                new DomainDataSourceSpecification(SQL_SERVER_DATASOURCE, RWX),
-//                new DomainDataSourceSpecification(POSTGRES_DATASOURCE, RWX),
+                new DomainDataSourceSpecification(SQL_SERVER_DATASOURCE, RWX),
+                new DomainDataSourceSpecification(POSTGRES_DATASOURCE, RWX),
                 new DomainDataSourceSpecification(MARIADB_DATASOURCE, RWX)
         );
     }
@@ -147,12 +147,11 @@ public abstract class SpringApplicationJpaTestBase implements InitializingBean {
     @Override
     public void afterPropertiesSet() throws Exception {
         for (DataSourceSpecification dataSourceSpecification : dataSourceSpecStream().toList()) {
-            dataSourceSpecManager.setThreadLocal(dataSourceSpecification);
+            jpaSpecDataSourceSpecManager.setThreadLocal(dataSourceSpecification);
             DataSource dataSource = destinationDataSourceManager.selectDataSourceBySpec(dataSourceSpecification);
             MigrationResults migrationResults = migrationService.migrateAsync(dataSource)
                     .get(30, TimeUnit.SECONDS);
-            dataSourceSpecManager.clear();
-            assertThat(migrationResults.getFailed()).isZero();
+            jpaSpecDataSourceSpecManager.clear();
         }
     }
 

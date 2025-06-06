@@ -2,7 +2,8 @@ package com.olsonsolution.common.data.domain.model.sql;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSource;
-import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSourceUsers;
+import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlPermission;
+import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlUser;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlVendor;
 import lombok.*;
 
@@ -24,9 +25,12 @@ public class DomainSqlDataSource implements SqlDataSource {
 
     private String database;
 
-    private SqlDataSourceUsers users;
+    private String schema;
 
-    @Singular("property")
+    private SqlUser user;
+
+    private SqlPermission permission;
+
     private Map<String, String> properties;
 
 }

@@ -1,5 +1,6 @@
 package com.olsonsolution.common.spring.domain.port.repository.jpa;
 
+import com.olsonsolution.common.spring.domain.port.repository.datasource.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;
 import lombok.NonNull;
@@ -15,6 +16,7 @@ public interface JpaSpecConfigurer {
             @NonNull String jpaSpecName,
             @NonNull String[] entityBasePackages,
             DataSourceSpecManager dataSourceSpecManager,
+            JpaSpecDataSourceSpecManager jpaSpecDataSourceSpecManager,
             SqlDataSourceProvider sqlDataSourceProvider,
             DestinationDataSourceManager destinationDataSourceManager);
 

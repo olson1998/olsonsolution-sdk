@@ -1,6 +1,7 @@
 package com.olsonsolution.common.data.domain.model.sql;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSourceUsers;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlUser;
 import lombok.*;
@@ -15,16 +16,16 @@ import java.util.List;
 @AllArgsConstructor
 public class DomainSqlDataSourceUsers implements SqlDataSourceUsers {
 
-    @Singular("ro")
-    private List<? extends SqlUser> readOnly;
+    @JsonDeserialize(contentAs = DomainSqlUser.class)
+    private SqlUser readOnly;
 
-    @Singular("wo")
-    private List<? extends SqlUser> writeOnly;
+    @JsonDeserialize(contentAs = DomainSqlUser.class)
+    private SqlUser writeOnly;
 
-    @Singular("rw")
-    private List<? extends SqlUser> readWrite;
+    @JsonDeserialize(contentAs = DomainSqlUser.class)
+    private SqlUser readWrite;
 
-    @Singular("rwx")
-    private List<? extends SqlUser> readWriteExecute;
+    @JsonDeserialize(contentAs = DomainSqlUser.class)
+    private SqlUser readWriteExecute;
 
 }

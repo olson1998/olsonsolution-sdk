@@ -3,9 +3,10 @@ package com.olsonsolution.common.spring.domain.service.jpa;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlVendor;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaSpecProperties;
+import com.olsonsolution.common.spring.domain.port.repository.datasource.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;
-import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.JpaSpecDataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.EntityManagerFactoryDelegate;
 import jakarta.persistence.*;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -33,8 +34,6 @@ public class MultiVendorEntityManagerFactory extends MultiVendorJpaConfigurable<
 
     private final String schema;
 
-    private final String jpaSpecName;
-
     private final String[] entityBasePackages;
 
     private final JpaProperties jpaProperties;
@@ -42,15 +41,15 @@ public class MultiVendorEntityManagerFactory extends MultiVendorJpaConfigurable<
     private final DestinationDataSourceManager destinationDataSourceManager;
 
     public MultiVendorEntityManagerFactory(String schema,
-                                           String jpaSpecName,
+                                           String jpaSpec,
                                            String[] entityBasePackages,
                                            JpaProperties jpaProperties,
                                            DataSourceSpecManager dataSourceSpecManager,
+                                           JpaSpecDataSourceSpecManager jpaSpecDataSourceSpecManager,
                                            SqlDataSourceProvider sqlDataSourceProvider,
                                            DestinationDataSourceManager routingDataSourceManager) {
-        super(dataSourceSpecManager, sqlDataSourceProvider);
+        super(jpaSpec, dataSourceSpecManager, jpaSpecDataSourceSpecManager, sqlDataSourceProvider);
         this.schema = schema;
-        this.jpaSpecName = jpaSpecName;
         this.entityBasePackages = entityBasePackages;
         this.jpaProperties = jpaProperties;
         this.destinationDataSourceManager = routingDataSourceManager;
@@ -151,7 +150,7 @@ public class MultiVendorEntityManagerFactory extends MultiVendorJpaConfigurable<
         EntityManagerFactory entityManagerFactory = Objects.requireNonNull(entityManagerFactoryBean.getObject());
         log.info(
                 "Created entity manager factory, Jpa Spec: '{}' schema: '{}' SQL vendor: '{}'",
-                jpaSpecName, schema, sqlVendor
+                jpaSpec, schema, sqlVendor
         );
         return entityManagerFactory;
     }
@@ -163,7 +162,7 @@ public class MultiVendorEntityManagerFactory extends MultiVendorJpaConfigurable<
         properties.put(SHOW_SQL, jpaSpecProperties.isLogSql());
         properties.put(FORMAT_SQL, jpaSpecProperties.isFormatSqlLog());
         properties.put(MULTI_TENANT_CONNECTION_PROVIDER, destinationDataSourceManager);
-        properties.put(MULTI_TENANT_IDENTIFIER_RESOLVER, dataSourceSpecManager);
+        properties.put(MULTI_TENANT_IDENTIFIER_RESOLVER, jpaSpecDataSourceSpecManager);
         properties.put(DIALECT, vendor.getDialect());
         return properties;
     }
@@ -171,7 +170,7 @@ public class MultiVendorEntityManagerFactory extends MultiVendorJpaConfigurable<
     private Optional<? extends JpaSpecProperties> findEntityManagerFactoryProperties() {
         return jpaProperties.getJpaSpecificationsProperties()
                 .stream()
-                .filter(props -> StringUtils.equals(jpaSpecName, props.getName()))
+                .filter(props -> StringUtils.equals(jpaSpec, props.getName()))
                 .findFirst();
     }
 

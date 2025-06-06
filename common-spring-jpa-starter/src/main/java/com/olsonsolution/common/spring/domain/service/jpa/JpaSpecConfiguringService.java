@@ -3,9 +3,10 @@ package com.olsonsolution.common.spring.domain.service.jpa;
 import com.olsonsolution.common.spring.domain.model.exception.jpa.JpaSpecNotRegisteredException;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaSpecProperties;
+import com.olsonsolution.common.spring.domain.port.repository.datasource.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;
-import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.JpaSpecDataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.EntityManagerFactoryDelegate;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.JpaSpecConfigurer;
 import lombok.NonNull;
@@ -38,6 +39,7 @@ public class JpaSpecConfiguringService implements JpaSpecConfigurer {
             @NonNull String jpaSpecName,
             @NonNull String[] entityBasePackages,
             DataSourceSpecManager dataSourceSpecManager,
+            JpaSpecDataSourceSpecManager jpaSpecDataSourceSpecManager,
             SqlDataSourceProvider sqlDataSourceProvider,
             DestinationDataSourceManager destinationDataSourceManager) {
         JpaSpecProperties properties = getJpaSpecProperties(jpaSpecName);
@@ -50,6 +52,7 @@ public class JpaSpecConfiguringService implements JpaSpecConfigurer {
                 entityBasePackages,
                 jpaProperties,
                 dataSourceSpecManager,
+                jpaSpecDataSourceSpecManager,
                 sqlDataSourceProvider,
                 destinationDataSourceManager
         );

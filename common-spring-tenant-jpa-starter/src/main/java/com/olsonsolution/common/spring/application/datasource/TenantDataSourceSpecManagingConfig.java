@@ -1,6 +1,6 @@
 package com.olsonsolution.common.spring.application.datasource;
 
-import com.olsonsolution.common.spring.domain.port.repository.jpa.DataSourceSpecManager;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.JpaSpecDataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.service.datasource.TenantDataSourceSpecManagingService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 public class TenantDataSourceSpecManagingConfig {
 
     @Bean
-    public DataSourceSpecManager tenantDataSourceSpecManager() {
+    public JpaSpecDataSourceSpecManager tenantDataSourceSpecManager() {
         return new TenantDataSourceSpecManagingService();
     }
 
