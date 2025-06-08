@@ -1,6 +1,8 @@
 package com.olsonsolution.common.spring.application.test.config;
 
 import com.microsoft.sqlserver.jdbc.SQLServerDataSource;
+import com.olsonsolution.common.data.domain.port.repository.sql.SqlDataSourceFactory;
+import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSource;
 import com.olsonsolution.common.migration.domain.port.repository.MigrationService;
 import com.olsonsolution.common.spring.application.async.config.AsyncConfig;
 import com.olsonsolution.common.spring.application.async.props.AsyncProperties;
@@ -17,9 +19,12 @@ import com.olsonsolution.common.spring.application.migration.config.SqlVendorSup
 import com.olsonsolution.common.spring.application.migration.props.LiquibaseProperties;
 import com.olsonsolution.common.spring.application.props.time.JodaDateTimeProperties;
 import com.olsonsolution.common.spring.domain.model.datasource.DomainDataSourceSpec;
+import com.olsonsolution.common.spring.domain.model.datasource.DomainJpaSpecDataSource;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
+import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.JpaSpecDataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
+import com.olsonsolution.common.spring.domain.port.stereotype.datasource.JpaDataSourceSpec;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.postgresql.ds.PGSimpleDataSource;
@@ -40,6 +45,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -47,6 +53,7 @@ import java.util.stream.Stream;
 
 import static com.olsonsolution.common.data.domain.model.sql.SqlPermissions.RWX;
 import static com.olsonsolution.common.data.domain.model.sql.SqlVendors.*;
+import static com.olsonsolution.common.spring.domain.model.datasource.DomainJpaSpecDataSource.SYSTEM_JPA_SPEC;
 
 @EnableJpaAuditing
 @EnableTransactionManagement
@@ -94,8 +101,8 @@ public abstract class SpringApplicationJpaTestBase implements InitializingBean {
 
     @Container
     private static final PostgreSQLContainer POSTGRES_CONTAINER =
-            new PostgreSQLContainer("postgres:14-alpine")
-                    .withUsername("sa")
+            (PostgreSQLContainer) new PostgreSQLContainer("postgres:14-alpine")
+                    .withUsername("rwx_user")
                     .withPassword(PASSWORD);
 
     @Container
@@ -107,10 +114,10 @@ public abstract class SpringApplicationJpaTestBase implements InitializingBean {
     private MigrationService migrationService;
 
     @Autowired
-    private JpaSpecDataSourceSpecManager jpaSpecDataSourceSpecManager;
+    private SqlDataSourceProvider sqlDataSourceProvider;
 
     @Autowired
-    private DestinationDataSourceManager destinationDataSourceManager;
+    private SqlDataSourceFactory sqlDataSourceFactory;
 
     public static Stream<DataSourceSpec> testDataSourceSpec() {
         return Stream.of(
@@ -122,7 +129,17 @@ public abstract class SpringApplicationJpaTestBase implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-
+        for (DataSourceSpec dataSourceSpec : testDataSourceSpec().toList()) {
+            JpaDataSourceSpec jpaDataSourceSpec = DomainJpaSpecDataSource.builder()
+                    .jpaSpec(SYSTEM_JPA_SPEC)
+                    .dataSourceName(dataSourceSpec.getDataSourceName())
+                    .permission(dataSourceSpec.getPermission())
+                    .build();
+            DataSource dataSource = sqlDataSourceProvider.findDestination(jpaDataSourceSpec)
+                    .map(sqlDataSource -> sqlDataSourceFactory.fabricate(sqlDataSource, RWX))
+                    .orElseThrow();
+            migrationService.migrateAsync(dataSource).get();
+        }
     }
 
     @BeforeAll
@@ -145,10 +162,8 @@ public abstract class SpringApplicationJpaTestBase implements InitializingBean {
         registry.add(prefix + ".0.user.1.schema", () -> "dbo");
         registry.add(prefix + ".0.user.1.read-write-execute.username", SQL_SERVER_CONTAINER::getUsername);
         registry.add(prefix + ".0.user.1.read-write-execute.password", SQL_SERVER_CONTAINER::getPassword);
-        registry.add(prefix + ".0.property.0.name", () -> "trustServerCertificate");
-        registry.add(prefix + ".0.property.0.value", () -> "true");
-        registry.add(prefix + ".0.property.1.name", () -> "encrypt");
-        registry.add(prefix + ".0.property.1.value", () -> "false");
+        registry.add(prefix + ".0.property.trustServerCertificate", () -> "true");
+        registry.add(prefix + ".0.property.encrypt", () -> "false");
         registry.add(prefix + ".1.name", () -> POSTGRES_DATASOURCE);
         registry.add(prefix + ".1.vendor", POSTGRESQL::name);
         registry.add(prefix + ".1.host", POSTGRES_CONTAINER::getHost);
@@ -207,6 +222,5 @@ public abstract class SpringApplicationJpaTestBase implements InitializingBean {
             query.execute();
         }
     }
-
 
 }

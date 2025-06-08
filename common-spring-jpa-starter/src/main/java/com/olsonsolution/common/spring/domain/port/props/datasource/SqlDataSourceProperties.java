@@ -19,6 +19,6 @@ public interface SqlDataSourceProperties {
 
     List<? extends SqlUsersProperties> getUsers();
 
-    Properties getProperties();
+    Properties getProperty();
 
 }

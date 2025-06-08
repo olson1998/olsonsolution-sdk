@@ -47,7 +47,7 @@ public class ApplicationDestinationDataSourceProperties implements DestinationDa
 
         private final List<ApplicationSqlUsersProperties> user = new ArrayList<>();
 
-        private final Properties properties = new Properties();
+        private final Properties property = new Properties();
 
         @Override
         public List<? extends SqlUsersProperties> getUsers() {

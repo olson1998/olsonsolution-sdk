@@ -48,7 +48,7 @@ public class RoutingDataSourceManagingService extends DestinationDataSourceManag
         SqlPermission permission = jpaDataSourceSpec.getPermission();
         SqlDataSource sqlDataSource = sqlDataSourceProvider.findDestination(jpaDataSourceSpec).orElse(null);
         DataSource dataSource = sqlDataSourceFactory.fabricate(sqlDataSource, permission);
-        log.info("Permission data source manager created for {}", jpaDataSourceSpec);
+        log.info("Data Source {} provisioned for: {}", dataSource.getClass().getSimpleName(), jpaDataSourceSpec);
         return dataSource;
     }
 

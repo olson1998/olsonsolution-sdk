@@ -1,6 +1,7 @@
 package com.olsonsolution.common.spring.domain.service.datasource;
 
 import com.olsonsolution.common.data.domain.model.sql.DomainSqlDataSource;
+import com.olsonsolution.common.data.domain.model.sql.DomainSqlUser;
 import com.olsonsolution.common.data.domain.model.sql.SqlPermissions;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlDataSource;
 import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlPermission;
@@ -53,14 +54,15 @@ public class DestinationDataSourcePropertyLookupService implements SqlDataSource
                 return Optional.empty();
             }
             String schema = matchingSchema.get();
-            Optional<? extends SqlUser> sqlUser = sqlDataSourceProperties
+            Optional<? extends SqlUser> sqlUserProperties = sqlDataSourceProperties
                     .flatMap(ds -> findUserForSchema(ds, permission, schema));
-            if (sqlUser.isEmpty()) {
+            if (sqlUserProperties.isEmpty()) {
                 log.warn("SQL Data source '{}' JpaSpec: '{}' schema: '{}' with permission: '{}'" +
                         " configured in properties but users not found", dsName, jpaSpec, schema, permission
                 );
             } else {
-                return Optional.of(buildSqlDataSource(sqlDataSourceProperties.get(), sqlUser.get(), schema));
+                SqlUser sqlUser = getUser(sqlUserProperties.get(), dsName, schema);
+                return Optional.of(buildSqlDataSource(sqlDataSourceProperties.get(), sqlUser, schema));
             }
         } else {
             log.warn("SQL Data source '{}' JpaSpec: '{}' not configured in properties", dsName, jpaSpec);
@@ -70,7 +72,7 @@ public class DestinationDataSourcePropertyLookupService implements SqlDataSource
 
     private SqlDataSource buildSqlDataSource(SqlDataSourceProperties properties, SqlUser user, String schema) {
         SqlVendor vendor = properties.getVendor();
-        Properties additionalPropertiesObj = properties.getProperties();
+        Properties additionalPropertiesObj = properties.getProperty();
         Map<String, String> additionalProperties = additionalPropertiesObj.keySet()
                 .stream()
                 .filter(String.class::isInstance)
@@ -90,6 +92,18 @@ public class DestinationDataSourcePropertyLookupService implements SqlDataSource
             sqlDataSource.database(schema);
         }
         return sqlDataSource.build();
+    }
+
+    private SqlUser getUser(SqlUser sqlUser, String dataSourceName, String schema) {
+        String username = sqlUser.getUsername();
+        String password = sqlUser.getPassword();
+        if (StringUtils.isNoneBlank(username, password)) {
+            return new DomainSqlUser(username, password);
+        }
+        throw new IllegalArgumentException(
+                "SQL user for data source: '%s' schema: '%s' must have username and password"
+                        .formatted(dataSourceName, schema)
+        );
     }
 
     private Optional<? extends SqlUser> findUserForSchema(SqlDataSourceProperties properties,
@@ -112,7 +126,7 @@ public class DestinationDataSourcePropertyLookupService implements SqlDataSource
         } else if (permission.isSameAs(SqlPermissions.RW)) {
             sqlUser = usersProperties.getReadWrite();
         } else if (permission.isSameAs(SqlPermissions.RWX)) {
-            sqlUser = usersProperties.getReadWrite();
+            sqlUser = usersProperties.getReadWriteExecute();
         }
         return Optional.ofNullable(sqlUser);
     }
