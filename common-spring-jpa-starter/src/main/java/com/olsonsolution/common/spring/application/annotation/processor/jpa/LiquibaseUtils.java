@@ -89,8 +89,6 @@ class LiquibaseUtils {
                            String columnName,
                            Column column,
                            boolean isIdentifier) {
-        messagePrinter.print(Diagnostic.Kind.NOTE, LiquibaseUtils.class,
-                "%s.%s.%s field=%s metadata=%s".formatted(jpaSpec, tableName, columnName, fieldElement, column));
         ChangeOp.Builder addColumnOp = ChangeOp.builder()
                 .operation("column")
                 .attribute("name", columnName)
@@ -280,10 +278,6 @@ class LiquibaseUtils {
         if (jdbcType == null) {
             return null;
         }
-        messagePrinter.print(
-                Diagnostic.Kind.NOTE, JpaEntityUtil.class,
-                "Entity field mirror %s resolve Jdbc Type %s".formatted(entityFieldElement, jdbcType)
-        );
         return getLiquibaseDataType(jdbcType, length, precision, scale);
     }
 

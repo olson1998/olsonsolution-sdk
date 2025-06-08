@@ -8,10 +8,15 @@ import com.olsonsolution.common.spring.application.datasource.item.entity.suppor
 import com.olsonsolution.common.spring.application.datasource.item.repository.CategoryJpaRepository;
 import com.olsonsolution.common.spring.application.datasource.item.repository.ItemCategoryJpaRepository;
 import com.olsonsolution.common.spring.application.datasource.item.repository.ItemJpaRepository;
+import com.olsonsolution.common.spring.application.datasource.order.entity.OrderData;
+import com.olsonsolution.common.spring.application.datasource.order.repository.OrderJpaRepository;
+import com.olsonsolution.common.spring.application.hibernate.EmbeddedTimestamp;
 import com.olsonsolution.common.spring.application.test.config.SpringApplicationJpaTestBase;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.joda.time.Duration;
+import org.joda.time.MutableDateTime;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -19,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,6 +42,9 @@ class JpaSupportTest extends SpringApplicationJpaTestBase {
 
     @Autowired
     private ItemCategoryJpaRepository itemCategoryJpaRepository;
+
+    @Autowired
+    private OrderJpaRepository orderJpaRepository;
 
     @AfterEach
     void clearDataSourceSpec() {
@@ -61,6 +70,23 @@ class JpaSupportTest extends SpringApplicationJpaTestBase {
             itemCategories.add(productCategory);
         }
         itemCategories = itemCategoryJpaRepository.saveAllAndFlush(itemCategories);
+        MutableDateTime now = MutableDateTime.now();
+        MutableDateTime completeUntil = now.copy();
+        completeUntil.add(Duration.standardDays(10));
+        MutableDateTime deliverUntil = now.copy();
+        deliverUntil.add(Duration.standardDays(30));
+        List<OrderData> order = products.stream()
+                .map(ItemData::getId)
+                .map(id -> OrderData.newOrder()
+                        .itemId(id)
+                        .id("ORDER-" + UUID.randomUUID())
+                        .quantity(10L)
+                        .fromClient("ABC")
+                        .deliverUntil(new EmbeddedTimestamp(deliverUntil))
+                        .completeUntil(new EmbeddedTimestamp(completeUntil))
+                        .build())
+                .toList();
+        orderJpaRepository.saveAllAndFlush(order);
         assertThat(itemCategories).isNotEmpty();
     }
 

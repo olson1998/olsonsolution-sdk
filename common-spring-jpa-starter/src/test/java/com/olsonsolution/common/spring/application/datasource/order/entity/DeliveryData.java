@@ -4,6 +4,7 @@ import com.olsonsolution.common.spring.application.annotation.migration.ChangeSe
 import com.olsonsolution.common.spring.application.datasource.model.audit.AuditableEntity;
 import com.olsonsolution.common.spring.application.datasource.order.entity.support.DeliveryStatus;
 import com.olsonsolution.common.spring.application.datasource.order.entity.support.DeliveryType;
+import com.olsonsolution.common.spring.application.jpa.service.AuditableEntityListener;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,6 +17,7 @@ import lombok.*;
 @Entity
 @ChangeSet
 @Table(name = "delivery")
+@EntityListeners({AuditableEntityListener.class})
 public class DeliveryData extends AuditableEntity {
 
     @Id

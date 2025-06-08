@@ -5,6 +5,7 @@ import com.olsonsolution.common.reflection.domain.port.repository.annotion.proce
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.apache.commons.collections4.keyvalue.DefaultMapEntry;
 import org.apache.commons.lang3.StringUtils;
 
@@ -33,15 +34,23 @@ class JpaEntityUtil {
             Transient.class, OneToOne.class, OneToMany.class, ManyToOne.class, ManyToMany.class
     );
 
+    @SneakyThrows
     Map<String, ColumnElementMetadata> obtainColumnMappings(TypeElement typeElement) {
         Map<String, Column> attributeOverrides = new HashMap<>();
         collectTypeAttributeOverride(typeElement, EMPTY, attributeOverrides);
         Stream.Builder<Map.Entry<String, ColumnElementMetadata>> mappings = Stream.builder();
         collectColumnMappings(typeElement, EMPTY, mappings, attributeOverrides);
-        return mappings.build().collect(Collectors.collectingAndThen(
+        var m = mappings.build().collect(Collectors.collectingAndThen(
                 Collectors.toCollection(LinkedList::new),
                 this::toOrderedMap
         ));
+        attributeOverrides.forEach((path, column) -> {
+            messagePrinter.print(Diagnostic.Kind.NOTE, JpaEntityUtil.class, "attributeOverride path=%s column=%s".formatted(path, column));
+        });
+        for (Map.Entry<String, ColumnElementMetadata> entry : m.entrySet()) {
+            messagePrinter.print(Diagnostic.Kind.NOTE, JpaEntityUtil.class, "column=%s metadata=%s".formatted(entry.getKey(), entry.getValue()));
+        }
+        return m;
     }
 
     Set<String> obtainEmbeddableIdColumns(TypeElement entityElement) {
@@ -96,9 +105,10 @@ class JpaEntityUtil {
                 attributePath = currentPath + "." + attributePath;
             }
             if (fieldType.getAnnotation(Embeddable.class) != null) {
-                collectTypeAttributeOverride(fieldType, EMPTY, attributeOverrides);
+                collectTypeAttributeOverride(fieldType, attributePath, attributeOverrides);
+                collectAttributeOverrides(field, attributePath, attributeOverrides);
                 collectColumnMappings(fieldType, attributePath, mappings, attributeOverrides);
-            } else if (isFieldColumnMapping(field)) {
+            } else if (!isFieldColumnMapping(field)) {
                 mappings.add(mapToMetadata(field, fieldType, attributePath, attributeOverrides));
             }
         } catch (IllegalArgumentException e) {
@@ -149,11 +159,6 @@ class JpaEntityUtil {
         return mappings;
     }
 
-    private boolean isFieldColumnMapping(VariableElement field) {
-        return mappingAnnotations.stream()
-                .allMatch(anno -> Objects.isNull(field.getAnnotation(anno)));
-    }
-
     private void collectAttributeOverrides(AnnotatedConstruct annotatedElement,
                                            String currentPath,
                                            Map<String, Column> attributeOverrides) {
@@ -172,7 +177,6 @@ class JpaEntityUtil {
             attributePath = path + "." + attributeOverride.name();
         }
         attributeOverrides.put(attributePath, attributeOverride.column());
-        messagePrinter.print(Diagnostic.Kind.NOTE, JpaEntityUtil.class, "Modified attributes override=%s".formatted(attributePath));
     }
 
     private Map.Entry<String, ColumnElementMetadata> mapToMetadata(VariableElement field, TypeElement fieldType,
@@ -187,6 +191,11 @@ class JpaEntityUtil {
         String columnName = column == null ? field.getSimpleName().toString() : column.name();
         ColumnElementMetadata columnElementMetadata = new ColumnElementMetadata(field, fieldType, column);
         return new DefaultMapEntry<>(columnName, columnElementMetadata);
+    }
+
+    private boolean isFieldColumnMapping(VariableElement field) {
+        return mappingAnnotations.stream()
+                .anyMatch(anno -> Objects.nonNull(field.getAnnotation(anno)));
     }
 
 }

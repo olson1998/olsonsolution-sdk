@@ -19,7 +19,7 @@ public class DeliveryCargo {
     private String deliveryId;
 
     @Column(name = "order_id", nullable = false, length = 63)
-    @ForeignKey(referenceTable = "order", referenceColumn = "id", version = "1.0.0")
+    @ForeignKey(referenceTable = "item_order", referenceColumn = "id", version = "1.0.0")
     private String orderId;
 
 }
