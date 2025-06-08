@@ -8,6 +8,8 @@ import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSou
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
 
+import java.util.Objects;
+
 import static com.olsonsolution.common.data.domain.model.sql.SqlPermissions.RWX;
 
 @RequiredArgsConstructor
@@ -19,6 +21,7 @@ public class JpaStartupConfiguringService implements JpaStartupConfigurer {
 
     @Override
     public void configure() {
+        Objects.requireNonNull(jpaProperties.getDefaultDataSource(), "Default data source name must be provided");
         DataSourceSpec dataSourceSpec = new DomainDataSourceSpec(jpaProperties.getDefaultDataSource(), RWX);
         dataSourceSpecManager.setThreadLocal(dataSourceSpec);
     }

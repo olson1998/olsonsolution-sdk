@@ -9,6 +9,7 @@ import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlVendor;
 import com.olsonsolution.common.spring.domain.port.props.datasource.DestinationDataSourceProperties;
 import com.olsonsolution.common.spring.domain.port.props.datasource.SqlDataSourceProperties;
 import com.olsonsolution.common.spring.domain.port.props.datasource.SqlUsersProperties;
+import com.olsonsolution.common.spring.domain.port.props.datasource.SqlVendorSupportProperties;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.JpaSpecConfigurer;
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.JpaDataSourceSpec;
@@ -22,11 +23,15 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import static com.olsonsolution.common.spring.domain.model.datasource.DomainJpaSpecDataSource.SYSTEM_JPA_SPEC;
+
 @Slf4j
 @RequiredArgsConstructor
 public class DestinationDataSourcePropertyLookupService implements SqlDataSourceProvider {
 
     private final JpaSpecConfigurer jpaSpecConfigurer;
+
+    private final SqlVendorSupportProperties sqlVendorSupportProperties;
 
     private final DestinationDataSourceProperties destinationDataSourceProperties;
 
@@ -35,7 +40,6 @@ public class DestinationDataSourcePropertyLookupService implements SqlDataSource
         log.debug("Searching for destination datasource {}", jpaDataSourceSpec);
         String jpaSpec = jpaDataSourceSpec.getJpaSpec();
         String dsName = jpaDataSourceSpec.getDataSourceName();
-        String schema = jpaSpecConfigurer.resolveSchema(jpaSpec);
         SqlPermission permission = jpaDataSourceSpec.getPermission();
         Optional<? extends SqlDataSourceProperties> sqlDataSourceProperties = destinationDataSourceProperties
                 .getInstances()
@@ -43,20 +47,23 @@ public class DestinationDataSourcePropertyLookupService implements SqlDataSource
                 .filter(datasource -> isSameName(datasource, dsName))
                 .findFirst();
         if (sqlDataSourceProperties.isPresent()) {
-            Optional<? extends SqlUser> user = sqlDataSourceProperties
+            Optional<String> matchingSchema = findSchema(sqlDataSourceProperties.get(), jpaSpec);
+            if (matchingSchema.isEmpty()) {
+                log.warn("SQL Data source '{}' JpaSpec: '{}' schema was not resovled", dsName, jpaSpec);
+                return Optional.empty();
+            }
+            String schema = matchingSchema.get();
+            Optional<? extends SqlUser> sqlUser = sqlDataSourceProperties
                     .flatMap(ds -> findUserForSchema(ds, permission, schema));
-            if (user.isEmpty()) {
+            if (sqlUser.isEmpty()) {
                 log.warn("SQL Data source '{}' JpaSpec: '{}' schema: '{}' with permission: '{}'" +
                         " configured in properties but users not found", dsName, jpaSpec, schema, permission
                 );
             } else {
-                return Optional.of(buildSqlDataSource(sqlDataSourceProperties.get(), user.get(), schema));
+                return Optional.of(buildSqlDataSource(sqlDataSourceProperties.get(), sqlUser.get(), schema));
             }
         } else {
-            log.warn(
-                    "SQL Data source '{}' JpaSpec: '{}' schema: '{}' not configured in properties",
-                    dsName, jpaSpec, schema
-            );
+            log.warn("SQL Data source '{}' JpaSpec: '{}' not configured in properties", dsName, jpaSpec);
         }
         return Optional.empty();
     }
@@ -108,6 +115,25 @@ public class DestinationDataSourcePropertyLookupService implements SqlDataSource
             sqlUser = usersProperties.getReadWrite();
         }
         return Optional.ofNullable(sqlUser);
+    }
+
+    private Optional<String> findSchema(SqlDataSourceProperties properties, String jpaSpec) {
+        SqlVendor vendor = properties.getVendor();
+        if (StringUtils.equals(jpaSpec, SYSTEM_JPA_SPEC)) {
+            return sqlVendorSupportProperties.getVendorDefaults()
+                    .stream()
+                    .filter(defaultsProps -> vendor.isSameAs(defaultsProps.getVendorName()))
+                    .findFirst()
+                    .map(defaultsProps -> {
+                        if (vendor.isSupportSchemas()) {
+                            return defaultsProps.getSchema();
+                        } else {
+                            return defaultsProps.getCatalog();
+                        }
+                    });
+        } else {
+            return Optional.ofNullable(jpaSpecConfigurer.resolveSchema(jpaSpec));
+        }
     }
 
     private boolean isSameName(SqlDataSourceProperties properties, String dataSourceName) {
