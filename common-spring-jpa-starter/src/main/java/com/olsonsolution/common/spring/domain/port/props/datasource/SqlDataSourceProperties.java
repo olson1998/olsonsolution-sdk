@@ -17,7 +17,7 @@ public interface SqlDataSourceProperties {
 
     Integer getPort();
 
-    List<? extends SqlUsersProperties> getUser();
+    List<? extends SqlUsersProperties> getUsers();
 
     Properties getProperties();
 

@@ -5,10 +5,12 @@ import java.util.Map;
 
 public interface JpaProperties {
 
-    Map<String, String> getDataSourceModelersEnableProperties();
+    String getDefaultDataSource();
 
-    RoutingDataSourceProperties getRoutingDataSourceProperties();
+    Map<String, String> getDataSourceModeler();
 
-    Collection<? extends JpaSpecProperties> getJpaSpecificationsProperties();
+    RoutingDataSourceProperties getRoutingDataSource();
+
+    Collection<? extends JpaSpecProperties> getJpaSpecConfig();
 
 }

@@ -2,23 +2,24 @@ package com.olsonsolution.common.spring.application.test.config;
 
 import com.microsoft.sqlserver.jdbc.SQLServerDataSource;
 import com.olsonsolution.common.migration.domain.port.repository.MigrationService;
-import com.olsonsolution.common.migration.domain.port.stereotype.MigrationResults;
+import com.olsonsolution.common.spring.application.annotation.jpa.EnableJpaSpec;
 import com.olsonsolution.common.spring.application.async.config.AsyncConfig;
 import com.olsonsolution.common.spring.application.async.props.AsyncProperties;
 import com.olsonsolution.common.spring.application.caching.InMemoryCachingConfig;
 import com.olsonsolution.common.spring.application.config.time.TimeUtilsConfig;
+import com.olsonsolution.common.spring.application.datasource.config.DestinationDataSourcePropertyLookupServiceConfig;
+import com.olsonsolution.common.spring.application.datasource.props.ApplicationDestinationDataSourceProperties;
 import com.olsonsolution.common.spring.application.jpa.config.*;
-import com.olsonsolution.common.spring.application.jpa.props.SpringApplicationDestinationDataSourceProperties;
 import com.olsonsolution.common.spring.application.jpa.props.SpringApplicationJpaProperties;
 import com.olsonsolution.common.spring.application.migration.config.ChangeLogProviderConfig;
 import com.olsonsolution.common.spring.application.migration.config.LiquibaseConfig;
 import com.olsonsolution.common.spring.application.migration.config.SqlVendorSupportersConfig;
 import com.olsonsolution.common.spring.application.migration.props.LiquibaseProperties;
 import com.olsonsolution.common.spring.application.props.time.JodaDateTimeProperties;
-import com.olsonsolution.common.spring.domain.model.datasource.DomainDataSourceSpecification;
+import com.olsonsolution.common.spring.domain.model.datasource.DomainDataSourceSpec;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.JpaSpecDataSourceSpecManager;
-import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpecification;
+import com.olsonsolution.common.spring.domain.port.stereotype.datasource.DataSourceSpec;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.postgresql.ds.PGSimpleDataSource;
@@ -39,22 +40,17 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static com.olsonsolution.common.data.domain.model.sql.SqlPermissions.RWX;
 import static com.olsonsolution.common.data.domain.model.sql.SqlVendors.*;
 import static com.olsonsolution.common.spring.application.jpa.config.DataSourceModelersConfig.SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX;
-import static com.olsonsolution.common.spring.application.jpa.props.SpringApplicationDestinationDataSourceProperties.SPRING_APPLICATION_JPA_DESTINATION_DATA_SOURCE_PROPERTIES_PREFIX;
 import static com.olsonsolution.common.spring.application.jpa.props.SpringApplicationJpaProperties.SPRING_APPLICATION_JPA_PROPERTIES_PREFIX;
 import static com.olsonsolution.common.spring.application.props.time.JodaDateTimeProperties.JODA_DATE_TIME_PROPERTIES_PREFIX;
-import static com.olsonsolution.common.spring.application.test.config.SpringApplicationJpaTestBase.CLASSIC_ENTITY_PACKAGE;
-import static com.olsonsolution.common.spring.application.test.config.SpringApplicationJpaTestBase.CLASSIC_REPO_PACKAGE;
-import static org.assertj.core.api.Assertions.assertThat;
+import static com.olsonsolution.common.spring.application.test.config.SpringApplicationJpaTestBase.*;
 
 @EnableJpaAuditing
 @EnableTransactionManagement
@@ -71,20 +67,23 @@ import static org.assertj.core.api.Assertions.assertThat;
         InMemoryCachingConfig.class,
         AuditableEntityListenerConfig.class,
         SqlVendorPropertiesResolverConfig.class,
+        DestinationDataSourcePropertyLookupServiceConfig.class,
         AsyncProperties.class,
         JodaDateTimeProperties.class,
         LiquibaseProperties.class,
         SpringApplicationJpaProperties.class,
-        SpringApplicationDestinationDataSourceProperties.class
+        ApplicationDestinationDataSourceProperties.class
 })
 @ComponentScan(basePackages = "com.olsonsolution.common.spring.application.config.jpa.test")
 @ExtendWith(SpringExtension.class)
 @Testcontainers(disabledWithoutDocker = true)
 @TestPropertySource(properties = {
         JODA_DATE_TIME_PROPERTIES_PREFIX + ".time-zone=America/New_York",
+        "spring.application.data-source.provider=properties",
         SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".sql-server=enabled",
         SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".postgresql=enabled",
         SPRING_APPLICATION_JPA_DATA_SOURCE_MODELERS_PROPERTIES_PREFIX + ".mariadb=enabled",
+        SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".default-data-source=" + POSTGRES_DATASOURCE,
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.name=WarehouseIndex",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.schema=warehouse_index",
         SPRING_APPLICATION_JPA_PROPERTIES_PREFIX + ".config.0.log-sql=true",
@@ -136,23 +135,17 @@ public abstract class SpringApplicationJpaTestBase implements InitializingBean {
     @Autowired
     private DestinationDataSourceManager destinationDataSourceManager;
 
-    public static Stream<DataSourceSpecification> dataSourceSpecStream() {
+    public static Stream<DataSourceSpec> testDataSourceSpec() {
         return Stream.of(
-                new DomainDataSourceSpecification(SQL_SERVER_DATASOURCE, RWX),
-                new DomainDataSourceSpecification(POSTGRES_DATASOURCE, RWX),
-                new DomainDataSourceSpecification(MARIADB_DATASOURCE, RWX)
+                new DomainDataSourceSpec("SQLSERVER", RWX),
+                new DomainDataSourceSpec("POSTGRES", RWX),
+                new DomainDataSourceSpec("MARIADB", RWX)
         );
     }
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        for (DataSourceSpecification dataSourceSpecification : dataSourceSpecStream().toList()) {
-            jpaSpecDataSourceSpecManager.setThreadLocal(dataSourceSpecification);
-            DataSource dataSource = destinationDataSourceManager.selectDataSourceBySpec(dataSourceSpecification);
-            MigrationResults migrationResults = migrationService.migrateAsync(dataSource)
-                    .get(30, TimeUnit.SECONDS);
-            jpaSpecDataSourceSpecManager.clear();
-        }
+
     }
 
     @BeforeAll
@@ -163,32 +156,35 @@ public abstract class SpringApplicationJpaTestBase implements InitializingBean {
 
     @DynamicPropertySource
     static void setDataSourceProperties(DynamicPropertyRegistry registry) {
-        String prefix = SPRING_APPLICATION_JPA_DESTINATION_DATA_SOURCE_PROPERTIES_PREFIX + ".instance";
+        String prefix = "spring.application.data-source.instance";
         registry.add(prefix + ".0.name", () -> SQL_SERVER_DATASOURCE);
-        registry.add(prefix + ".0.data-source.vendor", SQL_SERVER::name);
-        registry.add(prefix + ".0.data-source.host", SQL_SERVER_CONTAINER::getHost);
-        registry.add(prefix + ".0.data-source.port", () -> SQL_SERVER_CONTAINER.getMappedPort(1433));
-        registry.add(prefix + ".0.data-source.database", () -> DATABASE);
-        registry.add(prefix + ".0.data-source.user.rwx.0.username", SQL_SERVER_CONTAINER::getUsername);
-        registry.add(prefix + ".0.data-source.user.rwx.0.password", SQL_SERVER_CONTAINER::getPassword);
-        registry.add(prefix + ".0.data-source.property.0.name", () -> "trustServerCertificate");
-        registry.add(prefix + ".0.data-source.property.0.value", () -> "true");
-        registry.add(prefix + ".0.data-source.property.1.name", () -> "encrypt");
-        registry.add(prefix + ".0.data-source.property.1.value", () -> "false");
+        registry.add(prefix + ".0.vendor", SQL_SERVER::name);
+        registry.add(prefix + ".0.host", SQL_SERVER_CONTAINER::getHost);
+        registry.add(prefix + ".0.port", () -> SQL_SERVER_CONTAINER.getMappedPort(1433));
+        registry.add(prefix + ".0.database", () -> DATABASE);
+        registry.add(prefix + ".0.user.0.schema", () -> "warehouse_index");
+        registry.add(prefix + ".0.user.0.read-write-execute.username", SQL_SERVER_CONTAINER::getUsername);
+        registry.add(prefix + ".0.user.0.read-write-execute.password", SQL_SERVER_CONTAINER::getPassword);
+        registry.add(prefix + ".0.property.0.name", () -> "trustServerCertificate");
+        registry.add(prefix + ".0.property.0.value", () -> "true");
+        registry.add(prefix + ".0.property.1.name", () -> "encrypt");
+        registry.add(prefix + ".0.property.1.value", () -> "false");
         registry.add(prefix + ".1.name", () -> POSTGRES_DATASOURCE);
-        registry.add(prefix + ".1.data-source.vendor", POSTGRESQL::name);
-        registry.add(prefix + ".1.data-source.host", POSTGRES_CONTAINER::getHost);
-        registry.add(prefix + ".1.data-source.port", () -> POSTGRES_CONTAINER.getMappedPort(5432));
-        registry.add(prefix + ".1.data-source.database", () -> DATABASE);
-        registry.add(prefix + ".1.data-source.user.rwx.0.username", POSTGRES_CONTAINER::getUsername);
-        registry.add(prefix + ".1.data-source.user.rwx.0.password", POSTGRES_CONTAINER::getPassword);
+        registry.add(prefix + ".1.vendor", POSTGRESQL::name);
+        registry.add(prefix + ".1.host", POSTGRES_CONTAINER::getHost);
+        registry.add(prefix + ".1.port", () -> POSTGRES_CONTAINER.getMappedPort(5432));
+        registry.add(prefix + ".1.database", () -> DATABASE);
+        registry.add(prefix + ".1.user.0.schema", () -> "warehouse_index");
+        registry.add(prefix + ".1.user.0.read-write-execute.username", POSTGRES_CONTAINER::getUsername);
+        registry.add(prefix + ".1.user.0.read-write-execute.password", POSTGRES_CONTAINER::getPassword);
         registry.add(prefix + ".2.name", () -> MARIADB_DATASOURCE);
-        registry.add(prefix + ".2.data-source.vendor", MARIADB::name);
-        registry.add(prefix + ".2.data-source.host", MARIA_DB_CONTAINER::getHost);
-        registry.add(prefix + ".2.data-source.port", () -> MARIA_DB_CONTAINER.getMappedPort(3306));
-        registry.add(prefix + ".2.data-source.database", MARIA_DB_CONTAINER::getDatabaseName);
-        registry.add(prefix + ".2.data-source.user.rwx.0.username", () -> "root");
-        registry.add(prefix + ".2.data-source.user.rwx.0.password", () -> PASSWORD);
+        registry.add(prefix + ".2.vendor", MARIADB::name);
+        registry.add(prefix + ".2.host", MARIA_DB_CONTAINER::getHost);
+        registry.add(prefix + ".2.port", () -> MARIA_DB_CONTAINER.getMappedPort(3306));
+        registry.add(prefix + ".2.database", MARIA_DB_CONTAINER::getDatabaseName);
+        registry.add(prefix + ".2.user.0.schema", () -> "warehouse_index");
+        registry.add(prefix + ".2.user.0.read-write-execute.username", () -> "root");
+        registry.add(prefix + ".2.user.0.read-write-execute.password", () -> PASSWORD);
     }
 
     private static void createSQLServerTestEnv() throws SQLException {

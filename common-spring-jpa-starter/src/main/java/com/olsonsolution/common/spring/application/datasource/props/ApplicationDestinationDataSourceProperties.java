@@ -13,6 +13,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 
@@ -22,8 +23,12 @@ import java.util.Properties;
 @ConditionalOnProperty(name = "spring.application.data-source.provider", havingValue = "properties")
 public class ApplicationDestinationDataSourceProperties implements DestinationDataSourceProperties {
 
-    private final List<? extends SqlDataSourceProperties> instance =
-            new ArrayList<ApplicationSqlDataSourceProperties>();
+    private final List<ApplicationSqlDataSourceProperties> instance = new ArrayList<>();
+
+    @Override
+    public Collection<? extends SqlDataSourceProperties> getInstances() {
+        return instance;
+    }
 
     @Data
     @NoArgsConstructor
@@ -40,10 +45,14 @@ public class ApplicationDestinationDataSourceProperties implements DestinationDa
 
         private String database;
 
-        private final List<? extends SqlUsersProperties> user = new ArrayList<ApplicationSqlUsersProperties>();
+        private final List<ApplicationSqlUsersProperties> user = new ArrayList<>();
 
         private final Properties properties = new Properties();
 
+        @Override
+        public List<? extends SqlUsersProperties> getUsers() {
+            return user;
+        }
     }
 
     @Data

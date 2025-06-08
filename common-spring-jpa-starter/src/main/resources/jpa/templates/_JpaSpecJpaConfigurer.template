@@ -1,6 +1,8 @@
 package ${BASE_PACKAGE};
 
 import com.github.benmanes.caffeine.cache.Cache;
+import com.olsonsolution.common.spring.domain.model.datasource.DomainJpaSpecDataSource;
+import com.olsonsolution.common.spring.domain.port.config.jpa.JpaSpecConfig;
 import com.olsonsolution.common.caching.application.props.DefaultCachingProperties;
 import com.olsonsolution.common.caching.domain.port.props.CachingProperties;
 import com.olsonsolution.common.caching.domain.port.repository.InMemoryCacheFactory;
@@ -8,12 +10,13 @@ import com.olsonsolution.common.data.domain.port.repository.sql.SqlDataSourceFac
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.RoutingDataSourceProperties;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DataSourceEvictor;
+import com.olsonsolution.common.spring.domain.port.repository.datasource.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.EntityManagerFactoryDelegate;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.JpaSpecConfigurer;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.JpaSpecDataSourceSpecManager;
-import com.olsonsolution.common.spring.domain.port.stereotype.datasource.JpaSpecDataSource;
+import com.olsonsolution.common.spring.domain.port.stereotype.datasource.JpaDataSourceSpec;
 import com.olsonsolution.common.spring.domain.service.datasource.RoutingDataSourceManagingService;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +28,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.annotation.processing.Generated;
 import javax.sql.DataSource;
+
+import static com.olsonsolution.common.spring.application.jpa.config.JpaConfig.DEFAULT_JPA_DATA_SOURCE_SPEC_BEAN;
+import static com.olsonsolution.common.data.domain.model.sql.SqlPermissions.RWX;
 
 @Configuration
 @Generated(
@@ -48,17 +54,13 @@ public class ${JPA_SPEC}JpaSpecConfigurer implements JpaSpecConfig, Initializing
 
     private final SqlDataSourceProvider sqlDataSourceProvider;
 
-    private final DestinationDataSourceManager destinationDataSourceManager;
-
     @Autowired
     public ${JPA_SPEC}JpaSpecConfigurer(JpaSpecConfigurer jpaSpecConfigurer,
                                         DataSourceSpecManager dataSourceSpecManager,
-                                        SqlDataSourceProvider sqlDataSourceProvider,
-                                        DestinationDataSourceManager destinationDataSourceManager) {
+                                        SqlDataSourceProvider sqlDataSourceProvider) {
         this.jpaSpecConfigurer = jpaSpecConfigurer;
         this.dataSourceSpecManager = dataSourceSpecManager;
         this.sqlDataSourceProvider = sqlDataSourceProvider;
-        this.destinationDataSourceManager = destinationDataSourceManager;
     }
 
     @Override
@@ -78,11 +80,13 @@ public class ${JPA_SPEC}JpaSpecConfigurer implements JpaSpecConfig, Initializing
 
     @Bean(JPA_SPEC + "_destinationDataSourceManager")
     public DestinationDataSourceManager destinationDataSourceManager(JpaProperties jpaProperties,
+                                                                     @Qualifier(DEFAULT_JPA_DATA_SOURCE_SPEC_BEAN)
+                                                                     JpaDataSourceSpec defaultJpaDataSourceSpec,
                                                                      SqlDataSourceFactory sqlDataSourceFactory,
                                                                      SqlDataSourceProvider sqlDataSourceProvider,
                                                                      InMemoryCacheFactory inMemoryCacheFactory,
                                                                      DataSourceEvictor dataSourceEvictor) {
-        RoutingDataSourceProperties routingDataSourceProperties = jpaProperties.getRoutingDataSourceProperties();
+        RoutingDataSourceProperties routingDataSourceProperties = jpaProperties.getRoutingDataSource();
         int maximumDataSources = routingDataSourceProperties.getMaxDataSources();
         CachingProperties cachingProperties = new DefaultCachingProperties(
                 maximumDataSources,
@@ -91,10 +95,10 @@ public class ${JPA_SPEC}JpaSpecConfigurer implements JpaSpecConfig, Initializing
                 routingDataSourceProperties.getExpireTimeout(),
                 null
         );
-        Cache<JpaSpecDataSource, DataSource> destinationDataSourceCache =
+        Cache<JpaDataSourceSpec, DataSource> destinationDataSourceCache =
                 inMemoryCacheFactory.fabricate(cachingProperties, null, null, dataSourceEvictor);
         return new RoutingDataSourceManagingService(
-                defaultJpaSpecDataSource,
+                defaultJpaDataSourceSpec,
                 sqlDataSourceFactory,
                 sqlDataSourceProvider,
                 destinationDataSourceCache
@@ -103,7 +107,8 @@ public class ${JPA_SPEC}JpaSpecConfigurer implements JpaSpecConfig, Initializing
 
     @Bean(JPA_SPEC + "_entityManagerFactoryDelegate")
     public EntityManagerFactoryDelegate entityManagerFactoryDelegate(
-            @Qualifier(JPA_SPEC + "_destinationDataSourceManager") DestinationDataSourceManager destinationDataSourceManager) {
+            @Qualifier(JPA_SPEC + "_destinationDataSourceManager") DestinationDataSourceManager destinationDataSourceManager,
+            JpaSpecDataSourceSpecManager jpaSpecDataSourceSpecManager) {
         return jpaSpecConfigurer.createEntityManagerFactoryDelegate(
                 JPA_SPEC,
                 BASE_PACKAGES,

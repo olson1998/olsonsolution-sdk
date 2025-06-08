@@ -13,6 +13,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class DomainJpaSpecDataSource implements JpaDataSourceSpec {
 
+    public static final String SYSTEM_JPA_SPEC = "System";
+
     private String jpaSpec;
 
     private String dataSourceName;

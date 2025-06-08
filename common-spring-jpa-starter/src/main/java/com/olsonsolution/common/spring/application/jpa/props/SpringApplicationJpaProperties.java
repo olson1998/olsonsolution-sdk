@@ -1,7 +1,7 @@
 package com.olsonsolution.common.spring.application.jpa.props;
 
-import com.olsonsolution.common.spring.domain.port.props.jpa.JpaSpecProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
+import com.olsonsolution.common.spring.domain.port.props.jpa.JpaSpecProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.PackagesToScanProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.RoutingDataSourceProperties;
 import lombok.Data;
@@ -24,22 +24,16 @@ public class SpringApplicationJpaProperties implements JpaProperties {
 
     public static final String SPRING_APPLICATION_JPA_PROPERTIES_PREFIX = SPRING_APPLICATION_PROPERTIES_PREFIX + ".jpa";
 
+    private String defaultDataSource;
+
     private final Map<String, String> dataSourceModeler = new HashMap<>();
+
     private final List<ApplicationJpaSpecProperties> config = new ArrayList<>();
-    private final ApplicationRoutingDataSourceProperties routingDataSource = new ApplicationRoutingDataSourceProperties();
+
+    private final RoutingDataSourceProperties routingDataSource = new ApplicationRoutingDataSourceProperties();
 
     @Override
-    public Map<String, String> getDataSourceModelersEnableProperties() {
-        return dataSourceModeler;
-    }
-
-    @Override
-    public RoutingDataSourceProperties getRoutingDataSourceProperties() {
-        return routingDataSource;
-    }
-
-    @Override
-    public Collection<? extends JpaSpecProperties> getJpaSpecificationsProperties() {
+    public Collection<? extends JpaSpecProperties> getJpaSpecConfig() {
         return config;
     }
 

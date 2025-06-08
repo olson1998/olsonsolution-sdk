@@ -1,14 +1,16 @@
 package com.olsonsolution.common.spring.domain.service.jpa;
 
+import com.olsonsolution.common.spring.domain.model.datasource.DomainJpaSpecDataSource;
 import com.olsonsolution.common.spring.domain.model.exception.jpa.JpaSpecNotRegisteredException;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
 import com.olsonsolution.common.spring.domain.port.props.jpa.JpaSpecProperties;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;
-import com.olsonsolution.common.spring.domain.port.repository.jpa.JpaSpecDataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.EntityManagerFactoryDelegate;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.JpaSpecConfigurer;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.JpaSpecDataSourceSpecManager;
+import com.olsonsolution.common.spring.domain.port.stereotype.datasource.JpaDataSourceSpec;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,11 +18,23 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import static com.olsonsolution.common.data.domain.model.sql.SqlPermissions.RWX;
+import static com.olsonsolution.common.spring.domain.model.datasource.DomainJpaSpecDataSource.SYSTEM_JPA_SPEC;
+
 @Slf4j
 @RequiredArgsConstructor
 public class JpaSpecConfiguringService implements JpaSpecConfigurer {
 
     private final JpaProperties jpaProperties;
+
+    @Override
+    public JpaDataSourceSpec getDefaultJpaDataSourceSpec() {
+        return DomainJpaSpecDataSource.builder()
+                .jpaSpec(SYSTEM_JPA_SPEC)
+                .dataSourceName(jpaProperties.getDefaultDataSource())
+                .permission(RWX)
+                .build();
+    }
 
     @Override
     public boolean resolveCreateSchema(@NonNull String jpaSpec) {
@@ -64,7 +78,7 @@ public class JpaSpecConfiguringService implements JpaSpecConfigurer {
     }
 
     private JpaSpecProperties getJpaSpecProperties(String jpaSpecName) {
-        return jpaProperties.getJpaSpecificationsProperties()
+        return jpaProperties.getJpaSpecConfig()
                 .stream()
                 .filter(p -> StringUtils.equals(p.getName(), jpaSpecName))
                 .findFirst()

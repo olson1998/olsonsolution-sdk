@@ -38,7 +38,7 @@ public class DestinationDataSourcePropertyLookupService implements SqlDataSource
         String schema = jpaSpecConfigurer.resolveSchema(jpaSpec);
         SqlPermission permission = jpaDataSourceSpec.getPermission();
         Optional<? extends SqlDataSourceProperties> sqlDataSourceProperties = destinationDataSourceProperties
-                .getInstance()
+                .getInstances()
                 .stream()
                 .filter(datasource -> isSameName(datasource, dsName))
                 .findFirst();
@@ -88,7 +88,7 @@ public class DestinationDataSourcePropertyLookupService implements SqlDataSource
     private Optional<? extends SqlUser> findUserForSchema(SqlDataSourceProperties properties,
                                                           SqlPermission permission,
                                                           String schema) {
-        return properties.getUser()
+        return properties.getUsers()
                 .stream()
                 .filter(user -> StringUtils.equals(user.getSchema(), schema))
                 .findFirst()

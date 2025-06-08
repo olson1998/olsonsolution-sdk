@@ -6,8 +6,8 @@ import com.olsonsolution.common.spring.domain.port.props.jpa.JpaSpecProperties;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.DestinationDataSourceManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.SqlDataSourceProvider;
-import com.olsonsolution.common.spring.domain.port.repository.jpa.JpaSpecDataSourceSpecManager;
 import com.olsonsolution.common.spring.domain.port.repository.jpa.EntityManagerFactoryDelegate;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.JpaSpecDataSourceSpecManager;
 import jakarta.persistence.*;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.metamodel.Metamodel;
@@ -168,7 +168,7 @@ public class MultiVendorEntityManagerFactory extends MultiVendorJpaConfigurable<
     }
 
     private Optional<? extends JpaSpecProperties> findEntityManagerFactoryProperties() {
-        return jpaProperties.getJpaSpecificationsProperties()
+        return jpaProperties.getJpaSpecConfig()
                 .stream()
                 .filter(props -> StringUtils.equals(jpaSpec, props.getName()))
                 .findFirst();

@@ -22,7 +22,10 @@ public class EmbeddedTimestamp {
     private String zoneId;
 
     public EmbeddedTimestamp(MutableDateTime dateTime) {
-        this.dateTime = Timestamp.valueOf(LocalDateTime.of(dateTime.getYear(), dateTime.getMonthOfYear(), dateTime.getDayOfMonth(),
+        this.dateTime = Timestamp.valueOf(LocalDateTime.of(
+                dateTime.getYear(),
+                dateTime.getMonthOfYear(),
+                dateTime.getDayOfMonth(),
                 dateTime.getHourOfDay(),
                 dateTime.getMinuteOfHour(),
                 dateTime.getSecondOfMinute(),
