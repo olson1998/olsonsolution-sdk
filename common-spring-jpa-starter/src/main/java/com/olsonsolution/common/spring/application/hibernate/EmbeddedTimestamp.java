@@ -1,5 +1,6 @@
 package com.olsonsolution.common.spring.application.hibernate;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -17,8 +18,10 @@ import java.time.LocalDateTime;
 @Embeddable
 public class EmbeddedTimestamp {
 
+    @Column(name = "date_time", nullable = false)
     private Timestamp dateTime;
 
+    @Column(name = "zone_id", length = 32)
     private String zoneId;
 
     public EmbeddedTimestamp(MutableDateTime dateTime) {

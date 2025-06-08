@@ -162,6 +162,9 @@ public abstract class SpringApplicationJpaTestBase implements InitializingBean {
         registry.add(prefix + ".0.user.1.schema", () -> "dbo");
         registry.add(prefix + ".0.user.1.read-write-execute.username", SQL_SERVER_CONTAINER::getUsername);
         registry.add(prefix + ".0.user.1.read-write-execute.password", SQL_SERVER_CONTAINER::getPassword);
+        registry.add(prefix + ".0.user.2.schema", () -> "delivery_index");
+        registry.add(prefix + ".0.user.2.read-write-execute.username", SQL_SERVER_CONTAINER::getUsername);
+        registry.add(prefix + ".0.user.2.read-write-execute.password", SQL_SERVER_CONTAINER::getPassword);
         registry.add(prefix + ".0.property.trustServerCertificate", () -> "true");
         registry.add(prefix + ".0.property.encrypt", () -> "false");
         registry.add(prefix + ".1.name", () -> POSTGRES_DATASOURCE);
@@ -175,6 +178,9 @@ public abstract class SpringApplicationJpaTestBase implements InitializingBean {
         registry.add(prefix + ".1.user.1.schema", () -> "public");
         registry.add(prefix + ".1.user.1.read-write-execute.username", POSTGRES_CONTAINER::getUsername);
         registry.add(prefix + ".1.user.1.read-write-execute.password", POSTGRES_CONTAINER::getPassword);
+        registry.add(prefix + ".1.user.2.schema", () -> "delivery_index");
+        registry.add(prefix + ".1.user.2.read-write-execute.username", POSTGRES_CONTAINER::getUsername);
+        registry.add(prefix + ".1.user.2.read-write-execute.password", POSTGRES_CONTAINER::getPassword);
         registry.add(prefix + ".2.name", () -> MARIADB_DATASOURCE);
         registry.add(prefix + ".2.vendor", MARIADB::name);
         registry.add(prefix + ".2.host", MARIA_DB_CONTAINER::getHost);
@@ -186,6 +192,9 @@ public abstract class SpringApplicationJpaTestBase implements InitializingBean {
         registry.add(prefix + ".2.user.1.schema", () -> "mysql");
         registry.add(prefix + ".2.user.1.read-write-execute.username", () -> "root");
         registry.add(prefix + ".2.user.1.read-write-execute.password", () -> PASSWORD);
+        registry.add(prefix + ".2.user.2.schema", () -> "delivery_index");
+        registry.add(prefix + ".2.user.2.read-write-execute.username", () -> "root");
+        registry.add(prefix + ".2.user.2.read-write-execute.password", () -> PASSWORD);
     }
 
     private static void createSQLServerTestEnv() throws SQLException {
