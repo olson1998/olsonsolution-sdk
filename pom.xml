@@ -26,7 +26,6 @@
         <module>common-spring-boot-web-starter</module>
         <module>common-spring-tenant-jpa-starter</module>
         <module>common-spring-tenant-core</module>
-        <module>eventbus-publisher</module>
         <module>messagebus-subscriber</module>
         <module>messagebus-publisher</module>
         <module>messagebus-common</module>
