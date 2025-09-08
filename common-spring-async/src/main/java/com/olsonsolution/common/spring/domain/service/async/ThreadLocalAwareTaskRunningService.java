@@ -36,9 +36,8 @@ public class ThreadLocalAwareTaskRunningService implements ThreadLocalAwareTaskR
     }
 
     private void restoreInheritableThreadLocals(Map<ThreadLocalAware<Object>, Optional<?>> threadLocals) {
-        threadLocals.forEach((aware, value) -> value.ifPresent(v -> {
-            aware.setThreadLocal(v);
-        }));
+        threadLocals.forEach((aware, value) ->
+                value.ifPresent(aware::setThreadLocal));
     }
 
     private void clearInheritableThreadLocals(Map<ThreadLocalAware<Object>, Optional<?>> threadLocals) {
