@@ -1,8 +1,12 @@
 package com.olsonsolution.common.spring.application.datasource;
 
+import com.olsonsolution.common.spring.domain.port.props.jpa.JpaProperties;
 import com.olsonsolution.common.spring.domain.port.repository.context.LocalContextManager;
 import com.olsonsolution.common.spring.domain.port.repository.datasource.TenantDataSourceSpecManager;
+import com.olsonsolution.common.spring.domain.port.repository.jpa.JpaStartupConfigurer;
 import com.olsonsolution.common.spring.domain.service.datasource.TenantDataSourceSpecManagingService;
+import com.olsonsolution.common.spring.domain.service.datasource.TenantJpaStartupConfiguringService;
+import com.olsonsolution.common.time.domain.port.TimeUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,6 +27,17 @@ public class TenantDataSourceSpecManagingConfig {
     )
     public TenantDataSourceSpecManager tenantDataSourceSpecManager(LocalContextManager localContextManager) {
         return new TenantDataSourceSpecManagingService(localContextManager);
+    }
+
+    @Bean
+    @ConditionalOnProperty(
+            value = DATA_SOURCE_SPEC_MANAGER_TOGGLE_CONFIG,
+            havingValue = TENANT_DATA_SOURCE_SPEC_MANAGER
+    )
+    public JpaStartupConfigurer tenantStartupContextJpaStartupConfigurer(TimeUtils timeUtils,
+                                                                         JpaProperties jpaProperties,
+                                                                         LocalContextManager localContextManager) {
+        return new TenantJpaStartupConfiguringService(timeUtils, jpaProperties, localContextManager);
     }
 
 }

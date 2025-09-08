@@ -7,8 +7,12 @@ import com.olsonsolution.common.spring.domain.port.repository.jpa.JpaStartupConf
 import com.olsonsolution.common.spring.domain.port.stereotype.datasource.JpaDataSourceSpec;
 import com.olsonsolution.common.spring.domain.service.jpa.JpaSpecConfiguringService;
 import com.olsonsolution.common.spring.domain.service.jpa.JpaStartupConfiguringService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import static com.olsonsolution.common.spring.application.jpa.config.DataSourceSpecConfig.DATA_SOURCE_SPEC_MANAGER_TOGGLE_CONFIG;
+import static com.olsonsolution.common.spring.application.jpa.config.DataSourceSpecConfig.DEFAULT_DATA_SOURCE_SPEC_MANAGER;
 
 @Configuration
 public class JpaConfig {
@@ -30,6 +34,11 @@ public class JpaConfig {
     }
 
     @Bean
+    @ConditionalOnProperty(
+            value = DATA_SOURCE_SPEC_MANAGER_TOGGLE_CONFIG,
+            havingValue = DEFAULT_DATA_SOURCE_SPEC_MANAGER,
+            matchIfMissing = true
+    )
     public JpaStartupConfigurer jpaStartupConfigurer(JpaProperties jpaProperties,
                                                      DataSourceSpecManager dataSourceSpecManager) {
         return new JpaStartupConfiguringService(jpaProperties, dataSourceSpecManager);

@@ -28,16 +28,16 @@ public class DataSourceSpecConfig {
     }
 
     @Bean
-    public DataSourceSpecManager dataSourceSpecManager() {
-        return new DataSourceSpecManagingService();
-    }
-
-    @Bean
     @ConditionalOnProperty(
             value = DATA_SOURCE_SPEC_MANAGER_TOGGLE_CONFIG,
             havingValue = DEFAULT_DATA_SOURCE_SPEC_MANAGER,
             matchIfMissing = true
     )
+    public DataSourceSpecManager dataSourceSpecManager() {
+        return new DataSourceSpecManagingService();
+    }
+
+    @Bean
     public JpaSpecDataSourceSpecManager jpaSpecDataSourceSpecManager() {
         return new DataSourceSpecificationManagingService();
     }
