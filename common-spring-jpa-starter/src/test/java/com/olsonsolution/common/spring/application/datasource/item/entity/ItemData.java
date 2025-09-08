@@ -6,7 +6,6 @@ import com.olsonsolution.common.spring.application.datasource.model.audit.Audita
 import com.olsonsolution.common.spring.application.jpa.service.AuditableEntityListener;
 import jakarta.persistence.*;
 import lombok.*;
-import org.joda.time.MutableDateTime;
 
 @Getter
 @Setter

@@ -20,6 +20,8 @@
         <module>common-properties</module>
         <module>common-datasource-migration</module>
         <module>common-liquibase-migration</module>
+        <module>common-spring-jpa-annotation</module>
+        <module>common-spring-jpa-annotation-processor</module>
         <module>common-spring-jpa-starter</module>
         <module>common-spring-async</module>
         <module>common-spring-context</module>
@@ -42,6 +44,7 @@
         <commons-collections4.version>4.5.0</commons-collections4.version>
         <caffeine.version>3.1.8</caffeine.version>
         <jackson-databind.version>2.18.4</jackson-databind.version>
+        <hibernate-core.version>7.1.0.Final</hibernate-core.version>
         <spring-core.version>6.2.6</spring-core.version>
         <spring-context.version>6.2.6</spring-context.version>
         <spring-boot.version>3.4.5</spring-boot.version>
@@ -158,6 +161,16 @@
             </dependency>
             <dependency>
                 <groupId>com.olsonsolution.common</groupId>
+                <artifactId>common-spring-jpa-annotation</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.olsonsolution.common</groupId>
+                <artifactId>common-spring-jpa-annotation-processor</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.olsonsolution.common</groupId>
                 <artifactId>common-spring-jpa-starter</artifactId>
                 <version>${revision}</version>
             </dependency>
@@ -196,6 +209,12 @@
                 <artifactId>spring-boot-starter-test</artifactId>
                 <version>${spring-boot.version}</version>
                 <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate.orm</groupId>
+                <artifactId>hibernate-core</artifactId>
+                <version>${hibernate-core.version}</version>
+                <scope>compile</scope>
             </dependency>
             <dependency>
                 <groupId>com.google.auto.service</groupId>
@@ -356,16 +375,6 @@
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                             <version>${lombok.version}</version>
-                        </path>
-                        <path>
-                            <groupId>com.google.auto.service</groupId>
-                            <artifactId>auto-service</artifactId>
-                            <version>${auto-service.version}</version>
-                        </path>
-                        <path>
-                            <groupId>com.olsonsolution.common</groupId>
-                            <artifactId>common-spring-jpa-starter</artifactId>
-                            <version>${revision}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>

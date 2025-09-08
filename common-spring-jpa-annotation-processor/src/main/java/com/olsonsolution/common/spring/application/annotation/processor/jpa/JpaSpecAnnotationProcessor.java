@@ -5,6 +5,9 @@ import com.olsonsolution.common.reflection.domain.port.repository.annotion.proce
 import com.olsonsolution.common.reflection.domain.port.repository.annotion.processor.TypeElementUtils;
 import com.olsonsolution.common.reflection.domain.service.annotion.processor.MessagePrintingService;
 import com.olsonsolution.common.reflection.domain.service.annotion.processor.TypeElementUtilityService;
+import liquibase.Scope;
+import liquibase.logging.core.JavaLogService;
+import liquibase.resource.ClassLoaderResourceAccessor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.w3c.dom.Document;
 
@@ -42,7 +45,7 @@ public class JpaSpecAnnotationProcessor extends AbstractProcessor {
         TypeElementUtils typeElementUtils =
                 new TypeElementUtilityService(processingEnv.getTypeUtils(), processingEnv.getElementUtils());
         JpaEntityUtil jpaEntityUtil = new JpaEntityUtil(messagePrinter, typeElementUtils);
-        LiquibaseUtils liquibaseUtils = new LiquibaseUtils(messagePrinter, typeElementUtils);
+        LiquibaseUtils liquibaseUtils = createLiquibaseUtils(typeElementUtils);
         ChangeLogOrderer changeLogOrderer = new ChangeLogOrderer(messagePrinter);
         JpaSpecAnnotationUtils jpaSpecAnnotationUtils = new JpaSpecAnnotationUtils();
         this.changeLogFactory = new ChangeLogFactory(messagePrinter);
@@ -91,6 +94,19 @@ public class JpaSpecAnnotationProcessor extends AbstractProcessor {
             );
         }
         return true;
+    }
+
+    private LiquibaseUtils createLiquibaseUtils(TypeElementUtils typeElementUtils) {
+        var cl = Thread.currentThread().getContextClassLoader();
+        var attrs = Map.of(
+                Scope.Attr.logService.name(), new JavaLogService(),
+                Scope.Attr.resourceAccessor.name(), new ClassLoaderResourceAccessor(cl)
+        );
+        try {
+            return Scope.child(attrs, () -> new LiquibaseUtils(messagePrinter, typeElementUtils));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

@@ -8,7 +8,6 @@ import com.olsonsolution.common.spring.application.datasource.model.audit.Audita
 import com.olsonsolution.common.spring.application.jpa.service.AuditableEntityListener;
 import jakarta.persistence.*;
 import lombok.*;
-import org.joda.time.MutableDateTime;
 
 import static com.olsonsolution.common.spring.application.annotation.migration.Operation.ADD_COLUMN;
 import static com.olsonsolution.common.spring.application.annotation.migration.Operation.MODIFY_DATA_TYPE;

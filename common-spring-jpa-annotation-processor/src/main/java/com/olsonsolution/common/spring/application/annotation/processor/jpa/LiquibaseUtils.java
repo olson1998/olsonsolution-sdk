@@ -79,9 +79,9 @@ class LiquibaseUtils {
 
     private final Database anyDatabase = new MockDatabase();
 
-    private final TypeConfiguration typeConfiguration = new TypeConfiguration();
-
     private final DataTypeFactory dataTypeFactory = DataTypeFactory.getInstance();
+
+    private final TypeConfiguration typeConfiguration = new TypeConfiguration();
 
     ChangeOp buildColumnOp(VariableElement fieldElement,
                            String jpaSpec,
