@@ -1,10 +1,10 @@
 package com.olsonsolution.common.spring.domain.model.tenant;
 
-import com.olsonsolution.common.spring.domain.port.sterotype.tenant.AuthInfo;
 import com.olsonsolution.common.spring.domain.port.sterotype.tenant.User;
-import com.olsonsolution.common.spring.domain.port.sterotype.tenant.UserInfo;
 import lombok.Builder;
 import lombok.Data;
+
+import java.util.Set;
 
 @Data
 @Builder
@@ -14,8 +14,6 @@ public class DomainUser implements User {
 
     private final String username;
 
-    private final UserInfo info;
-
-    private final AuthInfo authInfo;
+    private final Set<String> roles;
 
 }
