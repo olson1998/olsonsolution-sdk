@@ -1,5 +1,6 @@
 package com.olsonsolution.common.spring.domain.model.context;
 
+import com.olsonsolution.common.data.domain.port.stereotype.sql.SqlPermission;
 import com.olsonsolution.common.spring.domain.port.stereotype.context.ContextMetadata;
 import com.olsonsolution.common.spring.domain.port.stereotype.context.ContextType;
 import com.olsonsolution.common.spring.domain.port.sterotype.context.TenantContext;
@@ -28,5 +29,10 @@ public class TenantThreadLocalContext extends ThreadLocalContext implements Tena
                 ", metadata=" + getMetadata() +
                 ", tenant=" + tenant +
                 ')';
+    }
+
+    @Override
+    public SqlPermission getPermission() {
+        return null;
     }
 }

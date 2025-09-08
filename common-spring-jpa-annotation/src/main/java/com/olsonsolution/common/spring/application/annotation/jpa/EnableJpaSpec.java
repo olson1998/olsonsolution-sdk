@@ -1,4 +1,4 @@
-package com.olsonsolution.common.spring.application.annotation;
+package com.olsonsolution.common.spring.application.annotation.jpa;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,8 +7,12 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.TYPE)
-public @interface JpaSpec {
+public @interface EnableJpaSpec {
 
     String value();
+
+    String configPackage() default "";
+
+    String[] basePackages() default {};
 
 }

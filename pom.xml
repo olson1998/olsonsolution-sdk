@@ -45,7 +45,9 @@
         <caffeine.version>3.1.8</caffeine.version>
         <jackson-databind.version>2.18.4</jackson-databind.version>
         <hibernate-core.version>7.1.0.Final</hibernate-core.version>
+        <liquibase-core.version>4.31.1</liquibase-core.version>
         <spring-core.version>6.2.6</spring-core.version>
+        <spring-boot-autoconfigure.version>3.4.5</spring-boot-autoconfigure.version>
         <spring-context.version>6.2.6</spring-context.version>
         <spring-boot.version>3.4.5</spring-boot.version>
         <auto-service.version>1.1.1</auto-service.version>
@@ -201,6 +203,12 @@
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-autoconfigure</artifactId>
+                <version>${spring-boot-autoconfigure.version}</version>
+                <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-configuration-processor</artifactId>
                 <version>${spring-boot.version}</version>
             </dependency>
@@ -215,6 +223,11 @@
                 <artifactId>hibernate-core</artifactId>
                 <version>${hibernate-core.version}</version>
                 <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.liquibase</groupId>
+                <artifactId>liquibase-core</artifactId>
+                <version>${liquibase-core.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.auto.service</groupId>

@@ -11,6 +11,7 @@ import com.olsonsolution.common.spring.domain.port.repository.jpa.JpaSpecDataSou
 import jakarta.persistence.*;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.metamodel.Metamodel;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
@@ -20,6 +21,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static org.hibernate.cfg.JdbcSettings.*;
 import static org.hibernate.cfg.MappingSettings.DEFAULT_SCHEMA;
@@ -31,6 +34,9 @@ public class MultiVendorEntityManagerFactory extends MultiVendorJpaConfigurable<
         implements EntityManagerFactoryDelegate {
 
     private static final String PERSISTENCE_UNIT_NAME = "%s_%s_jpa";
+
+    @Getter
+    private final String name;
 
     private final String schema;
 
@@ -49,6 +55,7 @@ public class MultiVendorEntityManagerFactory extends MultiVendorJpaConfigurable<
                                            SqlDataSourceProvider sqlDataSourceProvider,
                                            DestinationDataSourceManager routingDataSourceManager) {
         super(jpaSpec, dataSourceSpecManager, jpaSpecDataSourceSpecManager, sqlDataSourceProvider);
+        this.name = jpaSpec + "EntityManagerFactoryDelegate";
         this.schema = schema;
         this.entityBasePackages = entityBasePackages;
         this.jpaProperties = jpaProperties;
@@ -120,6 +127,16 @@ public class MultiVendorEntityManagerFactory extends MultiVendorJpaConfigurable<
     }
 
     @Override
+    public PersistenceUnitTransactionType getTransactionType() {
+        return getDelegate().getTransactionType();
+    }
+
+    @Override
+    public SchemaManager getSchemaManager() {
+        return getDelegate().getSchemaManager();
+    }
+
+    @Override
     public void addNamedQuery(String name, Query query) {
         getDelegate().addNamedQuery(name, query);
     }
@@ -132,6 +149,26 @@ public class MultiVendorEntityManagerFactory extends MultiVendorJpaConfigurable<
     @Override
     public <T> void addNamedEntityGraph(String graphName, EntityGraph<T> entityGraph) {
         getDelegate().addNamedEntityGraph(graphName, entityGraph);
+    }
+
+    @Override
+    public <R> Map<String, TypedQueryReference<R>> getNamedQueries(Class<R> aClass) {
+        return getDelegate().getNamedQueries(aClass);
+    }
+
+    @Override
+    public <E> Map<String, EntityGraph<? extends E>> getNamedEntityGraphs(Class<E> aClass) {
+        return getDelegate().getNamedEntityGraphs(aClass);
+    }
+
+    @Override
+    public void runInTransaction(Consumer<EntityManager> consumer) {
+        getDelegate().runInTransaction(consumer);
+    }
+
+    @Override
+    public <R> R callInTransaction(Function<EntityManager, R> function) {
+        return getDelegate().callInTransaction(function);
     }
 
     @Override

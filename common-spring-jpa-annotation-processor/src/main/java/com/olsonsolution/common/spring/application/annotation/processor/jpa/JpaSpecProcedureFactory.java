@@ -1,11 +1,7 @@
 package com.olsonsolution.common.spring.application.annotation.processor.jpa;
 
-import com.olsonsolution.common.spring.application.annotation.migration.*;
 import jakarta.persistence.Column;
 import jakarta.persistence.SequenceGenerator;
-import liquibase.Scope;
-import liquibase.logging.core.JavaLogService;
-import liquibase.resource.ClassLoaderResourceAccessor;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.keyvalue.DefaultMapEntry;
