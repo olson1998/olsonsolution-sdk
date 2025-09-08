@@ -10,12 +10,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.SequenceGenerator;
-import liquibase.database.Database;
-import liquibase.database.core.MockDatabase;
-import liquibase.datatype.DataTypeFactory;
-import liquibase.datatype.LiquibaseDataType;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.collections4.keyvalue.DefaultMapEntry;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.ConstructorUtils;
@@ -33,53 +28,54 @@ import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.JDBCType;
+import java.sql.Types;
 import java.util.*;
 
-import static org.apache.commons.lang3.StringUtils.EMPTY;
-import static org.hibernate.type.SqlTypes.*;
+import static java.util.Map.entry;
 
 @RequiredArgsConstructor
 class LiquibaseUtils {
 
-    public static final Map<Integer, String> CODE_TO_LIQUIBASE = Map.ofEntries(
-            // ───── core “virtual” temporal + UUID ───────────────────────────────
-            new DefaultMapEntry<>(UUID, "uuid"),                            // 3000
-            new DefaultMapEntry<>(TIMESTAMP_UTC, "timestamp"),                      // 3003
-            new DefaultMapEntry<>(TIME_UTC, "time"),                           // 3007
-            new DefaultMapEntry<>(OFFSET_DATE_TIME, "timestamp with time zone"),       // 3012 :contentReference[oaicite:3]{index=3}
-            new DefaultMapEntry<>(OFFSET_TIME, "time with time zone"),            // 3013 :contentReference[oaicite:4]{index=4}
-
-            // ───── JSON / network / interval ────────────────────────────────────
-            new DefaultMapEntry<>(JSON, "json"),                           // 3001 :contentReference[oaicite:5]{index=5}
-            new DefaultMapEntry<>(INET, "inet"),                           // 3002 (pass-through) :contentReference[oaicite:6]{index=6}
-            new DefaultMapEntry<>(INTERVAL_SECOND, "interval"),                       // 3100 :contentReference[oaicite:7]{index=7}
-
-            // ───── LOB helpers used by some dialects ────────────────────────────
-            new DefaultMapEntry<>(MATERIALIZED_BLOB, "blob"),                           // 3004 :contentReference[oaicite:8]{index=8}
-            new DefaultMapEntry<>(MATERIALIZED_CLOB, "clob"),                           // 3005 :contentReference[oaicite:9]{index=9}
-            new DefaultMapEntry<>(MATERIALIZED_NCLOB, "nclob"),                          // 3006 :contentReference[oaicite:10]{index=10}
-            new DefaultMapEntry<>(LONG32VARBINARY, "blob"),                           // 4003 :contentReference[oaicite:11]{index=11}
-            new DefaultMapEntry<>(LONG32VARCHAR, "clob"),                            // 4001 :contentReference[oaicite:12]{index=12}
-            new DefaultMapEntry<>(LONG32NVARCHAR, "nclob"),                          // 4002 :contentReference[oaicite:13]{index=13}
-
-            // ───── spatial & geo types ──────────────────────────────────────────
-            new DefaultMapEntry<>(GEOMETRY, "geometry"),                       // 3200 :contentReference[oaicite:14]{index=14}
-            new DefaultMapEntry<>(POINT, "point"),                          // 3201 :contentReference[oaicite:15]{index=15}
-            new DefaultMapEntry<>(GEOGRAPHY, "geography"),                      // 3250 :contentReference[oaicite:16]{index=16}
-
-            // ───── ENUM helpers (6.5+) ──────────────────────────────────────────
-            new DefaultMapEntry<>(NAMED_ENUM, "varchar"),                        // 6001 :contentReference[oaicite:17]{index=17}
-            new DefaultMapEntry<>(ORDINAL_ENUM, "int"),                            // 6002 :contentReference[oaicite:18]{index=18}
-            new DefaultMapEntry<>(NAMED_ORDINAL_ENUM, "int")                             // 6003 :contentReference[oaicite:19]{index=19}
+    private static final Map<Integer, String> CODE_TO_LIQUIBASE = Map.ofEntries(
+            // ==== Standard JDBC Types ====
+            entry(Types.CHAR, "char"),
+            entry(Types.NCHAR, "nchar"),
+            entry(Types.VARCHAR, "varchar"),
+            entry(Types.NVARCHAR, "nvarchar"),
+            entry(Types.BINARY, "binary"),
+            entry(Types.VARBINARY, "varbinary"),
+            entry(Types.LONGVARCHAR, "longvarchar"),
+            entry(Types.LONGNVARCHAR, "longnvarchar"),
+            entry(Types.CLOB, "clob"),
+            entry(Types.NCLOB, "nclob"),
+            entry(Types.BLOB, "blob"),
+            entry(Types.BOOLEAN, "boolean"),
+            entry(Types.BIT, "bit"),
+            entry(Types.TINYINT, "tinyint"),
+            entry(Types.SMALLINT, "smallint"),
+            entry(Types.INTEGER, "integer"),
+            entry(Types.BIGINT, "bigint"),
+            entry(Types.REAL, "real"),
+            entry(Types.FLOAT, "float"),
+            entry(Types.DOUBLE, "double"),
+            entry(Types.DECIMAL, "decimal"),
+            entry(Types.NUMERIC, "numeric"),
+            entry(Types.DATE, "date"),
+            entry(Types.TIME, "time"),
+            entry(Types.TIME_WITH_TIMEZONE, "time with time zone"),
+            entry(Types.TIMESTAMP, "timestamp"),
+            entry(Types.TIMESTAMP_WITH_TIMEZONE, "timestamp with time zone"),
+            entry(Types.ROWID, "rowid"),
+            entry(Types.SQLXML, "xml"),
+            entry(3100, "uuid"),
+            entry(3101, "json"),
+            entry(3102, "geography"),
+            entry(3103, "geometry")
     );
 
     private final MessagePrinter messagePrinter;
 
     private final TypeElementUtils typeElementUtils;
-
-    private final Database anyDatabase = new MockDatabase();
-
-    private final DataTypeFactory dataTypeFactory = DataTypeFactory.getInstance();
 
     private final TypeConfiguration typeConfiguration = new TypeConfiguration();
 
@@ -362,27 +358,6 @@ class LiquibaseUtils {
         return null;
     }
 
-    private String getLiquibaseDataType(JdbcType jdbcType, Integer length, Integer precision, Integer scale) {
-        int jdbcCode = jdbcType.getJdbcTypeCode();
-        if (jdbcCode < 3000) {
-            String typeDesc = JDBCType.valueOf(jdbcCode).getName();
-            LiquibaseDataType liquibaseDataType = dataTypeFactory.fromDescription(typeDesc, anyDatabase);
-            if (length != null && canSetLength(jdbcType)) {
-                liquibaseDataType.addParameter(length);
-            }
-            if (precision != null && canSetPrecisionScale(jdbcType) && precision > 0) {
-                String param = String.valueOf(precision);
-                if (scale != null && scale > 0) {
-                    param = param + ',' + scale;
-                }
-                liquibaseDataType.addParameter(param);
-            }
-            return liquibaseDataType.toDatabaseDataType(anyDatabase).getType();
-        } else {
-            return CODE_TO_LIQUIBASE.getOrDefault(jdbcCode, EMPTY);
-        }
-    }
-
     private boolean canSetPrecisionScale(JdbcType jdbcType) {
         return jdbcType instanceof DoubleJdbcType || jdbcType instanceof FloatJdbcType ||
                 jdbcType instanceof DecimalJdbcType;
@@ -401,6 +376,29 @@ class LiquibaseUtils {
                 .findFirst()
                 .map(Param::value)
                 .orElse(null);
+    }
+
+    private String getLiquibaseDataType(JdbcType jdbcType, Integer length, Integer precision, Integer scale) {
+        int jdbcCode = jdbcType.getJdbcTypeCode();
+        // Look up the base SQL name from the map
+        String base = CODE_TO_LIQUIBASE.get(jdbcCode);
+        if (base == null) {
+            // Fallback: use JDBCType name lowercased
+            base = JDBCType.valueOf(jdbcCode).getName().toLowerCase(Locale.ROOT);
+        }
+        // Apply length if appropriate
+        if (length != null && length > 0 && canSetLength(jdbcType)) {
+            return base + "(" + length + ")";
+        }
+        // Apply precision/scale if appropriate
+        if (precision != null && precision > 0 && canSetPrecisionScale(jdbcType)) {
+            if (scale != null && scale > 0) {
+                return base + "(" + precision + "," + scale + ")";
+            } else {
+                return base + "(" + precision + ")";
+            }
+        }
+        return base;
     }
 
 }
