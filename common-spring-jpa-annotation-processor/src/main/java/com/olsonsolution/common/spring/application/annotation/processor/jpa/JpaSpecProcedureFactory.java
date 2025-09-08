@@ -1,5 +1,6 @@
 package com.olsonsolution.common.spring.application.annotation.processor.jpa;
 
+import com.olsonsolution.common.spring.application.annotation.migration.*;
 import jakarta.persistence.Column;
 import jakarta.persistence.SequenceGenerator;
 import lombok.RequiredArgsConstructor;
